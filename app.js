@@ -856,22 +856,43 @@
             }
         },
 
-        shareProduct: function(productId) {
+        shareProduct: async function(productId) {
             const p = this.state.products.find(x => x.id === productId);
             if (!p) return;
             
             const url = window.location.href;
-            const shareText = `*${p.name}*\nRR ELECTRRIC — Branded Electrical Products\nSelling Price: ₹${p.selling_price}`;
+            // Embed the URL directly in the text so it always appears alongside native image shares
+            const shareText = `*${p.name}*\nRR ELECTRRIC — Branded Electrical Products\nSelling Price: ₹${p.selling_price}\n\nShop now: ${url}`;
             
             if (navigator.share) {
-                navigator.share({
-                    title: `RR ELECTRRIC - ${p.name}`,
-                    text: shareText,
-                    url: url
-                }).catch(err => console.warn('Share failed:', err));
+                try {
+                    // Try to attach the actual product image natively as a file
+                    if (p.image_urls && p.image_urls.length > 0 && navigator.canShare) {
+                        const response = await fetch(p.image_urls[0]);
+                        const blob = await response.blob();
+                        const file = new File([blob], 'product-image.webp', { type: blob.type });
+                        
+                        if (navigator.canShare({ files: [file] })) {
+                            await navigator.share({
+                                title: `RR ELECTRRIC - ${p.name}`,
+                                text: shareText,
+                                files: [file]
+                            });
+                            return;
+                        }
+                    }
+                    
+                    // Fallback to standard text + url share if files aren't supported
+                    await navigator.share({
+                        title: `RR ELECTRRIC - ${p.name}`,
+                        text: shareText
+                    });
+                } catch (err) {
+                    console.warn('Share failed or cancelled:', err);
+                }
             } else {
-                // Fallback for browsers without Web Share API
-                navigator.clipboard.writeText(`${shareText}\n\nLink: ${url}`).then(() => CustomUI.alert('Product info and link copied to clipboard!'));
+                // Fallback for desktop browsers
+                navigator.clipboard.writeText(shareText).then(() => CustomUI.alert('Product info and link copied to clipboard!'));
             }
         },
 
