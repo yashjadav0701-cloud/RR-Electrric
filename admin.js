@@ -1298,6 +1298,41 @@
                 document.getElementById('product-category-search').value = product.categories?.name || '';
                 document.getElementById('product-price').value = product.selling_price;
                 document.getElementById('product-mrp').value = product.mrp_price || '';
+                
+                // Read and split the warranty string back into the form
+                if (product.warranty) {
+                    const parts = product.warranty.split(' ');
+                    document.getElementById('product-warranty-val').value = parts[0] || '';
+                    let unit = parts[1] || 'Year';
+                    if (unit.endsWith('s')) unit = unit.slice(0, -1); // Strip the 's' for the dropdown
+                    
+                    const unitSelect = document.getElementById('product-warranty-unit');
+                    unitSelect.value = unit;
+                    
+                    // Sync with your Custom UI Dropdown
+                    const customOptions = unitSelect.nextElementSibling?.querySelectorAll('.custom-select-option');
+                    if (customOptions) {
+                        customOptions.forEach((opt, idx) => {
+                            opt.classList.toggle('selected', unitSelect.selectedIndex === idx);
+                            if (unitSelect.selectedIndex === idx) {
+                                unitSelect.nextElementSibling.querySelector('span').textContent = opt.textContent;
+                            }
+                        });
+                    }
+                } else {
+                    document.getElementById('product-warranty-val').value = '';
+                    const unitSelect = document.getElementById('product-warranty-unit');
+                    unitSelect.value = 'Year';
+                    
+                    const customOptions = unitSelect.nextElementSibling?.querySelectorAll('.custom-select-option');
+                    if (customOptions) {
+                        customOptions.forEach((opt, idx) => {
+                            opt.classList.toggle('selected', idx === 0);
+                            if (idx === 0) unitSelect.nextElementSibling.querySelector('span').textContent = opt.textContent;
+                        });
+                    }
+                }
+
                 document.getElementById('product-description').value = product.description || '';
                 document.getElementById('product-active').checked = product.is_active;
                 
@@ -1307,6 +1342,7 @@
                 delBtn.classList.add('hidden');
                 document.getElementById('product-id').value = '';
                 document.getElementById('product-category-id').value = '';
+                document.getElementById('product-warranty-val').value = '';
             }
             this.renderImagePreviews();
         },
@@ -1425,12 +1461,22 @@
                 newImageUrls = await this.uploadPendingImages();
                 const finalImageUrls = [...this.state.existingImages, ...newImageUrls];
 
+                // Auto format warranty string based on the numeric value
+                let warrantyStr = null;
+                const wVal = document.getElementById('product-warranty-val').value.trim();
+                if (wVal && parseInt(wVal) > 0) {
+                    const wUnit = document.getElementById('product-warranty-unit').value;
+                    const unitStr = parseInt(wVal) === 1 ? wUnit : wUnit + 's';
+                    warrantyStr = `${wVal} ${unitStr}`;
+                }
+
                 // 2. Prepare payload
                 const payload = {
                     name: document.getElementById('product-name').value.trim(),
                     category_id: catId,
                     selling_price: parseFloat(document.getElementById('product-price').value),
                     mrp_price: document.getElementById('product-mrp').value ? parseFloat(document.getElementById('product-mrp').value) : null,
+                    warranty: warrantyStr,
                     description: document.getElementById('product-description').value.trim(),
                     is_active: document.getElementById('product-active').checked,
                     image_urls: finalImageUrls

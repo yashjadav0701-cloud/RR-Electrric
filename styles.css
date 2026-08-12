@@ -2216,3 +2216,65 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     left: auto; 
     right: 0;
 }
+
+/* ============================================================
+   WARRANTY BADGE (Product Detail Page)
+   ============================================================ */
+.pdp-warranty-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.pdp-warranty-badge .warranty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--success); 
+}
+
+.pdp-warranty-badge .warranty-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.pdp-warranty-badge .warranty-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.pdp-warranty-badge .warranty-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pdp-warranty-badge .warranty-value {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-main);
+    line-height: 1.2;
+}
+
+/* ============================================================
+   FIX: ADMIN MODAL DROPDOWN SIZING
+   ============================================================ */
+/* Force dropdowns inside admin modals to match standard input box sizes */
+.modal-form .custom-select-trigger {
+    padding: 10px 6px;
+    font-size: 14px;
+}
+
+/* Make the options inside the dropdown comfortable to tap */
+.modal-form .custom-select-option {
+    padding: 10px 6px;
+    font-size: 14px;
+}
