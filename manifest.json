@@ -1,0 +1,17 @@
+{
+    "name": "RR ELECTRRIC",
+    "short_name": "RR ELECTRRIC",
+    "description": "Branded electrical products in Nadiad.",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#1e293b",
+    "icons": [
+        {
+            "src": "/logo-short.svg",
+            "sizes": "192x192 512x512",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}

@@ -1,0 +1,1411 @@
+(function() {
+    'use strict';
+
+    const SUPABASE_URL = 'https://ycckkswajajrqobrohcx.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljY2trc3dhamFqcnFvYnJvaGN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzNjQ4MTgsImV4cCI6MjEwMTk0MDgxOH0.G7CQyOFTy_LpOP3PK2QprHDx8cXP_ugqH0mTJaM9Oy4';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const AdminApp = {
+        init: async function() {
+            const startTime = Date.now();
+            this.bindEvents();
+            await this.checkSession();
+
+            // Hide preloader after initial load (minimum 3 seconds)
+            const elapsed = Date.now() - startTime;
+            const remainingTime = Math.max(0, 3000 - elapsed);
+            
+            setTimeout(() => {
+                const preloader = document.getElementById('global-preloader');
+                if (preloader) preloader.classList.add('hidden');
+            }, remainingTime);
+        },
+        
+        checkSession: async function() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                await this.verifyAdminRole(session.user.id);
+            } else {
+                this.showAuth();
+            }
+            
+            supabase.auth.onAuthStateChange(async (event, session) => {
+                if (event === 'SIGNED_OUT') {
+                    this.showAuth();
+                }
+            });
+        },
+
+        verifyAdminRole: async function(userId) {
+            try {
+                const { data, error } = await supabase
+                    .from('user_roles')
+                    .select('role')
+                    .eq('user_id', userId)
+                    .single();
+                    
+                if (error || !data || data.role !== 'admin') {
+                    throw new Error('Unauthorized: Admin access required.');
+                }
+                
+                this.showApp();
+            } catch (err) {
+                this.showError('Access denied. You are not an authorized admin.');
+                await supabase.auth.signOut();
+            }
+        },
+
+        showApp: function() {
+            document.getElementById('admin-auth').classList.add('hidden');
+            document.getElementById('admin-app').classList.remove('hidden');
+            this.loadView('dashboard');
+        },
+        
+        showError: function(message) {
+            const errorEl = document.getElementById('login-error');
+            if (errorEl) {
+                if (message) {
+                    errorEl.textContent = message;
+                    errorEl.classList.remove('hidden');
+                } else {
+                    errorEl.classList.add('hidden');
+                    errorEl.textContent = '';
+                }
+            }
+        },
+
+        bindEvents: function() {
+            const loginForm = document.getElementById('login-form');
+            if (loginForm) {
+                loginForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('admin-email').value;
+                    const password = document.getElementById('admin-password').value;
+                    const btn = document.getElementById('login-btn');
+                    
+                    btn.textContent = 'Authenticating...';
+                    btn.disabled = true;
+                    this.showError(''); 
+                    
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                        email,
+                        password
+                    });
+                    
+                    if (error) {
+                        this.showError(error.message);
+                        btn.textContent = 'Authenticate';
+                        btn.disabled = false;
+                    } else {
+                        await this.verifyAdminRole(data.user.id);
+                        btn.textContent = 'Authenticate';
+                        btn.disabled = false;
+                    }
+                });
+            }
+
+            const navLinks = document.querySelectorAll('.admin-nav a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    const view = e.currentTarget.getAttribute('href').replace('#', '');
+                    this.loadView(view);
+                });
+            });
+
+            document.getElementById('logout-btn')?.addEventListener('click', async () => {
+                await supabase.auth.signOut();
+            });
+        },
+        
+        loadView: function(viewId) {
+            document.getElementById('view-title').textContent = viewId.charAt(0).toUpperCase() + viewId.slice(1);
+            document.querySelectorAll('.admin-view').forEach(v => v.classList.add('hidden'));
+            
+            const viewEl = document.getElementById(`view-${viewId}`);
+            if(viewEl) viewEl.classList.remove('hidden');
+
+            if(viewId === 'dashboard') {
+                this.initDashboardView();
+            } else if (viewId === 'products') {
+                this.initProductsView();
+            } else if (viewId === 'configurations') {
+                this.initConfigurationsView();
+            } else if (viewId === 'orders') {
+                this.initOrdersView();
+            }
+        },
+
+        initDashboardView: async function() {
+            // Fetch high-level metrics simultaneously
+            const [ordersRes, productsRes] = await Promise.all([
+                supabase.from('orders').select('final_total, status, order_reference, created_at').order('created_at', { ascending: false }),
+                supabase.from('products').select('id', { count: 'exact' }).eq('is_active', true)
+            ]);
+
+            if (ordersRes.error) return console.error("Failed to load dashboard orders", ordersRes.error);
+
+            const orders = ordersRes.data || [];
+            
+            // Crunch the numbers
+            const pendingCount = orders.filter(o => o.status === 'pending').length;
+            const totalRevenue = orders.filter(o => o.status === 'accepted').reduce((sum, o) => sum + (o.final_total || 0), 0);
+            
+            // Push to UI
+            document.getElementById('dash-pending-orders').textContent = pendingCount;
+            document.getElementById('dash-total-revenue').textContent = `₹${totalRevenue.toLocaleString('en-IN')}`;
+            document.getElementById('dash-active-products').textContent = productsRes.count || 0;
+
+            // Render Recent Orders List
+            const recent = orders.slice(0, 5); // Grab only the latest 5
+            const tbody = document.getElementById('dash-recent-orders');
+            
+            if (recent.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="padding: 16px; text-align: center; color: var(--text-muted);">No orders in the system yet.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = recent.map(o => {
+                const date = new Date(o.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                const isPending = o.status === 'pending';
+                return `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 12px 16px; font-weight: 600;">${o.order_reference}</td>
+                        <td style="padding: 12px 16px; color: var(--text-muted);">${date}</td>
+                        <td style="padding: 12px 16px; font-weight: 600;">₹${o.final_total}</td>
+                        <td style="padding: 12px 16px;">
+                            <span class="status-badge ${isPending ? 'status-inactive' : 'status-active'}">
+                                ${isPending ? 'Pending' : 'Completed'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        },
+
+        // --- PHASE 14: ORDERS ---
+        initOrdersView: async function() {
+            this.switchOrderTab('pending');
+        },
+
+        switchOrderTab: async function(tab) {
+            this.state.currentOrderTab = tab;
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                const isMatch = btn.textContent.toLowerCase().includes(tab === 'accepted' ? 'archive' : 'pending');
+                btn.classList.toggle('active', isMatch);
+            });
+
+            await this.loadOrders();
+        },
+
+        loadOrders: async function() {
+            const container = document.getElementById('orders-container');
+            const loader = document.getElementById('orders-loading');
+            
+            container.innerHTML = '';
+            loader.classList.remove('hidden');
+
+            const { data, error } = await supabase
+                .from('orders')
+                .select(`
+                    *,
+                    customers (*),
+                    order_items (*),
+                    coupons (code)
+                `)
+                .eq('status', this.state.currentOrderTab)
+                .order('created_at', { ascending: false });
+
+            loader.classList.add('hidden');
+
+            if (error) {
+                container.innerHTML = `<p style="color:var(--danger)">Failed to load orders: ${error.message}</p>`;
+                return;
+            }
+
+            this.state.orders = data || [];
+            this.renderOrders();
+        },
+
+        renderOrders: function() {
+            const container = document.getElementById('orders-container');
+            
+            if (this.state.orders.length === 0) {
+                container.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--text-muted);">No ${this.state.currentOrderTab} orders found.</div>`;
+                return;
+            }
+
+            container.innerHTML = this.state.orders.map(order => {
+                const c = order.customers;
+                const items = order.order_items;
+                const d = new Date(order.created_at).toLocaleString();
+                
+                let itemsHtml = items.map(item => `
+                    <div class="order-item-row">
+                        <span style="flex:1; padding-right:8px; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;">${item.quantity} × ${item.product_name_snapshot}</span>
+                        <span>₹${item.total_price}</span>
+                    </div>
+                `).join('');
+
+                const isPending = order.status === 'pending';
+                let actionHtml = '';
+
+                const cleanPhone = c.phone.replace(/[^0-9+]/g, '');
+                
+                if (isPending) {
+                    actionHtml = `
+                        <div class="order-card-actions" style="display: flex; gap: 6px; flex-wrap: nowrap; align-items: center; width: 100%;">
+                            <a href="tel:${cleanPhone}" class="btn-secondary" style="display:inline-flex; flex:1; align-items:center; justify-content:center; gap:4px; padding: 8px 6px; text-decoration:none; font-size:12px; color:var(--text-main); white-space:nowrap;">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                Call
+                            </a>
+                            <button class="btn-secondary" style="display:inline-flex; flex:1; align-items:center; justify-content:center; gap:4px; padding: 8px 6px; font-size:12px; color:#16a34a; border-color:#bbf7d0; background:#f0fdf4; white-space:nowrap;" onclick="AdminApp.contactCustomer('${c.phone}', '${order.order_reference}')">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                                WhatsApp
+                            </button>
+                            <button class="btn-danger" style="display:inline-flex; flex:1; align-items:center; justify-content:center; gap:4px; padding: 8px 6px; font-size:12px; white-space:nowrap;" onclick="AdminApp.rejectOrder('${order.id}')">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                Reject
+                            </button>
+                            <button class="btn-primary" style="display:inline-flex; flex:1; align-items:center; justify-content:center; gap:4px; padding: 8px 6px; font-size:12px; background:var(--success); border-color:var(--success); white-space:nowrap;" onclick="AdminApp.acceptOrder('${order.id}')">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                Accept
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    actionHtml = `
+                        <div class="order-card-actions" style="display: flex; gap: 8px; align-items: center;">
+                            <span style="color:var(--text-muted); font-size:14px; margin-right:auto;">Archived Order</span>
+                            <a href="tel:${cleanPhone}" class="btn-secondary" style="display:inline-flex; align-items:center; gap:6px; padding: 8px 14px; text-decoration:none; font-size:13px; color:var(--text-main);">
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                Call
+                            </a>
+                            <button class="btn-secondary" style="display:inline-flex; align-items:center; gap:6px; padding: 8px 14px; font-size:13px; color:#16a34a; border-color:#bbf7d0; background:#f0fdf4;" onclick="AdminApp.contactCustomer('${c.phone}', '${order.order_reference}')">
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                                WhatsApp
+                            </button>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="admin-order-card">
+                        <div class="order-card-header">
+                            <strong style="font-size:16px;">${order.order_reference}</strong>
+                            <span style="font-size:12px; color:var(--text-muted);">${d}</span>
+                        </div>
+                        <div class="order-card-body">
+                            <div class="order-customer-info">
+                                <div class="order-section-title">Customer Details</div>
+                                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; margin-top: 12px;">
+                                    <div style="display: flex; gap: 8px; align-items: flex-start;">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="margin-top: 3px; flex-shrink: 0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                        <strong style="color: var(--text-main); font-size: 15px;">${c.name}</strong>
+                                    </div>
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="flex-shrink: 0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                        <a href="tel:${cleanPhone}" style="color: var(--primary); text-decoration: none; font-weight: 500;">${c.phone}</a>
+                                    </div>
+                                    <div style="display: flex; gap: 8px; align-items: flex-start;">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="margin-top: 3px; flex-shrink: 0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                        <div style="line-height: 1.5; color: var(--text-muted);">
+                                            ${c.address}<br>
+                                            <span style="font-weight: 500; color: var(--text-main);">${c.area} - Nadiad</span>
+                                            ${c.landmark ? `<br>Landmark: ${c.landmark}` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                                ${order.notes ? `
+                                    <div style="margin-top:12px; padding:12px; background:#fef3c7; border:1px solid #fde68a; border-radius:4px; font-size:13px;">
+                                        <strong>Notes:</strong><br>${order.notes.replace(/\n/g, '<br>')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="order-items-info">
+                                <div class="order-section-title">Order Items</div>
+                                <div>${itemsHtml}</div>
+                                
+                                <div class="order-totals">
+                                    <div class="order-totals-row">
+                                        <span>Subtotal</span>
+                                        <span>₹${order.subtotal}</span>
+                                    </div>
+                                    ${order.vip_discount > 0 ? `
+                                        <div class="order-totals-row" style="color:var(--success)">
+                                            <span>VIP Discount</span>
+                                            <span>-₹${order.vip_discount}</span>
+                                        </div>
+                                    ` : ''}
+                                    ${order.coupon_discount > 0 ? `
+                                        <div class="order-totals-row" style="color:var(--success)">
+                                            <span>Coupon (${order.coupons?.code || 'Applied'})</span>
+                                            <span>-₹${order.coupon_discount}</span>
+                                        </div>
+                                    ` : ''}
+                                    <div class="order-totals-row final">
+                                        <span>Final Total</span>
+                                        <span>₹${order.final_total}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        ${actionHtml}
+                    </div>
+                `;
+            }).join('');
+        },
+
+        acceptOrder: async function(id) {
+            if(!confirm("Accept this order? It will be moved to the archive.")) return;
+            const { error } = await supabase.from('orders').update({ status: 'accepted' }).eq('id', id);
+            if(error) alert("Failed to accept: " + error.message);
+            else this.loadOrders();
+        },
+
+        rejectOrder: async function(id) {
+            if(!confirm("Are you sure you want to REJECT and permanently delete this order?")) return;
+            const { error } = await supabase.from('orders').delete().eq('id', id);
+            if(error) alert("Failed to delete: " + error.message);
+            else this.loadOrders();
+        },
+
+        contactCustomer: function(phone, orderRef) {
+            const cleanPhone = phone.replace(/[^0-9]/g, '');
+            // Append 91 specifically since we enforce 10 digits on checkout
+            const msg = encodeURIComponent(`Hi, this is RR ELECTRRIC regarding your order ${orderRef}.`);
+            window.open(`https://wa.me/91${cleanPhone}?text=${msg}`, '_blank');
+        },
+
+        // --- PHASE 6 & 7: CONFIGURATIONS, VIP, AND COUPONS ---
+        state: {
+            // ... existing state items ...
+            categories: [], products: [], pendingImages: [], existingImages: [],
+            vipTiers: [], coupons: [],
+            orders: [], currentOrderTab: 'pending'
+        },
+
+        initConfigurationsView: async function() {
+            if (!this._configEventsBound) {
+                this._configEventsBound = true;
+                
+                // Configs
+                document.getElementById('config-form').addEventListener('submit', (e) => this.saveConfigurations(e));
+                
+                // VIP
+                document.getElementById('btn-add-vip').addEventListener('click', () => this.openVipModal());
+                document.getElementById('btn-close-vip-modal').addEventListener('click', () => document.getElementById('vip-modal').classList.add('hidden'));
+                document.getElementById('vip-form').addEventListener('submit', (e) => this.saveVip(e));
+                document.getElementById('btn-delete-vip').addEventListener('click', () => this.deleteVip());
+                
+                // Coupons
+                document.getElementById('btn-add-coupon').addEventListener('click', () => this.openCouponModal());
+                document.getElementById('btn-close-coupon-modal').addEventListener('click', () => document.getElementById('coupon-modal').classList.add('hidden'));
+                document.getElementById('coupon-form').addEventListener('submit', (e) => this.saveCoupon(e));
+                document.getElementById('btn-delete-coupon').addEventListener('click', () => this.deleteCoupon());
+            }
+
+            await this.loadConfigurations();
+            await this.loadVipTiers();
+            await this.loadCoupons();
+        },
+
+        loadConfigurations: async function() {
+            const { data, error } = await supabase.from('store_configurations').select('*');
+            if (error || !data) {
+                console.error("Failed to load configs", error);
+                return;
+            }
+
+            const storeInfo = data.find(c => c.config_key === 'store_info')?.config_value || {};
+            const deliverySettings = data.find(c => c.config_key === 'delivery_settings')?.config_value || {};
+            const homeSettings = data.find(c => c.config_key === 'homepage_settings')?.config_value || {};
+
+            document.getElementById('config-store-name').value = storeInfo.name || '';
+            document.getElementById('config-store-whatsapp').value = storeInfo.whatsapp || '';
+            document.getElementById('config-shop-address').value = storeInfo.address || '';
+            document.getElementById('config-maps-url').value = storeInfo.maps_url || '';
+            
+            document.getElementById('config-delivery-area').value = deliverySettings.area || 'Nadiad';
+            document.getElementById('config-delivery-min').value = deliverySettings.min_time || '10 minutes';
+            document.getElementById('config-delivery-max').value = deliverySettings.max_time || '2 days';
+            
+            document.getElementById('config-home-categories').value = (homeSettings.featured_categories || []).join(', ');
+        },
+
+        loadVipTiers: async function() {
+            const { data, error } = await supabase.from('vip_tiers').select('*').order('min_spend', { ascending: true });
+            const container = document.getElementById('vip-list-container');
+            if (!container) return; 
+            
+            if (error) {
+                container.innerHTML = `<div style="color:var(--danger); padding: 16px;">Error loading VIP tiers</div>`;
+                return;
+            }
+            this.state.vipTiers = data || [];
+            
+            if (this.state.vipTiers.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding: 20px; color:var(--text-muted)">No VIP tiers configured.</div>`;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="table-responsive desktop-only">
+                    <table class="data-table">
+                        <thead><tr><th>Tier Name</th><th>Min Spend (₹)</th><th>Discount (%)</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody>
+                            ${this.state.vipTiers.map(v => `
+                                <tr>
+                                    <td><strong>${v.name}</strong></td>
+                                    <td>₹${v.min_spend}</td>
+                                    <td>${v.discount_percentage}%</td>
+                                    <td><span class="status-badge ${v.is_active ? 'status-active' : 'status-inactive'}">${v.is_active ? 'Active' : 'Inactive'}</span></td>
+                                    <td><div class="action-links"><button onclick="AdminApp.openVipModal('${v.id}')">Edit</button></div></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mobile-only">
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        ${this.state.vipTiers.map(v => `
+                            <div style="border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-surface); overflow: hidden; box-shadow: var(--shadow-sm);">
+                                <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg-main); display: flex; align-items: center; gap: 8px;">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--primary)" stroke-width="2" style="flex-shrink: 0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                                    <div style="font-size: 15px; font-weight: 700; color: var(--text-main); word-wrap: break-word;">${v.name}</div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; text-align: center;">
+                                    <div style="padding: 10px 4px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;">Min Spend</div>
+                                    <div style="padding: 10px 4px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;">Discount</div>
+                                    <div style="padding: 10px 4px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;">Status</div>
+                                    <div style="padding: 10px 4px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;">Action</div>
+                                    
+                                    <div style="padding: 12px 2px; border-right: 1px solid var(--border); font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: var(--text-main);">₹${v.min_spend}</div>
+                                    <div style="padding: 12px 2px; border-right: 1px solid var(--border); font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: var(--primary);">${v.discount_percentage}%</div>
+                                    <div style="padding: 12px 2px; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center;">
+                                        <span style="font-size: 10px; font-weight: 800; padding: 4px 6px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0; background: ${v.is_active ? '#dcfce7' : '#f1f5f9'}; color: ${v.is_active ? '#15803d' : 'var(--text-muted)'}; border: 1px solid ${v.is_active ? '#bbf7d0' : 'var(--border)'};">
+                                            ${v.is_active ? 'ON' : 'OFF'}
+                                        </span>
+                                    </div>
+                                    <div style="padding: 12px 2px; display: flex; align-items: center; justify-content: center;">
+                                        <button onclick="AdminApp.openVipModal('${v.id}')" style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" aria-label="Edit Tier">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        },
+
+        openVipModal: function(id = null) {
+            document.getElementById('vip-modal').classList.remove('hidden');
+            document.getElementById('vip-form-error').classList.add('hidden');
+            document.getElementById('vip-form').reset();
+            
+            const title = document.getElementById('vip-modal-title');
+            const delBtn = document.getElementById('btn-delete-vip');
+            
+            if (id) {
+                const v = this.state.vipTiers.find(x => x.id === id);
+                if (!v) return;
+                title.textContent = 'Edit VIP Tier';
+                delBtn.classList.remove('hidden');
+                document.getElementById('vip-id').value = v.id;
+                document.getElementById('vip-name').value = v.name;
+                document.getElementById('vip-min-spend').value = v.min_spend;
+                document.getElementById('vip-discount').value = v.discount_percentage;
+                document.getElementById('vip-active').checked = v.is_active;
+            } else {
+                title.textContent = 'Add VIP Tier';
+                delBtn.classList.add('hidden');
+                document.getElementById('vip-id').value = '';
+            }
+        },
+
+        saveVip: async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-vip');
+            const errEl = document.getElementById('vip-form-error');
+            btn.disabled = true; errEl.classList.add('hidden');
+            
+            const payload = {
+                name: document.getElementById('vip-name').value.trim(),
+                min_spend: parseFloat(document.getElementById('vip-min-spend').value),
+                discount_percentage: parseFloat(document.getElementById('vip-discount').value),
+                is_active: document.getElementById('vip-active').checked
+            };
+            
+            const id = document.getElementById('vip-id').value;
+            let res;
+            if (id) res = await supabase.from('vip_tiers').update(payload).eq('id', id);
+            else res = await supabase.from('vip_tiers').insert(payload);
+            
+            if (res.error) {
+                errEl.textContent = res.error.message;
+                errEl.classList.remove('hidden');
+                btn.disabled = false;
+            } else {
+                document.getElementById('vip-modal').classList.add('hidden');
+                btn.disabled = false;
+                await this.loadVipTiers();
+            }
+        },
+        
+        deleteVip: async function() {
+            if(!confirm('Delete this VIP Tier?')) return;
+            const id = document.getElementById('vip-id').value;
+            await supabase.from('vip_tiers').delete().eq('id', id);
+            document.getElementById('vip-modal').classList.add('hidden');
+            await this.loadVipTiers();
+        },
+
+        loadCoupons: async function() {
+            const { data, error } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+            const container = document.getElementById('coupon-list-container');
+            if (!container) return;
+            
+            if (error) {
+                container.innerHTML = `<div style="color:var(--danger); padding: 16px;">Error loading coupons</div>`;
+                return;
+            }
+            this.state.coupons = data || [];
+            
+            if (this.state.coupons.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding: 20px; color:var(--text-muted)">No Coupons configured.</div>`;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="table-responsive desktop-only">
+                    <table class="data-table">
+                        <thead><tr><th>Code</th><th>Discount</th><th>Min Cart (₹)</th><th>Usage Limit</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody>
+                            ${this.state.coupons.map(c => {
+                                const expiryText = c.expires_at ? new Date(c.expires_at).toLocaleDateString() : 'Never';
+                                const usageText = c.usage_limit ? `${c.used_count || 0} / ${c.usage_limit}` : 'Unlimited';
+                                const discountText = c.discount_type === 'PERCENTAGE' ? `${c.discount_amount}%` : `₹${c.discount_amount}`;
+                                return `
+                                <tr>
+                                    <td><strong>${c.code}</strong></td>
+                                    <td>${discountText}</td>
+                                    <td>${c.min_cart_value > 0 ? `₹${c.min_cart_value}` : 'None'}</td>
+                                    <td>${usageText}</td>
+                                    <td>${expiryText}</td>
+                                    <td><span class="status-badge ${c.is_active ? 'status-active' : 'status-inactive'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
+                                    <td><div class="action-links"><button onclick="AdminApp.openCouponModal('${c.id}')">Edit</button></div></td>
+                                </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mobile-only">
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        ${this.state.coupons.map(c => {
+                            const expiryText = c.expires_at ? new Date(c.expires_at).toLocaleDateString() : 'Never';
+                            const usageText = c.usage_limit ? `${c.used_count || 0} / ${c.usage_limit}` : '∞';
+                            const discountText = c.discount_type === 'PERCENTAGE' ? `${c.discount_amount}%` : `₹${c.discount_amount}`;
+                            return `
+                            <div style="border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-surface); overflow: hidden; box-shadow: var(--shadow-sm);">
+                                <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg-main); display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--primary)" stroke-width="2" style="flex-shrink: 0;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                                        <div style="font-size: 15px; font-weight: 700; color: var(--text-main); word-wrap: break-word;">${c.code}</div>
+                                    </div>
+                                    <div style="font-size: 15px; font-weight: 800; color: var(--success);">${discountText}</div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; text-align: center;">
+                                    <div style="padding: 10px 4px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;">Min Cart</div>
+                                    <div style="padding: 10px 4px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;">Used</div>
+                                    <div style="padding: 10px 4px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;">Status</div>
+                                    <div style="padding: 10px 4px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase;">Action</div>
+                                    
+                                    <div style="padding: 12px 2px; border-right: 1px solid var(--border); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: var(--text-main);">${c.min_cart_value > 0 ? `₹${c.min_cart_value}` : 'None'}</div>
+                                    <div style="padding: 12px 2px; border-right: 1px solid var(--border); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: var(--text-main);">${usageText}</div>
+                                    <div style="padding: 12px 2px; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center;">
+                                        <span style="font-size: 10px; font-weight: 800; padding: 4px 6px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0; background: ${c.is_active ? '#dcfce7' : '#f1f5f9'}; color: ${c.is_active ? '#15803d' : 'var(--text-muted)'}; border: 1px solid ${c.is_active ? '#bbf7d0' : 'var(--border)'};">
+                                            ${c.is_active ? 'ON' : 'OFF'}
+                                        </span>
+                                    </div>
+                                    <div style="padding: 12px 2px; display: flex; align-items: center; justify-content: center;">
+                                        <button onclick="AdminApp.openCouponModal('${c.id}')" style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" aria-label="Edit Coupon">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div style="padding: 8px 12px; border-top: 1px solid var(--border); background: var(--bg-surface); font-size: 12px; color: var(--text-muted); text-align: center;">
+                                    Expires: <span style="font-weight: 600; color: var(--text-main);">${expiryText}</span>
+                                </div>
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        },
+
+        openCouponModal: function(id = null) {
+            document.getElementById('coupon-modal').classList.remove('hidden');
+            document.getElementById('coupon-form-error').classList.add('hidden');
+            document.getElementById('coupon-form').reset();
+            
+            const title = document.getElementById('coupon-modal-title');
+            const delBtn = document.getElementById('btn-delete-coupon');
+            
+            if (id) {
+                const c = this.state.coupons.find(x => x.id === id);
+                if (!c) return;
+                title.textContent = 'Edit Coupon';
+                delBtn.classList.remove('hidden');
+                document.getElementById('coupon-id').value = c.id;
+                document.getElementById('coupon-code').value = c.code;
+                document.getElementById('coupon-type').value = c.discount_type;
+                document.getElementById('coupon-amount').value = c.discount_amount;
+                document.getElementById('coupon-min-cart').value = c.min_cart_value || '';
+                document.getElementById('coupon-max-discount').value = c.max_discount || '';
+                document.getElementById('coupon-usage-limit').value = c.usage_limit || '';
+                
+                if (c.expires_at) {
+                    // Format for datetime-local: YYYY-MM-DDThh:mm
+                    const d = new Date(c.expires_at);
+                    document.getElementById('coupon-expiry').value = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                } else {
+                    document.getElementById('coupon-expiry').value = '';
+                }
+                
+                document.getElementById('coupon-active').checked = c.is_active;
+            } else {
+                title.textContent = 'Add Coupon';
+                delBtn.classList.add('hidden');
+                document.getElementById('coupon-id').value = '';
+            }
+        },
+
+        saveCoupon: async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-coupon');
+            const errEl = document.getElementById('coupon-form-error');
+            btn.disabled = true; errEl.classList.add('hidden');
+            
+            const expiryVal = document.getElementById('coupon-expiry').value;
+            
+            const payload = {
+                code: document.getElementById('coupon-code').value.trim().toUpperCase(),
+                discount_type: document.getElementById('coupon-type').value,
+                discount_amount: parseFloat(document.getElementById('coupon-amount').value),
+                min_cart_value: document.getElementById('coupon-min-cart').value ? parseFloat(document.getElementById('coupon-min-cart').value) : 0,
+                max_discount: document.getElementById('coupon-max-discount').value ? parseFloat(document.getElementById('coupon-max-discount').value) : null,
+                usage_limit: document.getElementById('coupon-usage-limit').value ? parseInt(document.getElementById('coupon-usage-limit').value) : null,
+                expires_at: expiryVal ? new Date(expiryVal).toISOString() : null,
+                is_active: document.getElementById('coupon-active').checked
+            };
+            
+            const id = document.getElementById('coupon-id').value;
+            let res;
+            if (id) res = await supabase.from('coupons').update(payload).eq('id', id);
+            else res = await supabase.from('coupons').insert(payload);
+            
+            if (res.error) {
+                errEl.textContent = res.error.message;
+                errEl.classList.remove('hidden');
+                btn.disabled = false;
+            } else {
+                document.getElementById('coupon-modal').classList.add('hidden');
+                btn.disabled = false;
+                await this.loadCoupons();
+            }
+        },
+        
+        deleteCoupon: async function() {
+            if(!confirm('Delete this Coupon?')) return;
+            const id = document.getElementById('coupon-id').value;
+            await supabase.from('coupons').delete().eq('id', id);
+            document.getElementById('coupon-modal').classList.add('hidden');
+            await this.loadCoupons();
+        },
+
+        saveConfigurations: async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-config');
+            const msgEl = document.getElementById('config-form-msg');
+            
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            msgEl.classList.add('hidden');
+
+            const mapsUrlInput = document.getElementById('config-maps-url').value.trim();
+            
+            // Validate Google Maps URL securely before attempting any DB save
+            if (mapsUrlInput) {
+                try {
+                    const parsedUrl = new URL(mapsUrlInput);
+                    if (!parsedUrl.hostname.includes('google') && !parsedUrl.hostname.includes('maps.app.goo.gl')) {
+                        throw new Error('Invalid Domain');
+                    }
+                } catch (e) {
+                    msgEl.textContent = 'Please enter a valid Google Maps URL (e.g. https://maps.google.com/...)';
+                    msgEl.style.color = 'var(--danger)';
+                    msgEl.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.textContent = 'Save All Configurations';
+                    return;
+                }
+            }
+
+            const storeInfo = {
+                name: document.getElementById('config-store-name').value.trim(),
+                whatsapp: document.getElementById('config-store-whatsapp').value.trim(),
+                address: document.getElementById('config-shop-address').value.trim(),
+                maps_url: mapsUrlInput
+            };
+            
+            const deliverySettings = {
+                area: document.getElementById('config-delivery-area').value.trim(),
+                min_time: document.getElementById('config-delivery-min').value.trim(),
+                max_time: document.getElementById('config-delivery-max').value.trim()
+            };
+            
+            const homeSettings = {
+                featured_categories: document.getElementById('config-home-categories').value
+                    .split(',')
+                    .map(s => s.trim())
+                    .filter(s => s) // Remove empty strings
+            };
+
+            try {
+                const updates = [
+                    supabase.from('store_configurations').update({ config_value: storeInfo }).eq('config_key', 'store_info'),
+                    supabase.from('store_configurations').update({ config_value: deliverySettings }).eq('config_key', 'delivery_settings'),
+                    supabase.from('store_configurations').update({ config_value: homeSettings }).eq('config_key', 'homepage_settings')
+                ];
+
+                const results = await Promise.all(updates);
+                const hasError = results.some(r => r.error);
+                if (hasError) throw new Error("One or more configurations failed to save.");
+                
+                msgEl.textContent = 'Configurations saved successfully!';
+                msgEl.style.color = 'var(--success)';
+                msgEl.classList.remove('hidden');
+            } catch (err) {
+                msgEl.textContent = err.message || 'Failed to save configurations.';
+                msgEl.style.color = 'var(--danger)';
+                msgEl.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save All Configurations';
+                // Hide success message after 3 seconds
+                setTimeout(() => { if(msgEl.style.color === 'var(--success)') msgEl.classList.add('hidden'); }, 3000);
+            }
+        },
+
+        // --- PHASE 5: PRODUCT MANAGEMENT ---
+        state: {
+            categories: [],
+            products: [],
+            pendingImages: [], // New images to upload (Files)
+            existingImages: [], // Existing image URLs
+            inventoryState: {
+                search: '',
+                category: 'all',
+                status: 'all',
+                sort: 'newest'
+            }
+        },
+        
+        searchDebounceTimer: null,
+        
+        handleInventorySearch: function(val) {
+            clearTimeout(this.searchDebounceTimer);
+            this.searchDebounceTimer = setTimeout(() => {
+                this.state.inventoryState.search = val;
+                this.renderProducts();
+            }, 250);
+        },
+
+        initProductsView: async function() {
+            this.bindProductEvents();
+            await this.loadCategories();
+            await this.loadProducts();
+        },
+
+        loadCategories: async function() {
+            const { data, error } = await supabase.from('categories').select('*').order('name');
+            if (!error && data) this.state.categories = data;
+        },
+
+        loadProducts: async function() {
+            document.getElementById('products-loading').classList.remove('hidden');
+            const container = document.getElementById('products-management-container');
+            if (container) container.innerHTML = ''; // clear while loading
+            
+            const { data, error } = await supabase
+                .from('products')
+                .select('*, categories(name)')
+                .order('created_at', { ascending: false });
+                
+            document.getElementById('products-loading').classList.add('hidden');
+            
+            if (error) {
+                if (container) container.innerHTML = `<p style="color:red">Failed to load products: ${error.message}</p>`;
+                return;
+            }
+            
+            this.state.products = data || [];
+            this.renderProducts();
+        },
+
+        renderProducts: function() {
+            const container = document.getElementById('products-management-container');
+            if (!container) return;
+
+            const invState = this.state.inventoryState;
+
+            // 1. Render Toolbar only once so inputs don't lose focus
+            if (!document.getElementById('inventory-list-wrapper')) {
+                const categories = this.state.categories || [];
+                const toolbarHtml = `
+                    <div class="inventory-toolbar">
+                        <div class="inventory-filters">
+                            <input type="text" placeholder="Search by name or category..." id="inv-search-input" value="${invState.search}" oninput="AdminApp.handleInventorySearch(this.value)">
+                            <select id="inv-cat-filter" onchange="AdminApp.state.inventoryState.category = this.value; AdminApp.renderProducts();">
+                                <option value="all">All Categories</option>
+                                ${categories.map(c => `<option value="${c.id}" ${invState.category === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
+                            </select>
+                            <select id="inv-status-filter" onchange="AdminApp.state.inventoryState.status = this.value; AdminApp.renderProducts();">
+                                <option value="all" ${invState.status === 'all' ? 'selected' : ''}>All Status</option>
+                                <option value="active" ${invState.status === 'active' ? 'selected' : ''}>Active</option>
+                                <option value="inactive" ${invState.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                            </select>
+                            <select id="inv-sort-filter" onchange="AdminApp.state.inventoryState.sort = this.value; AdminApp.renderProducts();">
+                                <option value="newest" ${invState.sort === 'newest' ? 'selected' : ''}>Newest</option>
+                                <option value="oldest" ${invState.sort === 'oldest' ? 'selected' : ''}>Oldest</option>
+                                <option value="name-asc" ${invState.sort === 'name-asc' ? 'selected' : ''}>Name A-Z</option>
+                                <option value="name-desc" ${invState.sort === 'name-desc' ? 'selected' : ''}>Name Z-A</option>
+                                <option value="price-asc" ${invState.sort === 'price-asc' ? 'selected' : ''}>Price Low to High</option>
+                                <option value="price-desc" ${invState.sort === 'price-desc' ? 'selected' : ''}>Price High to Low</option>
+                            </select>
+                        </div>
+                        <button onclick="AdminApp.openProductForm()" class="btn-primary" style="width: auto; padding: 10px 16px;">+ Add Product</button>
+                    </div>
+                    <div id="inventory-list-wrapper"></div>
+                `;
+                container.innerHTML = toolbarHtml;
+            }
+
+            let filtered = this.state.products.filter(p => {
+                const matchesSearch = p.name.toLowerCase().includes(invState.search.toLowerCase()) ||
+                                      (p.categories?.name && p.categories.name.toLowerCase().includes(invState.search.toLowerCase()));
+                const matchesCat = invState.category === 'all' || p.category_id === invState.category;
+                const matchesStatus = invState.status === 'all' || 
+                                      (invState.status === 'active' && p.is_active) || 
+                                      (invState.status === 'inactive' && !p.is_active);
+                return matchesSearch && matchesCat && matchesStatus;
+            });
+
+            // Sorting
+            filtered.sort((a, b) => {
+                if (invState.sort === 'newest') return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+                if (invState.sort === 'oldest') return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+                if (invState.sort === 'name-asc') return a.name.localeCompare(b.name);
+                if (invState.sort === 'name-desc') return b.name.localeCompare(a.name);
+                if (invState.sort === 'price-asc') return (a.selling_price || 0) - (b.selling_price || 0);
+                if (invState.sort === 'price-desc') return (b.selling_price || 0) - (a.selling_price || 0);
+                return 0;
+            });
+
+            let html = '';
+
+            if (filtered.length === 0) {
+                html += `<div style="text-align: center; padding: 40px; color: var(--text-muted); background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius);">No products found matching criteria.</div>`;
+            } else {
+                // Desktop Table
+                html += `
+                <div class="inventory-table-container desktop-only">
+                    <table class="inventory-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 64px;">Thumb</th>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>MRP</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filtered.map(p => {
+                                const thumb = p.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
+                                const cat = p.categories?.name || 'Unassigned';
+                                let discountHtml = '';
+                                if (p.mrp_price && p.mrp_price > p.selling_price) {
+                                    const off = Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100);
+                                    discountHtml = `<span style="color: var(--success); font-weight: bold; font-size: 12px; margin-left: 6px;">${off}% OFF</span>`;
+                                }
+                                return `
+                                    <tr>
+                                        <td>
+                                            <img src="${thumb}" class="inventory-thumb" alt="">
+                                        </td>
+                                        <td>
+                                            <span style="font-weight: 600; color: var(--text-main); white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">${p.name}</span>
+                                        </td>
+                                        <td>${cat}</td>
+                                        <td>
+                                            <div style="font-weight: bold; font-size: 15px;">₹${p.selling_price} ${discountHtml}</div>
+                                        </td>
+                                        <td>
+                                            ${(p.mrp_price && p.mrp_price > p.selling_price) ? `<span style="font-size: 13px; color: var(--text-muted);">MRP <span style="text-decoration: line-through;">₹${p.mrp_price}</span></span>` : '<span style="color: var(--text-muted);">--</span>'}
+                                        </td>
+                                        <td>
+                                            <span class="status-badge ${p.is_active ? 'status-active' : 'status-inactive'}">
+                                                ${p.is_active ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </td>
+                                        <td style="text-align: right;">
+                                            <button onclick="AdminApp.openProductForm('${p.id}')" title="Edit" style="background:none; border:none; cursor:pointer; padding:6px; color: var(--text-muted);">
+                                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                            </button>
+                                            <button onclick="AdminApp.deleteProduct('${p.id}')" title="Delete" style="background:none; border:none; cursor:pointer; padding:6px; color: var(--danger);">
+                                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile List View -->
+                <div class="mobile-only" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;">
+                    ${filtered.map(p => {
+                        const thumb = p.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
+                        const cat = p.categories?.name || 'Unassigned';
+                        let discountHtml = '';
+                        if (p.mrp_price && p.mrp_price > p.selling_price) {
+                            const off = Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100);
+                            discountHtml = `<span style="color: var(--success); font-weight: bold; font-size: 11px; margin-left: 6px;">${off}% OFF</span>`;
+                        }
+                        return `
+                            <div class="mobile-inventory-card" style="padding: 12px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: stretch;">
+                                <img src="${thumb}" class="inventory-thumb" alt="" style="width: 60px; height: 60px; flex-shrink: 0; align-self: flex-start;">
+                                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between;">
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 14px; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3;">${p.name}</div>
+                                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">${cat}</div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                                        <span style="font-size: 15px; font-weight: 700; color: var(--text-main);">₹${p.selling_price}</span>
+                                        ${(p.mrp_price && p.mrp_price > p.selling_price) ? `<span style="font-size: 12px; color: var(--text-muted);">MRP <span style="text-decoration: line-through;">₹${p.mrp_price}</span></span>` : ''}
+                                        ${discountHtml}
+                                    </div>
+                                </div>
+                                <div style="display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; flex-shrink: 0; width: 32px;">
+                                    <span class="status-badge ${p.is_active ? 'status-active' : 'status-inactive'}" style="padding: 2px 6px; font-size: 9px; border-radius: 4px; margin-bottom: 8px; letter-spacing: 0;">
+                                        ${p.is_active ? 'ON' : 'OFF'}
+                                    </span>
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <button onclick="AdminApp.openProductForm('${p.id}')" style="background:var(--bg-main); border:1px solid var(--border); border-radius:4px; cursor:pointer; padding:6px; color: var(--text-muted); display: flex; align-items: center; justify-content: center;">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                        </button>
+                                        <button onclick="AdminApp.deleteProduct('${p.id}')" style="background:var(--bg-main); border:1px solid var(--border); border-radius:4px; cursor:pointer; padding:6px; color: var(--danger); display: flex; align-items: center; justify-content: center;">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                `;
+            }
+
+            document.getElementById('inventory-list-wrapper').innerHTML = html;
+        },
+
+        bindProductEvents: function() {
+            // Prevent duplicate binding
+            if (this._productEventsBound) return;
+            this._productEventsBound = true;
+
+            const modal = document.getElementById('product-modal');
+            const openBtn = document.getElementById('btn-open-product-modal');
+            if (openBtn) openBtn.addEventListener('click', () => this.openProductForm());
+            document.getElementById('btn-close-product-modal').addEventListener('click', () => modal.classList.add('hidden'));
+            
+            // Combobox Logic
+            const searchInput = document.getElementById('product-category-search');
+            const suggestList = document.getElementById('category-suggestions');
+            
+            searchInput.addEventListener('input', (e) => {
+                const val = e.target.value.toLowerCase().trim();
+                suggestList.innerHTML = '';
+                if (!val) {
+                    suggestList.classList.add('hidden');
+                    document.getElementById('product-category-id').value = '';
+                    return;
+                }
+                
+                const matches = this.state.categories.filter(c => c.name.toLowerCase().includes(val));
+                let html = matches.map(c => `<li data-id="${c.id}" data-name="${c.name}">${c.name}</li>`).join('');
+                
+                const exactMatch = matches.find(c => c.name.toLowerCase() === val);
+                if (!exactMatch) {
+                    // Automatically convert the user's input to Title Case
+                    const titleCaseVal = val.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                    html += `<li class="create-new" data-create="${titleCaseVal}">+ Create "${titleCaseVal}"</li>`;
+                }
+                
+                suggestList.innerHTML = html;
+                suggestList.classList.remove('hidden');
+            });
+
+            suggestList.addEventListener('click', async (e) => {
+                const li = e.target.closest('li');
+                if (!li) return;
+                
+                if (li.classList.contains('create-new')) {
+                    const newCatName = li.dataset.create;
+                    searchInput.value = 'Creating...';
+                    suggestList.classList.add('hidden');
+                    
+                    const { data, error } = await supabase.from('categories').insert({ name: newCatName }).select().single();
+                    if (!error && data) {
+                        this.state.categories.push(data);
+                        this.state.categories.sort((a,b) => a.name.localeCompare(b.name));
+                        document.getElementById('product-category-id').value = data.id;
+                        searchInput.value = data.name;
+                    } else {
+                        alert("Failed to create category: " + (error?.message || "Unknown error"));
+                        searchInput.value = '';
+                    }
+                } else {
+                    document.getElementById('product-category-id').value = li.dataset.id;
+                    searchInput.value = li.dataset.name;
+                    suggestList.classList.add('hidden');
+                }
+            });
+
+            // Hide suggestions on outside click
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.combobox-container')) {
+                    suggestList.classList.add('hidden');
+                }
+            });
+
+            // Image Selection & Preview
+            const imgInput = document.getElementById('product-images');
+            imgInput.addEventListener('change', async (e) => {
+                const files = Array.from(e.target.files);
+                if (this.state.existingImages.length + this.state.pendingImages.length + files.length > 3) {
+                    alert("Maximum 3 images allowed.");
+                    imgInput.value = '';
+                    return;
+                }
+                
+                for (let file of files) {
+                    const webpBlob = await this.compressToWebP(file);
+                    this.state.pendingImages.push(webpBlob);
+                }
+                this.renderImagePreviews();
+                imgInput.value = ''; // Reset
+            });
+
+            // Auto MRP Logic
+            document.getElementById('btn-auto-mrp').addEventListener('click', () => {
+                const sellingPriceInput = document.getElementById('product-price').value;
+                if (!sellingPriceInput) {
+                    alert('Please enter a Selling Price first.');
+                    return;
+                }
+                const sellingPrice = parseFloat(sellingPriceInput);
+                // Calculate random increase between 20% (0.20) and 60% (0.60)
+                const randomIncrease = (Math.random() * 0.40) + 0.20;
+                const mrp = sellingPrice * (1 + randomIncrease);
+                
+                // Round to the nearest whole integer for a clean price tag
+                document.getElementById('product-mrp').value = Math.round(mrp);
+            });
+
+            // Form Submit
+            document.getElementById('product-form').addEventListener('submit', (e) => this.saveProduct(e));
+            
+            // Delete Product
+            document.getElementById('btn-delete-product').addEventListener('click', () => this.deleteProduct());
+        },
+
+        openProductForm: function(idOrProduct = null) {
+            document.getElementById('product-modal').classList.remove('hidden');
+            document.getElementById('product-form-error').classList.add('hidden');
+            document.getElementById('product-form').reset();
+            
+            this.state.pendingImages = [];
+            this.state.existingImages = [];
+            
+            const delBtn = document.getElementById('btn-delete-product');
+            const title = document.getElementById('product-modal-title');
+
+            let product = null;
+            if (typeof idOrProduct === 'string') {
+                product = this.state.products.find(x => x.id === idOrProduct);
+            } else {
+                product = idOrProduct;
+            }
+
+            if (product) {
+                title.textContent = 'Edit Product';
+                delBtn.classList.remove('hidden');
+                
+                document.getElementById('product-id').value = product.id;
+                document.getElementById('product-name').value = product.name;
+                document.getElementById('product-category-id').value = product.category_id;
+                document.getElementById('product-category-search').value = product.categories?.name || '';
+                document.getElementById('product-price').value = product.selling_price;
+                document.getElementById('product-mrp').value = product.mrp_price || '';
+                document.getElementById('product-description').value = product.description || '';
+                document.getElementById('product-active').checked = product.is_active;
+                
+                this.state.existingImages = product.image_urls || [];
+            } else {
+                title.textContent = 'Add Product';
+                delBtn.classList.add('hidden');
+                document.getElementById('product-id').value = '';
+                document.getElementById('product-category-id').value = '';
+            }
+            this.renderImagePreviews();
+        },
+
+        compressToWebP: function(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 1000; // Optimal mobile-first max size
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > MAX_WIDTH) {
+                            height = Math.round((height * MAX_WIDTH) / width);
+                            width = MAX_WIDTH;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        canvas.toBlob((blob) => resolve(blob), 'image/webp', 0.85);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        },
+
+        renderImagePreviews: function() {
+            const container = document.getElementById('image-preview-container');
+            let html = '';
+            
+            // Existing Images
+            this.state.existingImages.forEach((url, index) => {
+                html += `
+                    <div class="preview-box">
+                        <img src="${url}">
+                        <button type="button" class="remove-img" onclick="AdminApp.removeExistingImage(${index})">&times;</button>
+                    </div>`;
+            });
+            
+            // Pending Images
+            this.state.pendingImages.forEach((blob, index) => {
+                const url = URL.createObjectURL(blob);
+                html += `
+                    <div class="preview-box" style="border-color: var(--primary)">
+                        <img src="${url}">
+                        <button type="button" class="remove-img" onclick="AdminApp.removePendingImage(${index})">&times;</button>
+                    </div>`;
+            });
+            
+            container.innerHTML = html;
+        },
+
+        removeExistingImage: function(index) {
+            this.state.existingImages.splice(index, 1);
+            this.renderImagePreviews();
+        },
+
+        removePendingImage: function(index) {
+            this.state.pendingImages.splice(index, 1);
+            this.renderImagePreviews();
+        },
+
+        uploadPendingImages: async function() {
+            const uploadedUrls = [];
+            try {
+                for (let blob of this.state.pendingImages) {
+                    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
+                    const { data, error } = await supabase.storage.from('product-images').upload(fileName, blob, { contentType: 'image/webp' });
+                    
+                    if (error) throw error;
+                    
+                    const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName);
+                    uploadedUrls.push(publicUrl);
+                }
+                return uploadedUrls;
+            } catch (err) {
+                // Rollback successfully uploaded parts if the batch fails halfway
+                if (uploadedUrls.length > 0) {
+                    const pathsToRemove = uploadedUrls.map(url => url.split('/product-images/')[1]).filter(Boolean);
+                    if (pathsToRemove.length > 0) {
+                        try {
+                            await supabase.storage.from('product-images').remove(pathsToRemove);
+                        } catch (rollbackErr) {
+                            console.error('Failed to clean up partial upload:', rollbackErr);
+                        }
+                    }
+                }
+                throw new Error("Image upload failed: " + err.message);
+            }
+        },
+
+        saveProduct: async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-product');
+            const errorEl = document.getElementById('product-form-error');
+            
+            const catId = document.getElementById('product-category-id').value;
+            if (!catId) {
+                errorEl.textContent = 'Please select or create a valid category from the dropdown.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            errorEl.classList.add('hidden');
+
+            let newImageUrls = [];
+
+            try {
+                // 1. Upload new images
+                newImageUrls = await this.uploadPendingImages();
+                const finalImageUrls = [...this.state.existingImages, ...newImageUrls];
+
+                // 2. Prepare payload
+                const payload = {
+                    name: document.getElementById('product-name').value.trim(),
+                    category_id: catId,
+                    selling_price: parseFloat(document.getElementById('product-price').value),
+                    mrp_price: document.getElementById('product-mrp').value ? parseFloat(document.getElementById('product-mrp').value) : null,
+                    description: document.getElementById('product-description').value.trim(),
+                    is_active: document.getElementById('product-active').checked,
+                    image_urls: finalImageUrls
+                };
+
+                const id = document.getElementById('product-id').value;
+                const existingProduct = id ? this.state.products.find(x => x.id === id) : null;
+                const oldImages = existingProduct ? (existingProduct.image_urls || []) : [];
+                let res;
+
+                if (id) {
+                    res = await supabase.from('products').update(payload).eq('id', id);
+                } else {
+                    res = await supabase.from('products').insert(payload);
+                }
+
+                if (res.error) throw res.error;
+
+                // 3. ONLY AFTER DB SUCCESS: Clean up old storage images that are no longer referenced
+                if (oldImages.length > 0) {
+                    const imagesToDelete = oldImages.filter(oldUrl => !finalImageUrls.includes(oldUrl));
+                    if (imagesToDelete.length > 0) {
+                        const pathsToRemove = imagesToDelete.map(url => url.split('/product-images/')[1]).filter(Boolean);
+                        if (pathsToRemove.length > 0) {
+                            try {
+                                await supabase.storage.from('product-images').remove(pathsToRemove);
+                            } catch (err) {
+                                console.warn('Failed to delete old orphan storage files:', err);
+                            }
+                        }
+                    }
+                }
+
+                document.getElementById('product-modal').classList.add('hidden');
+                await this.loadProducts(); // Refresh list
+
+            } catch (err) {
+                // ROLLBACK: If DB save fails, delete the newly uploaded images to prevent orphans
+                if (newImageUrls.length > 0) {
+                    const pathsToRemove = newImageUrls.map(url => url.split('/product-images/')[1]).filter(Boolean);
+                    if (pathsToRemove.length > 0) {
+                        try {
+                            await supabase.storage.from('product-images').remove(pathsToRemove);
+                        } catch (rollbackErr) {
+                            console.error('Failed to rollback orphaned images:', rollbackErr);
+                        }
+                    }
+                }
+                errorEl.textContent = err.message || 'Failed to save product.';
+                errorEl.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Product';
+            }
+        },
+
+        deleteProduct: async function(idToDel = null) {
+            if (!confirm('Are you sure you want to delete this product? Historical orders will not be affected.')) return;
+            
+            const id = idToDel || document.getElementById('product-id').value;
+            const product = this.state.products.find(p => p.id === id);
+            const btn = document.getElementById('btn-delete-product');
+            
+            if (!idToDel) {
+                btn.disabled = true;
+                btn.textContent = 'Deleting...';
+            }
+
+            // 1. Delete from database
+            const { error } = await supabase.from('products').delete().eq('id', id);
+            
+            if (error) {
+                alert('Error deleting product: ' + error.message);
+                if (!idToDel) {
+                    btn.disabled = false;
+                    btn.textContent = 'Delete Product';
+                }
+            } else {
+                // 2. Only after DB success, clean up storage images
+                if (product && product.image_urls && product.image_urls.length > 0) {
+                    const pathsToRemove = product.image_urls.map(url => url.split('/product-images/')[1]).filter(Boolean);
+                    if (pathsToRemove.length > 0) {
+                        try {
+                            await supabase.storage.from('product-images').remove(pathsToRemove);
+                        } catch (err) {
+                            console.warn('Failed to delete product storage images:', err);
+                        }
+                    }
+                }
+                
+                document.getElementById('product-modal').classList.add('hidden');
+                await this.loadProducts();
+            }
+        },
+
+        // Marketplace Integration intentionally removed in Phase 1
+    };
+
+    // Attach AdminApp to window for inline onclick handlers inside dynamically generated HTML
+    window.AdminApp = AdminApp;
+
+    document.addEventListener('DOMContentLoaded', () => AdminApp.init());
+})();

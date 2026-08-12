@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — RR ELECTRRIC</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" href="/styles.css?v=1">
+    <link rel="stylesheet" href="/admin.css?v=1">
+    <link rel="icon" type="image/svg+xml" href="/logo-short.svg?v=1">
+    
+    <!-- Preconnect to Supabase for faster API handshakes -->
+    <link rel="preconnect" href="https://ycckkswajajrqobrohcx.supabase.co" crossorigin>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Global Preloader -->
+    <div id="global-preloader" class="global-preloader">
+        <img src="/logo-full.svg?v=1" alt="RR" class="preloader-logo">
+    </div>
+
+    <div id="admin-auth" class="admin-auth-container">
+        <div class="auth-card">
+            <img src="/logo-full.svg?v=1" alt="RR ELECTRRIC" width="200" style="margin-bottom: 24px;">
+            <h2>Admin Gateway</h2>
+            <p>Authentication required.</p>
+            <div id="login-error" class="hidden" style="color: var(--danger); margin-bottom: 16px; font-size: 14px;"></div>
+            <form id="login-form">
+                <input type="email" id="admin-email" placeholder="Admin Email" required>
+                <input type="password" id="admin-password" placeholder="Password" required>
+                <button type="submit" id="login-btn" class="btn-primary">Authenticate</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="admin-app" class="admin-layout hidden">
+        <aside class="admin-sidebar">
+            <div class="sidebar-brand">
+                <img src="/logo-short.svg?v=1" alt="RR" width="32" class="mobile-only">
+                <img src="/logo-full.svg?v=1" alt="RR ELECTRRIC" width="140" class="desktop-only">
+            </div>
+            <nav class="admin-nav">
+                <a href="#dashboard" class="active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#products">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                    <span>Products</span>
+                </a>
+                <a href="#orders">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                    <span>Orders</span>
+                </a>
+                <a href="#configurations">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    <span>Configs</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="logout-btn" class="btn-text">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <span>Log Out</span>
+                </button>
+            </div>
+        </aside>
+        
+        <main class="admin-main">
+            <header class="admin-topbar">
+                <h1 id="view-title">Dashboard</h1>
+            </header>
+            <div id="admin-content" class="admin-content-area">
+                <!-- Dashboard View -->
+                <div id="view-dashboard" class="admin-view hidden">
+                    <div class="dashboard-metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-label">Pending Orders</div>
+                            <div id="dash-pending-orders" class="metric-value" style="color: var(--danger);">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Total Revenue</div>
+                            <div id="dash-total-revenue" class="metric-value" style="color: var(--success);">₹--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Active Products</div>
+                            <div id="dash-active-products" class="metric-value" style="color: var(--primary);">--</div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-bottom: 16px; font-size: 18px;">Recent Orders</h3>
+                    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 40px;">
+                        <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 14px;">
+                            <thead>
+                                <tr style="background: var(--bg-main); border-bottom: 1px solid var(--border);">
+                                    <th style="padding: 12px 16px;">Order Ref</th>
+                                    <th style="padding: 12px 16px;">Date</th>
+                                    <th style="padding: 12px 16px;">Amount</th>
+                                    <th style="padding: 12px 16px;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash-recent-orders">
+                                <tr><td colspan="4" style="padding: 16px; text-align: center; color: var(--text-muted);">Loading data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Products View -->
+                <div id="view-products" class="admin-view hidden">
+                    <div id="products-loading" class="loading-state">Loading products...</div>
+                    <div id="products-management-container">
+                        <!-- Master Inventory injected here via JS -->
+                    </div>
+                </div>
+
+                <!-- Orders View -->
+                <div id="view-orders" class="admin-view hidden">
+                    <div class="tabs-container">
+                        <button class="tab-btn active" onclick="AdminApp.switchOrderTab('pending')">Pending Orders</button>
+                        <button class="tab-btn" onclick="AdminApp.switchOrderTab('accepted')">Archive / History</button>
+                    </div>
+                    <div id="orders-loading" class="loading-state hidden">Loading orders...</div>
+                    <div id="orders-container" class="orders-layout">
+                        <!-- Orders injected here -->
+                    </div>
+                </div>
+
+                <!-- Configurations View -->
+                <div id="view-configurations" class="admin-view hidden">
+                    <form id="config-form" style="max-width: 1400px; margin: 0 auto;">
+                        <div class="config-grid-desktop">
+                            <div class="config-card">
+                                <h3>Store Details</h3>
+                                <div class="form-group">
+                                    <label>Store Name</label>
+                                    <input type="text" id="config-store-name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>WhatsApp Number <small>(Include country code)</small></label>
+                                    <input type="text" id="config-store-whatsapp" placeholder="+91..." required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Shop Address</label>
+                                    <textarea id="config-shop-address" rows="2" placeholder="Full store address"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Google Maps Location URL</label>
+                                    <input type="url" id="config-maps-url" placeholder="https://maps.google.com/?q=...">
+                                </div>
+                            </div>
+
+                            <div class="config-card">
+                                <h3>Delivery Settings</h3>
+                                <div class="form-group">
+                                    <label>Delivery Area Restrictions</label>
+                                    <input type="text" id="config-delivery-area" value="Nadiad" required>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Minimum Expected Time</label>
+                                        <input type="text" id="config-delivery-min" placeholder="e.g. 10 minutes" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Maximum Expected Time</label>
+                                        <input type="text" id="config-delivery-max" placeholder="e.g. 2 days" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="config-card">
+                                <h3>Homepage Layout</h3>
+                                <div class="form-group">
+                                    <label>Featured Categories <small>(Comma separated names. These will be highlighted on the main storefront)</small></label>
+                                    <input type="text" id="config-home-categories" placeholder="e.g. LED Bulbs, Modular Switches" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="config-form-msg" class="hidden" style="margin-top: 16px; font-weight: bold; font-size: 14px;"></div>
+                        
+                        <div style="margin-top: 24px;">
+                            <button type="submit" id="btn-save-config" class="btn-primary" style="width: auto; padding: 12px 24px;">Save All Configurations</button>
+                        </div>
+                    </form>
+                    
+                    <!-- Phase 7 VIP and Coupons -->
+                    <div class="config-grid-desktop" style="margin-top: 32px; max-width: 1400px; margin-left: auto; margin-right: auto;">
+                        
+                        <!-- VIP Card -->
+                        <div class="config-card">
+                            <div class="card-header-flex">
+                                <h3 style="border: none; padding: 0; margin: 0;">VIP Tiers</h3>
+                                <button type="button" id="btn-add-vip" class="btn-secondary" style="padding: 6px 16px; font-size: 14px;">+ Add Tier</button>
+                            </div>
+                            <div id="vip-list-container">
+                                <div style="text-align:center; padding: 20px; color: var(--text-muted);">Loading...</div>
+                            </div>
+                        </div>
+
+                        <!-- Coupons Card -->
+                        <div class="config-card">
+                            <div class="card-header-flex">
+                                <h3 style="border: none; padding: 0; margin: 0;">Discount Coupons</h3>
+                                <button type="button" id="btn-add-coupon" class="btn-secondary" style="padding: 6px 16px; font-size: 14px;">+ Add Coupon</button>
+                            </div>
+                            <div id="coupon-list-container">
+                                <div style="text-align:center; padding: 20px; color: var(--text-muted);">Loading...</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Product Modal Overlay -->
+    <div id="product-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2 id="product-modal-title">Add Product</h2>
+                <button type="button" id="btn-close-product-modal" class="icon-btn">&times;</button>
+            </header>
+            <form id="product-form" class="modal-form">
+                <input type="hidden" id="product-id">
+                
+                <div class="form-group">
+                    <label>Product Name *</label>
+                    <input type="text" id="product-name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Category *</label>
+                    <div class="combobox-container">
+                        <input type="text" id="product-category-search" placeholder="Type to search or create..." required autocomplete="off">
+                        <input type="hidden" id="product-category-id">
+                        <ul id="category-suggestions" class="suggestions-list hidden"></ul>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>RR ELECTRRIC Price (₹) *</label>
+                        <input type="number" id="product-price" min="0" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>MRP Price (₹) <small>(Optional)</small></label>
+                        <div class="input-with-btn">
+                            <input type="number" id="product-mrp" min="0" step="0.01" style="flex: 1;">
+                            <button type="button" id="btn-auto-mrp" class="btn-secondary" title="Auto generate 20-60% above selling price">Auto</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Product Overview <small>(Keep it brief)</small></label>
+                    <textarea id="product-description" rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Images (Max 3, auto-optimized to WebP)</label>
+                    <input type="file" id="product-images" accept="image/*" multiple>
+                    <div id="image-preview-container" class="image-previews"></div>
+                </div>
+
+                <div class="form-group toggle-group">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="product-active" checked>
+                        <span>Product is Active (Visible to customers)</span>
+                    </label>
+                </div>
+
+                <div id="product-form-error" class="hidden" style="color: var(--danger); margin-bottom: 12px; font-size: 14px;"></div>
+                
+                <div class="modal-actions">
+                    <button type="button" id="btn-delete-product" class="btn-danger hidden">Delete Product</button>
+                    <div style="flex:1"></div>
+                    <button type="submit" id="btn-save-product" class="btn-primary" style="width: auto; padding: 12px 24px;">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- VIP Modal -->
+    <div id="vip-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 450px;">
+            <header class="modal-header">
+                <h2 id="vip-modal-title">Add VIP Tier</h2>
+                <button type="button" id="btn-close-vip-modal" class="icon-btn">&times;</button>
+            </header>
+            <form id="vip-form" class="modal-form">
+                <input type="hidden" id="vip-id">
+                <div class="form-group">
+                    <label>Tier Name *</label>
+                    <input type="text" id="vip-name" placeholder="e.g. Gold Tier" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Min Spend (₹) *</label>
+                        <input type="number" id="vip-min-spend" min="0" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Discount (%) *</label>
+                        <input type="number" id="vip-discount" min="0" max="100" step="0.01" required>
+                    </div>
+                </div>
+                <div class="form-group toggle-group" style="margin-top: 8px;">
+                    <label class="toggle-label"><input type="checkbox" id="vip-active" checked><span>Tier is Active</span></label>
+                </div>
+                <div id="vip-form-error" class="hidden" style="color: var(--danger); font-size: 14px;"></div>
+                <div class="modal-actions">
+                    <button type="button" id="btn-delete-vip" class="btn-danger hidden">Delete</button>
+                    <div style="flex:1"></div>
+                    <button type="submit" id="btn-save-vip" class="btn-primary" style="width: auto; padding: 10px 20px;">Save Tier</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Coupon Modal -->
+    <div id="coupon-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <header class="modal-header">
+                <h2 id="coupon-modal-title">Add Coupon</h2>
+                <button type="button" id="btn-close-coupon-modal" class="icon-btn">&times;</button>
+            </header>
+            <form id="coupon-form" class="modal-form">
+                <input type="hidden" id="coupon-id">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Coupon Code *</label>
+                        <input type="text" id="coupon-code" placeholder="e.g. FESTIVAL50" style="text-transform: uppercase;" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Expiry Date <small>(Optional)</small></label>
+                        <input type="datetime-local" id="coupon-expiry">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Discount Type *</label>
+                        <select id="coupon-type" style="padding: 10px; border: 1px solid var(--border); border-radius: 4px;" required>
+                            <option value="FIXED">Flat Amount (₹)</option>
+                            <option value="PERCENTAGE">Percentage (%)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Discount Value *</label>
+                        <input type="number" id="coupon-amount" min="0" step="0.01" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Min Cart Value (₹) <small>(Optional)</small></label>
+                        <input type="number" id="coupon-min-cart" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Discount (₹) <small>(If Percentage)</small></label>
+                        <input type="number" id="coupon-max-discount" min="0" step="0.01">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Total Usage Limit <small>(Leave empty for unlimited)</small></label>
+                    <input type="number" id="coupon-usage-limit" min="1" step="1">
+                </div>
+                <div class="form-group toggle-group" style="margin-top: 8px;">
+                    <label class="toggle-label"><input type="checkbox" id="coupon-active" checked><span>Coupon is Active</span></label>
+                </div>
+                <div id="coupon-form-error" class="hidden" style="color: var(--danger); font-size: 14px;"></div>
+                <div class="modal-actions">
+                    <button type="button" id="btn-delete-coupon" class="btn-danger hidden">Delete</button>
+                    <div style="flex:1"></div>
+                    <button type="submit" id="btn-save-coupon" class="btn-primary" style="width: auto; padding: 10px 20px;">Save Coupon</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/admin.js?v=1"></script>
+</body>
+</html>

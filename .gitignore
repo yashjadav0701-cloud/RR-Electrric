@@ -1,0 +1,7 @@
+# Supabase Edge Function Secrets
+.env
+supabase/.temp/
+
+# OS Files
+.DS_Store
+Thumbs.db
