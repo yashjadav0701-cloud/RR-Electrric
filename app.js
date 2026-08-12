@@ -1,6 +1,98 @@
 (function() {
     'use strict';
 
+    // Custom UI Engine for Modals & Selects
+    const CustomUI = {
+        dialogTemplate: `
+            <div id="custom-dialog" class="custom-dialog-overlay">
+                <div class="custom-dialog-box">
+                    <div id="custom-dialog-title" class="custom-dialog-title"></div>
+                    <div id="custom-dialog-msg" class="custom-dialog-msg"></div>
+                    <div class="custom-dialog-actions">
+                        <button id="custom-dialog-cancel" class="btn-secondary">Cancel</button>
+                        <button id="custom-dialog-confirm" class="btn-primary">OK</button>
+                    </div>
+                </div>
+            </div>
+        `,
+        init: function() {
+            if (!document.getElementById('custom-dialog')) {
+                document.body.insertAdjacentHTML('beforeend', this.dialogTemplate);
+            }
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.custom-select-wrapper')) {
+                    document.querySelectorAll('.custom-select-options').forEach(el => el.classList.remove('open'));
+                }
+            });
+        },
+        alert: function(msg, title = "Notification") {
+            return new Promise((resolve) => this.showDialog(title, msg, false, resolve));
+        },
+        confirm: function(msg, title = "Confirm Action") {
+            return new Promise((resolve) => this.showDialog(title, msg, true, resolve));
+        },
+        showDialog: function(title, msg, isConfirm, resolve) {
+            const overlay = document.getElementById('custom-dialog');
+            document.getElementById('custom-dialog-title').textContent = title;
+            document.getElementById('custom-dialog-msg').innerHTML = msg;
+            const cancelBtn = document.getElementById('custom-dialog-cancel');
+            const confirmBtn = document.getElementById('custom-dialog-confirm');
+            
+            cancelBtn.style.display = isConfirm ? 'inline-flex' : 'none';
+            const close = (result) => {
+                overlay.classList.remove('active');
+                cancelBtn.onclick = null; confirmBtn.onclick = null;
+                setTimeout(() => resolve(result), 200);
+            };
+            cancelBtn.onclick = () => close(false);
+            confirmBtn.onclick = () => close(true);
+            overlay.classList.add('active');
+        },
+        styleSelects: function() {
+            document.querySelectorAll('select:not(.custom-styled)').forEach(select => {
+                select.classList.add('custom-styled');
+                select.style.display = 'none';
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = 'custom-select-wrapper';
+                const trigger = document.createElement('div');
+                trigger.className = 'custom-select-trigger';
+                
+                const selectedOption = select.options[select.selectedIndex];
+                trigger.innerHTML = `<span>${selectedOption ? selectedOption.text : ''}</span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+                
+                const optionsContainer = document.createElement('div');
+                optionsContainer.className = 'custom-select-options';
+                
+                Array.from(select.options).forEach((opt, index) => {
+                    const optDiv = document.createElement('div');
+                    optDiv.className = 'custom-select-option' + (opt.selected ? ' selected' : '');
+                    optDiv.textContent = opt.text;
+                    optDiv.onclick = (e) => {
+                        e.stopPropagation();
+                        select.selectedIndex = index;
+                        trigger.querySelector('span').textContent = opt.text;
+                        optionsContainer.classList.remove('open');
+                        Array.from(optionsContainer.children).forEach(c => c.classList.remove('selected'));
+                        optDiv.classList.add('selected');
+                        select.dispatchEvent(new Event('change'));
+                    };
+                    optionsContainer.appendChild(optDiv);
+                });
+                
+                trigger.onclick = (e) => {
+                    e.stopPropagation();
+                    const wasOpen = optionsContainer.classList.contains('open');
+                    document.querySelectorAll('.custom-select-options').forEach(el => el.classList.remove('open'));
+                    if (!wasOpen) optionsContainer.classList.add('open');
+                };
+                wrapper.appendChild(trigger);
+                wrapper.appendChild(optionsContainer);
+                select.parentNode.insertBefore(wrapper, select.nextSibling);
+            });
+        }
+    };
+
     // TODO: Replace with your actual Supabase URL and Anon Key
     const SUPABASE_URL = 'https://ycckkswajajrqobrohcx.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljY2trc3dhamFqcnFvYnJvaGN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzNjQ4MTgsImV4cCI6MjEwMTk0MDgxOH0.G7CQyOFTy_LpOP3PK2QprHDx8cXP_ugqH0mTJaM9Oy4';
@@ -25,6 +117,7 @@
         },
 
         init: async function() {
+            CustomUI.init();
             this._initStartTime = Date.now();
             document.getElementById('year').textContent = new Date().getFullYear();
             this.bindEvents();
@@ -79,6 +172,16 @@
                         document.getElementById('search-results').innerHTML = ''; // clear on close
                     }
                 });
+
+                // Close search bar when clicking outside of it
+                document.addEventListener('click', (e) => {
+                    if (!searchBar.classList.contains('hidden') && 
+                        !searchBar.contains(e.target) && 
+                        !searchTrigger.contains(e.target)) {
+                        searchBar.classList.add('hidden');
+                        document.getElementById('search-results').innerHTML = '';
+                    }
+                });
             }
 
             // Live Search with Debounce
@@ -98,6 +201,9 @@
                     
                     // 300ms debounce
                     searchTimeout = setTimeout(() => {
+                        // Save last search to personalize 'recommended' sorting
+                        localStorage.setItem('rr_last_search', q);
+                        
                         const matches = this.state.products.filter(p => {
                             const nameMatch = p.name.toLowerCase().includes(q);
                             const catMatch = (p.categories?.name || '').toLowerCase().includes(q);
@@ -154,13 +260,12 @@
 
         fetchData: async function() {
             try {
-                // Fetch active products, categories, configs, VIP, and Coupons simultaneously
-                const [prodRes, catRes, confRes, vipRes, couponRes] = await Promise.all([
+                // Fetch active products, categories, configs, VIP simultaneously
+                const [prodRes, catRes, confRes, vipRes] = await Promise.all([
                     supabase.from('products').select('*, categories(name)').eq('is_active', true).order('created_at', { ascending: false }),
                     supabase.from('categories').select('*').order('name'),
                     supabase.from('store_configurations').select('*'),
-                    supabase.from('vip_tiers').select('*').eq('is_active', true).order('min_spend', { ascending: false }),
-                    supabase.from('coupons').select('*').eq('is_active', true)
+                    supabase.from('vip_tiers').select('*').eq('is_active', true).order('min_spend', { ascending: false })
                 ]);
 
                 if (prodRes.error) throw prodRes.error;
@@ -168,7 +273,23 @@
                 this.state.products = prodRes.data || [];
                 this.state.categories = catRes.data || [];
                 this.state.vipTiers = vipRes.data || [];
-                this.state.coupons = couponRes.data || [];
+                this.state.coupons = [];
+                
+                // Validate any saved coupon completely via the secure Server-Side Edge Function
+                if (this.state.appliedCouponCode) {
+                    try {
+                        const { data } = await supabase.functions.invoke('validate-coupon', {
+                            body: { code: this.state.appliedCouponCode }
+                        });
+                        if (data && data.valid) {
+                            this.state.coupons = [data.coupon];
+                        } else {
+                            this.state.appliedCouponCode = null;
+                        }
+                    } catch (err) {
+                        this.state.appliedCouponCode = null;
+                    }
+                }
                 
                 const configs = confRes.data || [];
                 this.state.config.homeCategories = configs.find(c => c.config_key === 'homepage_settings')?.config_value?.featured_categories || [];
@@ -340,16 +461,39 @@
         },
 
         sortArray: function(arr, sortMode) {
-            const sorted = [...arr];
-            if (sortMode === 'price-low') sorted.sort((a,b) => a.selling_price - b.selling_price);
-            else if (sortMode === 'price-high') sorted.sort((a,b) => b.selling_price - a.selling_price);
-            else if (sortMode === 'newest') sorted.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-            // 'recommended' naturally falls back to the database return order
+            let sorted = [...arr];
+            
+            if (sortMode === 'recommended') {
+                // 1. Shuffle all products randomly on each refresh
+                for (let i = sorted.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
+                }
+                
+                // 2. Bring items matching the last search to the top
+                const lastSearch = localStorage.getItem('rr_last_search');
+                if (lastSearch) {
+                    const q = lastSearch.toLowerCase();
+                    sorted.sort((a, b) => {
+                        const aMatch = (a.name.toLowerCase().includes(q) || (a.categories?.name || '').toLowerCase().includes(q)) ? 1 : 0;
+                        const bMatch = (b.name.toLowerCase().includes(q) || (b.categories?.name || '').toLowerCase().includes(q)) ? 1 : 0;
+                        return bMatch - aMatch; // Pushes matches (1) above non-matches (0)
+                    });
+                }
+            } else if (sortMode === 'price-low') {
+                sorted.sort((a,b) => a.selling_price - b.selling_price);
+            } else if (sortMode === 'price-high') {
+                sorted.sort((a,b) => b.selling_price - a.selling_price);
+            } else if (sortMode === 'newest') {
+                sorted.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+            }
+            
             return sorted;
         },
 
         renderHome: function() {
             this.updateHomeGrid();
+            setTimeout(() => CustomUI.styleSelects(), 0);
         },
 
         updateHomeSort: function() {
@@ -434,6 +578,9 @@
             document.getElementById('search-page-title').textContent = `Results for "${query}"`;
             const q = query.toLowerCase();
             
+            // Save last search to personalize 'recommended' sorting
+            localStorage.setItem('rr_last_search', q);
+            
             const matches = this.state.products.filter(p => {
                 const nameMatch = p.name.toLowerCase().includes(q);
                 const catMatch = (p.categories?.name || '').toLowerCase().includes(q);
@@ -455,9 +602,22 @@
             document.getElementById('category-page-title').textContent = catObj ? catObj.name : 'Category';
             
             // Ensure sort dropdown matches state
-            document.getElementById('category-sort').value = this.state.categoryCurrentSort;
+            const sortSelect = document.getElementById('category-sort');
+            sortSelect.value = this.state.categoryCurrentSort;
+            
+            // Update custom select UI if it exists
+            const customOptions = sortSelect.nextElementSibling?.querySelectorAll('.custom-select-option');
+            if (customOptions) {
+                customOptions.forEach((opt, idx) => {
+                    opt.classList.toggle('selected', sortSelect.selectedIndex === idx);
+                    if (sortSelect.selectedIndex === idx) {
+                        sortSelect.nextElementSibling.querySelector('span').textContent = opt.textContent;
+                    }
+                });
+            }
 
             this.updateCategoryGrid();
+            setTimeout(() => CustomUI.styleSelects(), 0);
         },
 
         updateCategorySort: function() {
@@ -703,7 +863,7 @@
                 }).catch(err => console.warn('Share failed:', err));
             } else {
                 // Fallback for browsers without Web Share API
-                navigator.clipboard.writeText(`${shareText}\n\nLink: ${url}`).then(() => alert('Product info and link copied to clipboard!'));
+                navigator.clipboard.writeText(`${shareText}\n\nLink: ${url}`).then(() => CustomUI.alert('Product info and link copied to clipboard!'));
             }
         },
 
@@ -779,37 +939,56 @@
             this.saveCart();
         },
 
-        clearCart: function() {
-            if (!confirm("Remove all items from your bag?")) return;
+        clearCart: async function() {
+            if (!await CustomUI.confirm("Remove all items from your bag?", "Clear Bag")) return;
             this.state.cart = [];
             this.state.appliedCouponCode = null;
             this.saveCart();
         },
 
-        applyCoupon: function() {
+        applyCoupon: async function() {
             const input = document.getElementById('coupon-input');
+            const errorMsg = document.getElementById('coupon-error-msg');
             const code = input.value.trim().toUpperCase();
-            if (!code) return;
             
-            // Client side validation (Server validates securely in Phase 12)
-            const coupon = this.state.coupons.find(c => c.code === code);
+            if (!code) {
+                errorMsg.textContent = "Please enter a coupon code.";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
             
-            if (!coupon) {
-                alert("Invalid coupon code.");
-                return;
-            }
-            if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
-                alert("This coupon has expired.");
-                return;
-            }
-            if (coupon.usage_limit && coupon.used_count >= coupon.usage_limit) {
-                alert("This coupon has reached its usage limit.");
-                return;
-            }
+            // Clear old errors before checking
+            errorMsg.classList.add('hidden');
+            const btn = input.nextElementSibling;
+            btn.textContent = '...';
+            btn.disabled = true;
 
-            // Min cart validation done dynamically during totals calculation
-            this.state.appliedCouponCode = code;
-            this.saveCart();
+            try {
+                // True Server-Side Verification via Edge Function
+                const { data, error } = await supabase.functions.invoke('validate-coupon', {
+                    body: { code: code }
+                });
+
+                if (error) throw error;
+                if (data?.error) throw new Error(data.error);
+
+                // Store securely in memory for calculation
+                this.state.coupons = [data.coupon]; 
+                this.state.appliedCouponCode = code;
+                this.saveCart();
+
+            } catch (err) {
+                let displayMsg = err.message || "Invalid coupon code.";
+                // Catch any remaining generic network errors
+                if (displayMsg.includes("non-2xx") || displayMsg.includes("Edge Function")) {
+                    displayMsg = "Invalid coupon code or criteria not met.";
+                }
+                errorMsg.textContent = displayMsg;
+                errorMsg.classList.remove('hidden');
+            } finally {
+                btn.textContent = 'Apply';
+                btn.disabled = false;
+            }
         },
 
         removeCoupon: function() {
@@ -952,11 +1131,12 @@
                 `;
             } else {
                 couponHtml = `
-                    <div class="coupon-area">
-                        <input type="text" id="coupon-input" placeholder="Coupon Code" value="${this.state.appliedCouponCode || ''}">
+                    <div class="coupon-area" style="margin-bottom: 8px;">
+                        <input type="text" id="coupon-input" placeholder="Coupon Code" value="${this.state.appliedCouponCode || ''}" oninput="document.getElementById('coupon-error-msg').classList.add('hidden')">
                         <button onclick="Store.applyCoupon()">Apply</button>
                     </div>
-                    ${totals.couponMsg ? `<div style="color:var(--warning); font-size:12px; margin-top:-16px; margin-bottom:24px;">${totals.couponMsg}</div>` : ''}
+                    <div id="coupon-error-msg" class="hidden" style="color: var(--danger); font-size: 13px; margin-bottom: 24px; font-weight: 500;"></div>
+                    ${totals.couponMsg ? `<div style="color:var(--warning); font-size:13px; margin-bottom:24px; font-weight: 500;">${totals.couponMsg}</div>` : ''}
                 `;
             }
 
@@ -975,6 +1155,10 @@
                             <span>-₹${totals.productDiscount.toFixed(2)}</span>
                         </div>
                     ` : ''}
+                    <div class="summary-row" style="font-weight: 600; color: var(--text-main);">
+                        <span>RR Price</span>
+                        <span>₹${totals.sellingSubtotal.toFixed(2)}</span>
+                    </div>
                     <div class="summary-row ${totals.vipDiscount > 0 ? 'discount-text' : ''}">
                         <span>VIP Discount ${totals.appliedVipName ? `(${totals.appliedVipName})` : ''}</span>
                         <span>-₹${totals.vipDiscount.toFixed(2)}</span>
@@ -1068,8 +1252,18 @@
                     ${itemsHtml}
                 </div>
                 <div class="summary-row">
-                    <span>Subtotal</span>
+                    <span>Subtotal (MRP)</span>
                     <span>₹${totals.subtotal.toFixed(2)}</span>
+                </div>
+                ${totals.productDiscount > 0 ? `
+                    <div class="summary-row discount-text">
+                        <span>Product Discount (MRP Savings)</span>
+                        <span>-₹${totals.productDiscount.toFixed(2)}</span>
+                    </div>
+                ` : ''}
+                <div class="summary-row" style="font-weight: 600; color: var(--text-main);">
+                    <span>RR Price</span>
+                    <span>₹${totals.sellingSubtotal.toFixed(2)}</span>
                 </div>
                 <div class="summary-row ${totals.vipDiscount > 0 ? 'discount-text' : ''}">
                     <span>VIP Discount ${totals.appliedVipName ? `(${totals.appliedVipName})` : ''}</span>
@@ -1165,7 +1359,11 @@
 
             } catch (err) {
                 console.error("Order Creation Error:", err);
-                errorEl.textContent = err.message || "Failed to process order securely. Please check your connection and try again.";
+                let displayMsg = err.message || "Failed to process order securely. Please check your connection and try again.";
+                if (displayMsg.includes("non-2xx") || displayMsg.includes("Edge Function")) {
+                    displayMsg = "Failed to verify order details securely. Please try again.";
+                }
+                errorEl.textContent = displayMsg;
                 errorEl.classList.remove('hidden');
                 btn.disabled = false;
                 btn.textContent = 'Confirm Order & WhatsApp';

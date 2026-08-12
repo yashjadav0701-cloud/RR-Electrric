@@ -1,6 +1,98 @@
 (function() {
     'use strict';
 
+    // Custom UI Engine for Modals & Selects
+    const CustomUI = {
+        dialogTemplate: `
+            <div id="custom-dialog" class="custom-dialog-overlay">
+                <div class="custom-dialog-box">
+                    <div id="custom-dialog-title" class="custom-dialog-title"></div>
+                    <div id="custom-dialog-msg" class="custom-dialog-msg"></div>
+                    <div class="custom-dialog-actions">
+                        <button id="custom-dialog-cancel" class="btn-secondary">Cancel</button>
+                        <button id="custom-dialog-confirm" class="btn-primary">OK</button>
+                    </div>
+                </div>
+            </div>
+        `,
+        init: function() {
+            if (!document.getElementById('custom-dialog')) {
+                document.body.insertAdjacentHTML('beforeend', this.dialogTemplate);
+            }
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.custom-select-wrapper')) {
+                    document.querySelectorAll('.custom-select-options').forEach(el => el.classList.remove('open'));
+                }
+            });
+        },
+        alert: function(msg, title = "Notification") {
+            return new Promise((resolve) => this.showDialog(title, msg, false, resolve));
+        },
+        confirm: function(msg, title = "Confirm Action") {
+            return new Promise((resolve) => this.showDialog(title, msg, true, resolve));
+        },
+        showDialog: function(title, msg, isConfirm, resolve) {
+            const overlay = document.getElementById('custom-dialog');
+            document.getElementById('custom-dialog-title').textContent = title;
+            document.getElementById('custom-dialog-msg').innerHTML = msg;
+            const cancelBtn = document.getElementById('custom-dialog-cancel');
+            const confirmBtn = document.getElementById('custom-dialog-confirm');
+            
+            cancelBtn.style.display = isConfirm ? 'inline-flex' : 'none';
+            const close = (result) => {
+                overlay.classList.remove('active');
+                cancelBtn.onclick = null; confirmBtn.onclick = null;
+                setTimeout(() => resolve(result), 200);
+            };
+            cancelBtn.onclick = () => close(false);
+            confirmBtn.onclick = () => close(true);
+            overlay.classList.add('active');
+        },
+        styleSelects: function() {
+            document.querySelectorAll('select:not(.custom-styled)').forEach(select => {
+                select.classList.add('custom-styled');
+                select.style.display = 'none';
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = 'custom-select-wrapper';
+                const trigger = document.createElement('div');
+                trigger.className = 'custom-select-trigger';
+                
+                const selectedOption = select.options[select.selectedIndex];
+                trigger.innerHTML = `<span>${selectedOption ? selectedOption.text : ''}</span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+                
+                const optionsContainer = document.createElement('div');
+                optionsContainer.className = 'custom-select-options';
+                
+                Array.from(select.options).forEach((opt, index) => {
+                    const optDiv = document.createElement('div');
+                    optDiv.className = 'custom-select-option' + (opt.selected ? ' selected' : '');
+                    optDiv.textContent = opt.text;
+                    optDiv.onclick = (e) => {
+                        e.stopPropagation();
+                        select.selectedIndex = index;
+                        trigger.querySelector('span').textContent = opt.text;
+                        optionsContainer.classList.remove('open');
+                        Array.from(optionsContainer.children).forEach(c => c.classList.remove('selected'));
+                        optDiv.classList.add('selected');
+                        select.dispatchEvent(new Event('change'));
+                    };
+                    optionsContainer.appendChild(optDiv);
+                });
+                
+                trigger.onclick = (e) => {
+                    e.stopPropagation();
+                    const wasOpen = optionsContainer.classList.contains('open');
+                    document.querySelectorAll('.custom-select-options').forEach(el => el.classList.remove('open'));
+                    if (!wasOpen) optionsContainer.classList.add('open');
+                };
+                wrapper.appendChild(trigger);
+                wrapper.appendChild(optionsContainer);
+                select.parentNode.insertBefore(wrapper, select.nextSibling);
+            });
+        }
+    };
+
     const SUPABASE_URL = 'https://ycckkswajajrqobrohcx.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljY2trc3dhamFqcnFvYnJvaGN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzNjQ4MTgsImV4cCI6MjEwMTk0MDgxOH0.G7CQyOFTy_LpOP3PK2QprHDx8cXP_ugqH0mTJaM9Oy4';
 
@@ -8,6 +100,8 @@
 
     const AdminApp = {
         init: async function() {
+            CustomUI.init();
+            CustomUI.styleSelects(); // Initiates static selects like coupon-type
             const startTime = Date.now();
             this.bindEvents();
             await this.checkSession();
@@ -214,7 +308,7 @@
                 .select(`
                     *,
                     customers (*),
-                    order_items (*),
+                    order_items (*, products(image_urls, mrp_price, selling_price)),
                     coupons (code)
                 `)
                 .eq('status', this.state.currentOrderTab)
@@ -244,12 +338,28 @@
                 const items = order.order_items;
                 const d = new Date(order.created_at).toLocaleString();
                 
-                let itemsHtml = items.map(item => `
-                    <div class="order-item-row">
-                        <span style="flex:1; padding-right:8px; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;">${item.quantity} × ${item.product_name_snapshot}</span>
-                        <span>₹${item.total_price}</span>
+                let mrpSubtotal = 0;
+                let sellingSubtotal = 0;
+
+                let itemsHtml = items.map(item => {
+                    const p = item.products || {};
+                    const img = p.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
+                    const itemMrp = (p.mrp_price && p.mrp_price > item.unit_price_snapshot) ? p.mrp_price : item.unit_price_snapshot;
+                    
+                    mrpSubtotal += itemMrp * item.quantity;
+                    sellingSubtotal += item.total_price;
+
+                    return `
+                    <div class="order-item-row" style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border);">
+                        <img src="${img}" style="width: 42px; height: 42px; object-fit: contain; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-main); flex-shrink: 0;">
+                        <span style="flex:1; line-height: 1.3; font-size: 13px;">
+                            <span style="font-weight: 600;">${item.quantity} ×</span> ${item.product_name_snapshot}
+                        </span>
                     </div>
-                `).join('');
+                    `;
+                }).join('');
+
+                const productDiscount = mrpSubtotal - sellingSubtotal;
 
                 const isPending = order.status === 'pending';
                 let actionHtml = '';
@@ -331,24 +441,30 @@
                                 <div class="order-section-title">Order Items</div>
                                 <div>${itemsHtml}</div>
                                 
-                                <div class="order-totals">
-                                    <div class="order-totals-row">
-                                        <span>Subtotal</span>
-                                        <span>₹${order.subtotal}</span>
+                                <div class="order-totals" style="background: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius); border: 1px solid var(--border); margin-top: 16px;">
+                                    <div class="order-totals-row" style="margin-bottom: 6px;">
+                                        <span style="color: var(--text-muted);">Subtotal (MRP)</span>
+                                        <span style="color: var(--text-muted);">₹${mrpSubtotal.toFixed(2)}</span>
                                     </div>
-                                    ${order.vip_discount > 0 ? `
-                                        <div class="order-totals-row" style="color:var(--success)">
-                                            <span>VIP Discount</span>
-                                            <span>-₹${order.vip_discount}</span>
+                                    ${productDiscount > 0 ? `
+                                        <div class="order-totals-row" style="color: var(--success); margin-bottom: 6px;">
+                                            <span>Product Discount (MRP Savings)</span>
+                                            <span>-₹${productDiscount.toFixed(2)}</span>
                                         </div>
                                     ` : ''}
-                                    ${order.coupon_discount > 0 ? `
-                                        <div class="order-totals-row" style="color:var(--success)">
-                                            <span>Coupon (${order.coupons?.code || 'Applied'})</span>
-                                            <span>-₹${order.coupon_discount}</span>
-                                        </div>
-                                    ` : ''}
-                                    <div class="order-totals-row final">
+                                    <div class="order-totals-row" style="margin-bottom: 6px; font-weight: 600; color: var(--text-main);">
+                                        <span>RR Price</span>
+                                        <span>₹${sellingSubtotal.toFixed(2)}</span>
+                                    </div>
+                                    <div class="order-totals-row" style="margin-bottom: 6px; color: ${order.vip_discount > 0 ? 'var(--text-main)' : 'var(--text-muted)'};">
+                                        <span>VIP Discount</span>
+                                        <span>-₹${order.vip_discount}</span>
+                                    </div>
+                                    <div class="order-totals-row" style="margin-bottom: 6px; color: ${order.coupon_discount > 0 ? 'var(--text-main)' : 'var(--text-muted)'};">
+                                        <span>Coupon Discount ${order.coupons?.code ? `(${order.coupons.code})` : ''}</span>
+                                        <span>-₹${order.coupon_discount}</span>
+                                    </div>
+                                    <div class="order-totals-row final" style="font-size: 16px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
                                         <span>Final Total</span>
                                         <span>₹${order.final_total}</span>
                                     </div>
@@ -362,16 +478,16 @@
         },
 
         acceptOrder: async function(id) {
-            if(!confirm("Accept this order? It will be moved to the archive.")) return;
+            if(!await CustomUI.confirm("Accept this order? It will be moved to the archive.", "Accept Order")) return;
             const { error } = await supabase.from('orders').update({ status: 'accepted' }).eq('id', id);
-            if(error) alert("Failed to accept: " + error.message);
+            if(error) CustomUI.alert("Failed to accept: " + error.message, "Error");
             else this.loadOrders();
         },
 
         rejectOrder: async function(id) {
-            if(!confirm("Are you sure you want to REJECT and permanently delete this order?")) return;
+            if(!await CustomUI.confirm("Are you sure you want to REJECT and permanently delete this order?", "Reject Order")) return;
             const { error } = await supabase.from('orders').delete().eq('id', id);
-            if(error) alert("Failed to delete: " + error.message);
+            if(error) CustomUI.alert("Failed to delete: " + error.message, "Error");
             else this.loadOrders();
         },
 
@@ -561,7 +677,7 @@
         },
         
         deleteVip: async function() {
-            if(!confirm('Delete this VIP Tier?')) return;
+            if(!await CustomUI.confirm('Delete this VIP Tier?', 'Delete VIP Tier')) return;
             const id = document.getElementById('vip-id').value;
             await supabase.from('vip_tiers').delete().eq('id', id);
             document.getElementById('vip-modal').classList.add('hidden');
@@ -727,7 +843,7 @@
         },
         
         deleteCoupon: async function() {
-            if(!confirm('Delete this Coupon?')) return;
+            if(!await CustomUI.confirm('Delete this Coupon?', 'Delete Coupon')) return;
             const id = document.getElementById('coupon-id').value;
             await supabase.from('coupons').delete().eq('id', id);
             document.getElementById('coupon-modal').classList.add('hidden');
@@ -872,14 +988,17 @@
 
             // 1. Render Toolbar only once so inputs don't lose focus
             if (!document.getElementById('inventory-list-wrapper')) {
-                const categories = this.state.categories || [];
+                // Check which categories actually have products assigned to them
+                const activeCatIds = new Set(this.state.products.map(p => p.category_id));
+                const activeCategories = (this.state.categories || []).filter(c => activeCatIds.has(c.id));
+
                 const toolbarHtml = `
                     <div class="inventory-toolbar">
                         <div class="inventory-filters">
                             <input type="text" placeholder="Search by name or category..." id="inv-search-input" value="${invState.search}" oninput="AdminApp.handleInventorySearch(this.value)">
                             <select id="inv-cat-filter" onchange="AdminApp.state.inventoryState.category = this.value; AdminApp.renderProducts();">
                                 <option value="all">All Categories</option>
-                                ${categories.map(c => `<option value="${c.id}" ${invState.category === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
+                                ${activeCategories.map(c => `<option value="${c.id}" ${invState.category === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
                             </select>
                             <select id="inv-status-filter" onchange="AdminApp.state.inventoryState.status = this.value; AdminApp.renderProducts();">
                                 <option value="all" ${invState.status === 'all' ? 'selected' : ''}>All Status</option>
@@ -923,7 +1042,12 @@
                 return 0;
             });
 
-            let html = '';
+            let html = `
+                <div style="margin-bottom: 12px; padding: 0 4px; font-size: 13px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                    Total Products: <span style="color: var(--text-main); font-weight: 800;">${filtered.length}</span>
+                </div>
+            `;
 
             if (filtered.length === 0) {
                 html += `<div style="text-align: center; padding: 40px; color: var(--text-muted); background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius);">No products found matching criteria.</div>`;
@@ -1032,6 +1156,7 @@
             }
 
             document.getElementById('inventory-list-wrapper').innerHTML = html;
+            setTimeout(() => CustomUI.styleSelects(), 0);
         },
 
         bindProductEvents: function() {
@@ -1087,7 +1212,7 @@
                         document.getElementById('product-category-id').value = data.id;
                         searchInput.value = data.name;
                     } else {
-                        alert("Failed to create category: " + (error?.message || "Unknown error"));
+                        CustomUI.alert("Failed to create category: " + (error?.message || "Unknown error"), "Error");
                         searchInput.value = '';
                     }
                 } else {
@@ -1109,7 +1234,7 @@
             imgInput.addEventListener('change', async (e) => {
                 const files = Array.from(e.target.files);
                 if (this.state.existingImages.length + this.state.pendingImages.length + files.length > 3) {
-                    alert("Maximum 3 images allowed.");
+                    CustomUI.alert("Maximum 3 images allowed.", "Limit Reached");
                     imgInput.value = '';
                     return;
                 }
@@ -1126,7 +1251,7 @@
             document.getElementById('btn-auto-mrp').addEventListener('click', () => {
                 const sellingPriceInput = document.getElementById('product-price').value;
                 if (!sellingPriceInput) {
-                    alert('Please enter a Selling Price first.');
+                    CustomUI.alert('Please enter a Selling Price first.', 'Missing Info');
                     return;
                 }
                 const sellingPrice = parseFloat(sellingPriceInput);
@@ -1363,7 +1488,7 @@
         },
 
         deleteProduct: async function(idToDel = null) {
-            if (!confirm('Are you sure you want to delete this product? Historical orders will not be affected.')) return;
+            if (!await CustomUI.confirm('Are you sure you want to delete this product? Historical orders will not be affected.', 'Delete Product')) return;
             
             const id = idToDel || document.getElementById('product-id').value;
             const product = this.state.products.find(p => p.id === id);
@@ -1378,7 +1503,7 @@
             const { error } = await supabase.from('products').delete().eq('id', id);
             
             if (error) {
-                alert('Error deleting product: ' + error.message);
+                CustomUI.alert('Error deleting product: ' + error.message, 'Error');
                 if (!idToDel) {
                     btn.disabled = false;
                     btn.textContent = 'Delete Product';
