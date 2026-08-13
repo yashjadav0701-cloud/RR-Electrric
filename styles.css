@@ -1699,7 +1699,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 /* Mobile Responsive Adjustments */
 @media (max-width: 600px) {
     .hero-section {
-        min-height: 160px; /* Ultra compact */
+        min-height: 150px; /* Ultra compact */
     }
 
     .hero-content {
