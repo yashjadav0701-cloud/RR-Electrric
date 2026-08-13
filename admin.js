@@ -150,6 +150,11 @@
             }
         },
 
+        showAuth: function() {
+            document.getElementById('admin-app').classList.add('hidden');
+            document.getElementById('admin-auth').classList.remove('hidden');
+        },
+
         showApp: function() {
             document.getElementById('admin-auth').classList.add('hidden');
             document.getElementById('admin-app').classList.remove('hidden');
@@ -350,10 +355,10 @@
                     sellingSubtotal += item.total_price;
 
                     return `
-                    <div class="order-item-row" style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border);">
-                        <img src="${img}" style="width: 42px; height: 42px; object-fit: contain; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-main); flex-shrink: 0;">
-                        <span style="flex:1; line-height: 1.3; font-size: 13px;">
-                            <span style="font-weight: 600;">${item.quantity} ×</span> ${item.product_name_snapshot}
+                    <div class="order-item-row" style="display: flex; gap: 16px; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border);">
+                        <img src="${img}" style="width: 80px; height: 80px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border); background: #ffffff; padding: 4px; flex-shrink: 0; box-shadow: var(--shadow-sm);">
+                        <span style="flex:1; line-height: 1.4; font-size: 14px;">
+                            <span style="font-weight: 700; font-size: 15px;">${item.quantity} ×</span> ${item.product_name_snapshot}
                         </span>
                     </div>
                     `;
@@ -404,81 +409,117 @@
                 }
 
                 return `
-                    <div class="admin-order-card">
-                        <div class="order-card-header">
-                            <strong style="font-size:16px;">${order.order_reference}</strong>
-                            <span style="font-size:12px; color:var(--text-muted);">${d}</span>
+                    <div class="admin-order-card" style="border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; background: var(--bg-surface); box-shadow: var(--shadow-sm); padding: 0;">
+                        <!-- Accordion Header (Summary) -->
+                        <div onclick="AdminApp.toggleOrderDetails('${order.id}')" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--bg-surface); transition: background 0.2s;" onmouseover="this.style.background='var(--bg-main)'" onmouseout="this.style.background='var(--bg-surface)'">
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <strong style="font-size: 15px; color: var(--text-main); letter-spacing: -0.3px;">${order.order_reference}</strong>
+                                    ${isPending ? '<span style="width: 8px; height: 8px; background: var(--warning); border-radius: 50%; display: inline-block; box-shadow: 0 0 6px rgba(180,83,9,0.5);"></span>' : ''}
+                                </div>
+                                <div style="font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                    ${c.name}
+                                </div>
+                            </div>
+                            <div style="text-align: right; display: flex; align-items: center; gap: 16px;">
+                                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                                    <div style="font-size: 16px; font-weight: 800; color: var(--text-main);">₹${order.final_total}</div>
+                                    <div style="font-size: 11px; color: var(--text-muted);">${d.split(',')[0]}</div>
+                                </div>
+                                <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--bg-main); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                                    <svg id="icon-toggle-${order.id}" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </div>
+                            </div>
                         </div>
-                        <div class="order-card-body">
-                            <div class="order-customer-info">
-                                <div class="order-section-title">Customer Details</div>
-                                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; margin-top: 12px;">
-                                    <div style="display: flex; gap: 8px; align-items: flex-start;">
-                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="margin-top: 3px; flex-shrink: 0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                                        <strong style="color: var(--text-main); font-size: 15px;">${c.name}</strong>
-                                    </div>
-                                    <div style="display: flex; gap: 8px; align-items: center;">
-                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="flex-shrink: 0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                        <a href="tel:${cleanPhone}" style="color: var(--primary); text-decoration: none; font-weight: 500;">${c.phone}</a>
-                                    </div>
-                                    <div style="display: flex; gap: 8px; align-items: flex-start;">
-                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="margin-top: 3px; flex-shrink: 0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                                        <div style="line-height: 1.5; color: var(--text-muted);">
-                                            ${c.address}<br>
-                                            <span style="font-weight: 500; color: var(--text-main);">${c.area} - Nadiad</span>
-                                            ${c.landmark ? `<br>Landmark: ${c.landmark}` : ''}
+                        
+                        <!-- Accordion Body (Full Details) -->
+                        <div id="order-details-${order.id}" class="hidden">
+                            <div style="border-top: 1px solid var(--border); background: var(--bg-main); padding: 16px;">
+                                <div class="order-customer-info">
+                                    <div class="order-section-title">Customer Details</div>
+                                    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; margin-top: 12px;">
+                                        <div style="display: flex; gap: 8px; align-items: flex-start;">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="margin-top: 3px; flex-shrink: 0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                            <strong style="color: var(--text-main); font-size: 15px;">${c.name}</strong>
+                                        </div>
+                                        <div style="display: flex; gap: 8px; align-items: center;">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="flex-shrink: 0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                            <a href="tel:${cleanPhone}" style="color: var(--primary); text-decoration: none; font-weight: 500;">${c.phone}</a>
+                                        </div>
+                                        <div style="display: flex; gap: 8px; align-items: flex-start;">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="margin-top: 3px; flex-shrink: 0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                            <div style="line-height: 1.5; color: var(--text-muted);">
+                                                ${c.address}<br>
+                                                <span style="font-weight: 500; color: var(--text-main);">${c.area} - Nadiad</span>
+                                                ${c.landmark ? `<br>Landmark: ${c.landmark}` : ''}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                ${order.notes ? `
-                                    <div style="margin-top:12px; padding:12px; background:#fef3c7; border:1px solid #fde68a; border-radius:4px; font-size:13px;">
-                                        <strong>Notes:</strong><br>${order.notes.replace(/\n/g, '<br>')}
-                                    </div>
-                                ` : ''}
-                            </div>
-                            
-                            <div class="order-items-info">
-                                <div class="order-section-title">Order Items</div>
-                                <div>${itemsHtml}</div>
-                                
-                                <div class="order-totals" style="background: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius); border: 1px solid var(--border); margin-top: 16px;">
-                                    <div class="order-totals-row" style="margin-bottom: 6px;">
-                                        <span style="color: var(--text-muted);">Subtotal (MRP)</span>
-                                        <span style="color: var(--text-muted);">₹${mrpSubtotal.toFixed(2)}</span>
-                                    </div>
-                                    ${productDiscount > 0 ? `
-                                        <div class="order-totals-row" style="color: var(--success); margin-bottom: 6px;">
-                                            <span>Product Discount (MRP Savings)</span>
-                                            <span>-₹${productDiscount.toFixed(2)}</span>
+                                    ${order.notes ? `
+                                        <div style="margin-top:12px; padding:12px; background:#fef3c7; border:1px solid #fde68a; border-radius:4px; font-size:13px;">
+                                            <strong>Notes:</strong><br>${order.notes.replace(/\n/g, '<br>')}
                                         </div>
                                     ` : ''}
-                                    <div class="order-totals-row" style="margin-bottom: 6px; font-weight: 600; color: var(--text-main);">
-                                        <span>RR Price</span>
-                                        <span>₹${sellingSubtotal.toFixed(2)}</span>
-                                    </div>
-                                    <div class="order-totals-row" style="margin-bottom: 6px; color: ${order.vip_discount > 0 ? 'var(--text-main)' : 'var(--text-muted)'};">
-                                        <span>VIP Discount</span>
-                                        <span>-₹${order.vip_discount}</span>
-                                    </div>
-                                    <div class="order-totals-row" style="margin-bottom: 6px; color: ${order.coupon_discount > 0 ? 'var(--text-main)' : 'var(--text-muted)'};">
-                                        <span>Coupon Discount ${order.coupons?.code ? `(${order.coupons.code})` : ''}</span>
-                                        <span>-₹${order.coupon_discount}</span>
-                                    </div>
-                                    <div class="order-totals-row" style="margin-bottom: 6px;">
-                                        <span style="color: var(--text-muted);">Delivery Charge</span>
-                                        <span style="${order.delivery_charge === 0 ? 'color: var(--success); font-weight: 600;' : 'color: var(--text-main);'}">${order.delivery_charge === 0 ? 'FREE' : '₹' + order.delivery_charge}</span>
-                                    </div>
-                                    <div class="order-totals-row final" style="font-size: 16px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
-                                        <span>Final Total</span>
-                                        <span>₹${order.final_total}</span>
+                                </div>
+                                
+                                <div class="order-items-info" style="margin-top: 24px;">
+                                    <div class="order-section-title">Order Items</div>
+                                    <div>${itemsHtml}</div>
+                                    
+                                    <div class="order-totals" style="background: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius); border: 1px solid var(--border); margin-top: 16px;">
+                                        <div class="order-totals-row" style="margin-bottom: 6px;">
+                                            <span style="color: var(--text-muted);">Subtotal (MRP)</span>
+                                            <span style="color: var(--text-muted);">₹${mrpSubtotal.toFixed(2)}</span>
+                                        </div>
+                                        ${productDiscount > 0 ? `
+                                            <div class="order-totals-row" style="color: var(--success); margin-bottom: 6px;">
+                                                <span>Product Discount (MRP Savings)</span>
+                                                <span>-₹${productDiscount.toFixed(2)}</span>
+                                            </div>
+                                        ` : ''}
+                                        <div class="order-totals-row" style="margin-bottom: 6px; font-weight: 600; color: var(--text-main);">
+                                            <span>RR Price</span>
+                                            <span>₹${sellingSubtotal.toFixed(2)}</span>
+                                        </div>
+                                        <div class="order-totals-row" style="margin-bottom: 6px; color: ${order.vip_discount > 0 ? 'var(--text-main)' : 'var(--text-muted)'};">
+                                            <span>VIP Discount</span>
+                                            <span>-₹${order.vip_discount}</span>
+                                        </div>
+                                        <div class="order-totals-row" style="margin-bottom: 6px; color: ${order.coupon_discount > 0 ? 'var(--text-main)' : 'var(--text-muted)'};">
+                                            <span>Coupon Discount ${order.coupons?.code ? `(${order.coupons.code})` : ''}</span>
+                                            <span>-₹${order.coupon_discount}</span>
+                                        </div>
+                                        <div class="order-totals-row" style="margin-bottom: 6px;">
+                                            <span style="color: var(--text-muted);">Delivery Charge</span>
+                                            <span style="${order.delivery_charge === 0 ? 'color: var(--success); font-weight: 600;' : 'color: var(--text-main);'}">${order.delivery_charge === 0 ? 'FREE' : '₹' + order.delivery_charge}</span>
+                                        </div>
+                                        <div class="order-totals-row final" style="font-size: 16px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
+                                            <span>Final Total</span>
+                                            <span>₹${order.final_total}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                            <div style="padding: 16px; border-top: 1px solid var(--border); background: var(--bg-surface);">
+                                ${actionHtml}
+                            </div>
                         </div>
-                        ${actionHtml}
                     </div>
                 `;
             }).join('');
+        },
+
+        toggleOrderDetails: function(orderId) {
+            const details = document.getElementById(`order-details-${orderId}`);
+            const icon = document.getElementById(`icon-toggle-${orderId}`);
+            if (details.classList.contains('hidden')) {
+                details.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                details.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
         },
 
         acceptOrder: async function(id) {
