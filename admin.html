@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin — RR ELECTRRIC</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" href="/styles.css?v=1">
-    <link rel="stylesheet" href="/admin.css?v=1">
-    <link rel="icon" type="image/svg+xml" href="/assets/logo-short.svg?v=1">
+    <link rel="stylesheet" href="/styles.css?v=1.1">
+    <link rel="stylesheet" href="/admin.css?v=1.1">
+    <link rel="icon" type="image/svg+xml" href="/assets/logo-short.svg?v=1.1">
     
     <!-- Preconnect to Supabase for faster API handshakes -->
     <link rel="preconnect" href="https://ycckkswajajrqobrohcx.supabase.co" crossorigin>
@@ -17,12 +17,12 @@
 <body>
     <!-- Global Preloader -->
     <div id="global-preloader" class="global-preloader">
-        <img src="/assets/logo-full.svg?v=1" alt="RR" class="preloader-logo">
+        <img src="/assets/logo-full.svg?v=1.1" alt="RR" class="preloader-logo">
     </div>
 
     <div id="admin-auth" class="admin-auth-container">
         <div class="auth-card">
-            <img src="/assets/logo-full.svg?v=1" alt="RR ELECTRRIC" width="200" style="margin-bottom: 24px;">
+            <img src="/assets/logo-full.svg?v=1.1" alt="RR ELECTRRIC" width="200" style="margin-bottom: 24px;">
             <h2>Admin Gateway</h2>
             <p>Authentication required.</p>
             <div id="login-error" class="hidden" style="color: var(--danger); margin-bottom: 16px; font-size: 14px;"></div>
@@ -37,8 +37,8 @@
     <div id="admin-app" class="admin-layout hidden">
         <aside class="admin-sidebar">
             <div class="sidebar-brand">
-                <img src="/assets/logo-short.svg?v=1" alt="RR" width="32" class="mobile-only">
-                <img src="/assets/logo-full.svg?v=1" alt="RR ELECTRRIC" width="140" class="desktop-only">
+                <img src="/assets/logo-short.svg?v=1.1" alt="RR" width="32" class="mobile-only">
+                <img src="/assets/logo-full.svg?v=1.1" alt="RR ELECTRRIC" width="140" class="desktop-only">
             </div>
             <nav class="admin-nav">
                 <a href="#dashboard" class="active">
@@ -255,7 +255,7 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>RR ELECTRRIC Price (₹) *</label>
+                        <label>RR Price (₹) *</label>
                         <input type="number" id="product-price" min="0" step="0.01" required>
                     </div>
                     <div class="form-group">
@@ -266,6 +266,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="form-group">
                     <label>Brand Warranty <small>(Optional)</small></label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -283,6 +284,50 @@
                     <label>Product Overview <small>(Keep it brief)</small></label>
                     <textarea id="product-description" rows="3"></textarea>
                 </div>
+                
+                <!-- SMART VARIANT ENGINE BOX -->
+                <div style="border: 1px solid var(--border); padding: 14px; border-radius: var(--radius); background: var(--bg-main); margin-bottom: 16px;">
+                    <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 14px; color: var(--primary); display: flex; align-items: center; gap: 6px;">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                        Smart Variant Engine (Optional)
+                    </h4>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Bulk Pack Qty <small>(e.g. 2)</small></label>
+                            <input type="number" id="product-pack-qty" min="2" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Bulk Pack Price (₹)</label>
+                            <input type="number" id="product-pack-price" min="0" step="0.01">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Zero-Cost Options <small>(Comma separated, e.g. Color: Red, Black)</small></label>
+                        <input type="text" id="product-custom-options" placeholder="e.g. Color: Red, Black, Green">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Link Related Products <small>(Select matching Wattages/Sizes)</small></label>
+                        <div id="product-linked-ids-container" class="linked-products-container"></div>
+                    </div>
+                </div>
+                <!-- END SMART VARIANT ENGINE BOX -->
+
+                <!-- CROSS-SELLING ENGINE BOX -->
+                <div style="border: 1px solid var(--border); padding: 14px; border-radius: var(--radius); background: var(--bg-main); margin-bottom: 16px;">
+                    <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 14px; color: var(--success); display: flex; align-items: center; gap: 6px;">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20v-4"></path></svg>
+                        Cross-Selling Engine (Accessories)
+                    </h4>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Frequently Bought Together <small>(e.g. Link Switches to this Plate)</small></label>
+                        <input type="text" id="accessory-search-input" placeholder="Type to search for accessories..." style="margin-bottom: 8px;" autocomplete="off">
+                        <div id="product-accessory-ids-container" class="linked-products-container" style="height: 180px;"></div>
+                    </div>
+                </div>
+                <!-- END CROSS-SELLING ENGINE BOX -->
 
                 <div class="form-group">
                     <label>Images (Max 3, auto-optimized to WebP)</label>
@@ -300,7 +345,7 @@
                 <div id="product-form-error" class="hidden" style="color: var(--danger); margin-bottom: 12px; font-size: 14px;"></div>
                 
                 <div class="modal-actions">
-                    <button type="button" id="btn-delete-product" class="btn-danger hidden">Delete Product</button>
+                    <button type="button" id="btn-delete-product" class="btn-danger hidden">Delete</button>
                     <div style="flex:1"></div>
                     <button type="submit" id="btn-save-product" class="btn-primary" style="width: auto; padding: 12px 24px;">Save Product</button>
                 </div>
@@ -403,6 +448,6 @@
         </div>
     </div>
 
-    <script src="/admin.js?v=1"></script>
+    <script src="/admin.js?v=1.1"></script>
 </body>
 </html>

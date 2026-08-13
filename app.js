@@ -874,9 +874,113 @@
                             return pricingHtml;
                         })()}
                         
-                        ${p.description ? `<div class="pdp-desc">${p.description.replace(/\n/g, '<br>')}</div>` : ''}
+                        ${(() => {
+                            let variantHtml = '';
+                            if ((p.linked_product_ids && p.linked_product_ids.length > 0) || p.custom_options || (p.pack_qty && p.pack_price)) {
+                                variantHtml += `<div class="variant-engine-container">`;
+                                
+                                // 1. Linked Products (Smart Link Engine)
+                                if (p.linked_product_ids && p.linked_product_ids.length > 0) {
+                                    const linkedProds = this.state.products.filter(x => p.linked_product_ids.includes(x.id));
+                                    if (linkedProds.length > 0) {
+                                        const allLinked = [p, ...linkedProds].sort((a,b) => a.selling_price - b.selling_price);
+                                        variantHtml += `
+                                            <div class="variant-group">
+                                                <div class="variant-label">Available Variations</div>
+                                                <div class="variant-pill-list">
+                                                    ${allLinked.map(lp => {
+                                                        let shortName = lp.name.length > 22 ? lp.name.substring(0, 22) + '...' : lp.name;
+                                                        return `<a href="javascript:void(0)" onclick="Store.navigate('product', '${lp.id}')" class="variant-pill ${lp.id === p.id ? 'active' : ''}">${shortName}</a>`;
+                                                    }).join('')}
+                                                </div>
+                                            </div>
+                                        `;
+                                    }
+                                }
+
+                                // 2. Custom Options (Colors, etc.)
+                                if (p.custom_options) {
+                                    const parts = p.custom_options.split(':');
+                                    const label = parts.length > 1 ? parts[0].trim() : 'Options';
+                                    const optionsStr = parts.length > 1 ? parts[1] : parts[0];
+                                    const options = optionsStr.split(',').map(o => o.trim()).filter(o => o);
+                                    
+                                    if (options.length > 0) {
+                                        variantHtml += `
+                                            <div class="variant-group">
+                                                <div class="variant-label">${label}</div>
+                                                <div class="variant-pill-list" id="pdp-custom-options" data-label="${label}">
+                                                    ${options.map((opt, i) => `
+                                                        <div class="variant-pill ${i===0 ? 'active' : ''}" onclick="document.querySelectorAll('#pdp-custom-options .variant-pill').forEach(el=>el.classList.remove('active')); this.classList.add('active');" data-val="${opt}">${opt}</div>
+                                                    `).join('')}
+                                                </div>
+                                            </div>
+                                        `;
+                                    }
+                                }
+
+                                // 3. Bulk Pack Engine
+                                if (p.pack_qty && p.pack_price) {
+                                    const singlePrice = p.selling_price;
+                                    const packUnitCost = p.pack_price / p.pack_qty;
+                                    const savings = (singlePrice - packUnitCost) * p.pack_qty;
+                                    
+                                    variantHtml += `
+                                        <div class="variant-group">
+                                            <div class="variant-label">Package Size</div>
+                                            <div class="variant-pill-list" id="pdp-pack-options">
+                                                <div class="pack-pill active" onclick="document.querySelectorAll('#pdp-pack-options .pack-pill').forEach(el=>el.classList.remove('active')); this.classList.add('active');" data-ispack="false">
+                                                    <div class="pack-pill-title">Pack of 1</div>
+                                                    <div class="pack-pill-price">₹${singlePrice}</div>
+                                                    <div class="pack-pill-unit">₹${singlePrice.toFixed(2)} / count</div>
+                                                </div>
+                                                <div class="pack-pill" onclick="document.querySelectorAll('#pdp-pack-options .pack-pill').forEach(el=>el.classList.remove('active')); this.classList.add('active');" data-ispack="true">
+                                                    <div class="pack-pill-title">Pack of ${p.pack_qty}</div>
+                                                    <div class="pack-pill-price">₹${p.pack_price}</div>
+                                                    <div class="pack-pill-unit">₹${packUnitCost.toFixed(2)} / count</div>
+                                                    ${savings > 0 ? `<div class="pack-pill-save">Save ₹${savings.toFixed(2)}</div>` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+
+                                variantHtml += `</div>`;
+                            }
+                            return variantHtml;
+                        })()}
                         
-                        <button class="btn-add-cart-large" onclick="Store.addToCart('${p.id}')">
+                        ${p.description ? `<div class="pdp-desc" style="margin-top: 16px;">${p.description.replace(/\n/g, '<br>')}</div>` : ''}
+                        
+                        ${(() => {
+                            let crossSellHtml = '';
+                            if (p.accessory_ids && p.accessory_ids.length > 0) {
+                                const accessories = this.state.products.filter(x => p.accessory_ids.includes(x.id) && x.is_active);
+                                if (accessories.length > 0) {
+                                    crossSellHtml += `
+                                        <div class="cross-sell-container">
+                                            <div class="cross-sell-title">Frequently Bought Together</div>
+                                            <div class="cross-sell-grid">
+                                                ${accessories.map(acc => {
+                                                    const img = acc.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
+                                                    return `
+                                                        <div class="cross-sell-card">
+                                                            <img src="${img}" class="cross-sell-img" alt="${acc.name}" onclick="Store.navigate('product', '${acc.id}')" style="cursor: pointer;">
+                                                            <div class="cross-sell-name" onclick="Store.navigate('product', '${acc.id}')" style="cursor: pointer;" title="${acc.name}">${acc.name}</div>
+                                                            <div class="cross-sell-price">₹${acc.selling_price}</div>
+                                                            <button class="cross-sell-btn" onclick="Store.addToCart('${acc.id}')">+ Add</button>
+                                                        </div>
+                                                    `;
+                                                }).join('')}
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                            }
+                            return crossSellHtml;
+                        })()}
+
+                        <button class="btn-add-cart-large" onclick="Store.handlePDPAddToCart('${p.id}')">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
                             Add to Bag
                         </button>
@@ -1050,15 +1154,24 @@
             if (mobileBadge) mobileBadge.textContent = count;
         },
 
-        addToCart: function(productId) {
+        addToCart: function(productId, isPack = false, selectedOptions = null) {
             const p = this.state.products.find(x => x.id === productId);
             if (!p) return;
             
-            const existing = this.state.cart.find(x => x.id === productId);
+            // Generate a unique cart item key based on product + pack state + custom options
+            const cartKey = `${productId}_${isPack ? 'pack' : 'single'}_${selectedOptions || 'none'}`;
+            
+            const existing = this.state.cart.find(x => x.cartKey === cartKey);
             if (existing) {
                 existing.qty += 1;
             } else {
-                this.state.cart.push({ id: productId, qty: 1 });
+                this.state.cart.push({ 
+                    id: productId, 
+                    qty: 1, 
+                    cartKey: cartKey,
+                    isPack: isPack,
+                    selectedOptions: selectedOptions
+                });
             }
             
             this.saveCart();
@@ -1074,19 +1187,43 @@
             }, 200);
         },
 
-        updateCartQty: function(productId, delta) {
-            const item = this.state.cart.find(x => x.id === productId);
+        handlePDPAddToCart: function(productId) {
+            let isPack = false;
+            let selectedOptions = null;
+            
+            const packContainer = document.getElementById('pdp-pack-options');
+            if (packContainer) {
+                const activePack = packContainer.querySelector('.pack-pill.active');
+                if (activePack && activePack.dataset.ispack === 'true') {
+                    isPack = true;
+                }
+            }
+            
+            const optionsContainer = document.getElementById('pdp-custom-options');
+            if (optionsContainer) {
+                const activeOption = optionsContainer.querySelector('.variant-pill.active');
+                if (activeOption) {
+                    const label = optionsContainer.dataset.label || 'Option';
+                    selectedOptions = `${label}: ${activeOption.dataset.val}`;
+                }
+            }
+            
+            this.addToCart(productId, isPack, selectedOptions);
+        },
+
+        updateCartQty: function(cartKey, delta) {
+            const item = this.state.cart.find(x => x.cartKey === cartKey || x.id === cartKey); // Fallback for old storage
             if (!item) return;
             
             item.qty += delta;
             if (item.qty <= 0) {
-                this.state.cart = this.state.cart.filter(x => x.id !== productId);
+                this.state.cart = this.state.cart.filter(x => (x.cartKey || x.id) !== (item.cartKey || item.id));
             }
             this.saveCart();
         },
 
-        removeFromCart: function(productId) {
-            this.state.cart = this.state.cart.filter(x => x.id !== productId);
+        removeFromCart: function(cartKey) {
+            this.state.cart = this.state.cart.filter(x => (x.cartKey || x.id) !== cartKey);
             this.saveCart();
         },
 
@@ -1156,10 +1293,25 @@
             this.state.cart.forEach(item => {
                 const product = this.state.products.find(p => p.id === item.id);
                 if (product) {
-                    const itemMrp = (product.mrp_price && product.mrp_price > product.selling_price) ? product.mrp_price : product.selling_price;
-                    mrpSubtotal += itemMrp * item.qty;
-                    sellingSubtotal += product.selling_price * item.qty;
-                    validItems.push({ ...product, qty: item.qty });
+                    // Phase 4: Handle Pack Math if selected
+                    const isPack = item.isPack && product.pack_qty && product.pack_price;
+                    const baseMrp = (product.mrp_price && product.mrp_price > product.selling_price) ? product.mrp_price : product.selling_price;
+                    
+                    const unitPrice = isPack ? product.pack_price : product.selling_price;
+                    const unitMrp = isPack ? (baseMrp * product.pack_qty) : baseMrp;
+                    
+                    mrpSubtotal += unitMrp * item.qty;
+                    sellingSubtotal += unitPrice * item.qty;
+                    
+                    validItems.push({ 
+                        ...product, 
+                        qty: item.qty, 
+                        cartKey: item.cartKey || item.id,
+                        isPack: isPack,
+                        selectedOptions: item.selectedOptions,
+                        calculatedPrice: unitPrice,
+                        calculatedMrp: unitMrp
+                    });
                 }
             });
 
@@ -1270,26 +1422,32 @@
             // Render Items
             const itemsHtml = totals.validItems.map(item => {
                 const img = item.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
-                const mrpHtml = (item.mrp_price && item.mrp_price > item.selling_price) 
-                    ? `<span style="font-size: 13px; color: var(--text-muted); margin-left: 8px; font-weight: normal;">MRP <span style="text-decoration: line-through;">₹${item.mrp_price}</span></span>` 
+                const mrpHtml = (item.calculatedMrp && item.calculatedMrp > item.calculatedPrice) 
+                    ? `<span style="font-size: 13px; color: var(--text-muted); margin-left: 8px; font-weight: normal;">MRP <span style="text-decoration: line-through;">₹${item.calculatedMrp}</span></span>` 
                     : '';
+                    
+                // Append Pack Label & Options to Title
+                let displayName = item.name;
+                if (item.isPack) displayName += ` <span style="color:var(--primary); font-weight:800; font-size:11px; background:rgba(34,211,238,0.1); padding:3px 6px; border-radius:4px; margin-left:6px; display:inline-block; vertical-align:middle;">Pack of ${item.pack_qty}</span>`;
+                if (item.selectedOptions) displayName += ` <div style="font-size:12px; color:var(--text-muted); margin-top:4px; font-weight:600;">${item.selectedOptions}</div>`;
+                
                 return `
                     <div class="cart-item">
                         <img src="${img}" class="cart-item-img" alt="${item.name}">
                         <div class="cart-item-details">
-                            <div class="cart-item-title">${item.name}</div>
-                            <div class="cart-item-price">₹${item.selling_price} ${mrpHtml}</div>
+                            <div class="cart-item-title" style="line-height:1.4;">${displayName}</div>
+                            <div class="cart-item-price">₹${item.calculatedPrice} ${mrpHtml}</div>
                             <div class="cart-qty-row">
                                 <div class="cart-qty-controls">
-                                    <button class="cart-qty-btn" aria-label="Decrease quantity" onclick="Store.updateCartQty('${item.id}', -1)">
+                                    <button class="cart-qty-btn" aria-label="Decrease quantity" onclick="Store.updateCartQty('${item.cartKey}', -1)">
                                         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                                     </button>
                                     <div class="cart-qty-val">${item.qty}</div>
-                                    <button class="cart-qty-btn" aria-label="Increase quantity" onclick="Store.updateCartQty('${item.id}', 1)">
+                                    <button class="cart-qty-btn" aria-label="Increase quantity" onclick="Store.updateCartQty('${item.cartKey}', 1)">
                                         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                                     </button>
                                 </div>
-                                <button class="cart-remove-btn" aria-label="Remove item" onclick="Store.removeFromCart('${item.id}')">
+                                <button class="cart-remove-btn" aria-label="Remove item" onclick="Store.removeFromCart('${item.cartKey}')">
                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                     Remove
                                 </button>
@@ -1429,18 +1587,17 @@
             const totals = this.calculateTotals();
             const summaryContainer = document.getElementById('checkout-summary-container');
 
-            let itemsHtml = totals.validItems.map(item => {
-                const itemTotal = (item.selling_price * item.qty).toFixed(2);
-                const mrpHtml = (item.mrp_price && item.mrp_price > item.selling_price) 
-                    ? `<span style="font-size: 11px; color: var(--text-muted); margin-left: 6px; font-weight: normal;">MRP <span style="text-decoration: line-through;">₹${(item.mrp_price * item.qty).toFixed(2)}</span></span>` 
-                    : '';
-                return `
-                <div class="checkout-item-compact">
-                    <span class="checkout-item-title">${item.qty} × ${item.name}</span>
-                    <span style="font-weight: 600;">₹${itemTotal} ${mrpHtml}</span>
-                </div>
-                `;
-            }).join('');
+            msg += `\n*ITEMS:*\n`;
+            totals.validItems.forEach(item => {
+                let displayName = item.name;
+                if (item.isPack) displayName += ` (Pack of ${item.pack_qty})`;
+                
+                msg += `${item.qty} × ${displayName}\n`;
+                if (item.selectedOptions) msg += `   ↳ ${item.selectedOptions}\n`;
+                msg += `₹${item.calculatedPrice} each\n\n`;
+            });
+
+            msg += `*Subtotal:* ₹${totals.subtotal.toFixed(2)}\n`;
 
             summaryContainer.innerHTML = `
                 <h3 style="margin-bottom: 16px; font-size:16px;">Order Summary</h3>

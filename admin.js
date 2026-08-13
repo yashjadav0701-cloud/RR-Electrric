@@ -356,7 +356,7 @@
 
                     return `
                     <div class="order-item-row" style="display: flex; gap: 16px; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border);">
-                        <img src="${img}" style="width: 80px; height: 80px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border); background: #ffffff; padding: 4px; flex-shrink: 0; box-shadow: var(--shadow-sm);">
+                        <img src="${img}" style="width: 80px; height: 80HVpx; object-fit: contain; border-radius: 6px; border: 1px solid var(--border); background: #ffffff; padding: 4px; flex-shrink: 0; box-shadow: var(--shadow-sm);">
                         <span style="flex:1; line-height: 1.4; font-size: 14px;">
                             <span style="font-weight: 700; font-size: 15px;">${item.quantity} ×</span> ${item.product_name_snapshot}
                         </span>
@@ -996,6 +996,156 @@
             }, 250);
         },
 
+        normalizeSearchText: function(text) {
+            if (!text) return '';
+            return text.toLowerCase()
+                .replace(/[^a-z0-9\s]/g, ' ')
+                .replace(/\b(watts|watt)\b/g, 'w')
+                .replace(/\b(kilowatts|kilowatt|kwatt)\b/g, 'kw')
+                .replace(/\b(volts|volt)\b/g, 'v')
+                .replace(/\b(amps|ampere|amp)\b/g, 'a')
+                .replace(/\b(hertz)\b/g, 'hz')
+                .replace(/(\d+)\s+(w|kw|v|a|hz)\b/g, '$1$2')
+                .replace(/\s+/g, ' ')
+                .trim();
+        },
+
+        updateSmartLinkSuggestions: function() {
+            const nameInput = document.getElementById('product-name').value;
+            const container = document.getElementById('product-linked-ids-container');
+            if (!container) return;
+
+            const currentProductId = document.getElementById('product-id').value;
+            const q = this.normalizeSearchText(nameInput);
+            const queryTokens = q.split(' ').filter(t => t);
+
+            let scoredProducts = this.state.products.filter(p => p.id !== currentProductId).map(p => {
+                let score = 0;
+                
+                // Pin already selected items to the very top permanently
+                if (AdminApp._currentLinkedIds && AdminApp._currentLinkedIds.has(p.id)) {
+                    score += 10000;
+                }
+
+                // Score remaining products based on matching name tokens
+                if (queryTokens.length > 0) {
+                    if (!p._searchNormName) {
+                        p._searchNormName = this.normalizeSearchText(p.name);
+                        p._searchCat = (p.categories?.name || '').toLowerCase();
+                    }
+
+                    queryTokens.forEach(token => {
+                        if (p._searchNormName.split(' ').includes(token)) score += 10; // Exact word match
+                        else if (p._searchNormName.includes(token)) score += 3; // Partial match
+                        else if (p._searchCat.includes(token)) score += 1; // Category match
+                    });
+                }
+
+                return { product: p, score: score };
+            });
+
+            // Sort by highest score first, then alphabetical
+            scoredProducts.sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                return a.product.name.localeCompare(b.product.name);
+            });
+
+            // Rebuild HTML cleanly with checkboxes and images
+            container.innerHTML = scoredProducts.map(m => {
+                const isChecked = (AdminApp._currentLinkedIds && AdminApp._currentLinkedIds.has(m.product.id)) ? 'checked' : '';
+                const img = m.product.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
+                return `
+                    <label class="linked-product-row">
+                        <img src="${img}" alt="">
+                        <span>${m.product.name}</span>
+                        <input type="checkbox" value="${m.product.id}" ${isChecked} onchange="AdminApp.toggleLinkedProduct('${m.product.id}', this.checked)">
+                    </label>
+                `;
+            }).join('');
+        },
+
+        toggleLinkedProduct: function(id, isChecked) {
+            if (!AdminApp._currentLinkedIds) AdminApp._currentLinkedIds = new Set();
+            if (isChecked) {
+                AdminApp._currentLinkedIds.add(id);
+            } else {
+                AdminApp._currentLinkedIds.delete(id);
+            }
+        },
+
+        updateAccessorySuggestions: function() {
+            const searchInput = document.getElementById('accessory-search-input').value;
+            const container = document.getElementById('product-accessory-ids-container');
+            if (!container) return;
+
+            const currentProductId = document.getElementById('product-id').value;
+            const q = this.normalizeSearchText(searchInput);
+            const queryTokens = q.split(' ').filter(t => t);
+
+            let scoredProducts = this.state.products.filter(p => p.id !== currentProductId).map(p => {
+                let score = 0;
+                
+                // Pin already selected items to the very top permanently
+                if (AdminApp._currentAccessoryIds && AdminApp._currentAccessoryIds.has(p.id)) {
+                    score += 10000;
+                }
+
+                // Score remaining products based on matching name tokens from the accessory search box
+                if (queryTokens.length > 0) {
+                    if (!p._searchNormName) {
+                        p._searchNormName = this.normalizeSearchText(p.name);
+                        p._searchCat = (p.categories?.name || '').toLowerCase();
+                    }
+
+                    queryTokens.forEach(token => {
+                        if (p._searchNormName.split(' ').includes(token)) score += 10;
+                        else if (p._searchNormName.includes(token)) score += 3;
+                        else if (p._searchCat.includes(token)) score += 1;
+                    });
+                } else if (!AdminApp._currentAccessoryIds || !AdminApp._currentAccessoryIds.has(p.id)) {
+                    // Push down non-selected items if there is no search active
+                    score -= 1;
+                }
+
+                return { product: p, score: score };
+            });
+
+            // Sort by highest score first, then alphabetical
+            scoredProducts.sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                return a.product.name.localeCompare(b.product.name);
+            });
+
+            // Limit to top 50 to render fast unless there's a specific search
+            if (queryTokens.length === 0) {
+                const checkedCount = AdminApp._currentAccessoryIds ? AdminApp._currentAccessoryIds.size : 0;
+                const limit = Math.max(50, checkedCount + 10);
+                scoredProducts = scoredProducts.slice(0, limit);
+            }
+
+            // Rebuild HTML cleanly with checkboxes and images
+            container.innerHTML = scoredProducts.map(m => {
+                const isChecked = (AdminApp._currentAccessoryIds && AdminApp._currentAccessoryIds.has(m.product.id)) ? 'checked' : '';
+                const img = m.product.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
+                return `
+                    <label class="linked-product-row">
+                        <img src="${img}" alt="">
+                        <span>${m.product.name}</span>
+                        <input type="checkbox" value="${m.product.id}" ${isChecked} onchange="AdminApp.toggleAccessory('${m.product.id}', this.checked)">
+                    </label>
+                `;
+            }).join('');
+        },
+
+        toggleAccessory: function(id, isChecked) {
+            if (!AdminApp._currentAccessoryIds) AdminApp._currentAccessoryIds = new Set();
+            if (isChecked) {
+                AdminApp._currentAccessoryIds.add(id);
+            } else {
+                AdminApp._currentAccessoryIds.delete(id);
+            }
+        },
+
         initProductsView: async function() {
             this.bindProductEvents();
             await this.loadCategories();
@@ -1062,33 +1212,115 @@
                                 <option value="price-desc" ${invState.sort === 'price-desc' ? 'selected' : ''}>Price High to Low</option>
                             </select>
                         </div>
-                        <button onclick="AdminApp.openProductForm()" class="btn-primary" style="width: auto; padding: 10px 16px;">+ Add Product</button>
+                        <div id="inventory-action-buttons" style="display: flex; gap: 8px;">
+                            <button onclick="AdminApp.toggleQuickEdit()" id="btn-quick-edit" class="btn-secondary" style="width: auto; padding: 10px 16px;">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><polygon points="16 3 21 8 8 21 3 21 3 16 16 3"></polygon></svg> Quick Edit
+                            </button>
+                            <button onclick="AdminApp.openProductForm()" id="btn-add-product" class="btn-primary" style="width: auto; padding: 10px 16px;">+ Add Product</button>
+                            <button onclick="AdminApp.saveQuickEdit()" id="btn-save-quick-edit" class="btn-primary hidden" style="background: var(--success); border-color: var(--success); width: auto; padding: 10px 16px;">Save Prices</button>
+                        </div>
                     </div>
                     <div id="inventory-list-wrapper"></div>
                 `;
                 container.innerHTML = toolbarHtml;
             }
 
-            let filtered = this.state.products.filter(p => {
-                const matchesSearch = p.name.toLowerCase().includes(invState.search.toLowerCase()) ||
-                                      (p.categories?.name && p.categories.name.toLowerCase().includes(invState.search.toLowerCase()));
+            // Phase 2: Manage Toolbar States for Quick Edit
+            const btnQe = document.getElementById('btn-quick-edit');
+            const btnAdd = document.getElementById('btn-add-product');
+            const btnSaveQe = document.getElementById('btn-save-quick-edit');
+            
+            if (this.state.isQuickEditMode) {
+                if(btnQe) { btnQe.textContent = 'Cancel Edit'; btnQe.style.background = '#fee2e2'; btnQe.style.color = 'var(--danger)'; btnQe.style.borderColor = '#fca5a5'; }
+                if(btnAdd) btnAdd.classList.add('hidden');
+                if(btnSaveQe) btnSaveQe.classList.remove('hidden');
+            } else {
+                if(btnQe) { btnQe.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><polygon points="16 3 21 8 8 21 3 21 3 16 16 3"></polygon></svg> Quick Edit'; btnQe.style.background = ''; btnQe.style.color = ''; btnQe.style.borderColor = ''; }
+                if(btnAdd) btnAdd.classList.remove('hidden');
+                if(btnSaveQe) btnSaveQe.classList.add('hidden');
+            }
+
+            const q = this.normalizeSearchText(invState.search);
+            const queryTokens = q.split(' ').filter(t => t);
+
+            let scoredProducts = this.state.products.map(p => {
+                let matchesSearch = true;
+                let score = 0;
+                
+                if (queryTokens.length > 0) {
+                    if (!p._searchNormName) {
+                        p._searchNormName = this.normalizeSearchText(p.name);
+                        p._searchCat = (p.categories?.name || '').toLowerCase();
+                    }
+                    
+                    // Pad with spaces to enforce exact word boundary matching
+                    const paddedName = ` ${p._searchNormName} `;
+                    const paddedCat = ` ${p._searchCat} `;
+                    
+                    let tokenMatches = 0;
+                    
+                    queryTokens.forEach(token => {
+                        const paddedToken = ` ${token} `;
+                        
+                        if (paddedName.includes(paddedToken)) {
+                            score += 10;
+                            tokenMatches++;
+                        } else if (paddedCat.includes(paddedToken)) {
+                            score += 5;
+                            tokenMatches++;
+                        } else if (p._searchNormName.includes(token)) {
+                            // Fix the 3W vs 23W bug: reject partial matches on tiny tokens
+                            if (token.length > 2) {
+                                score += 2;
+                                tokenMatches++;
+                            }
+                        } else if (p._searchCat.includes(token)) {
+                             if (token.length > 2) {
+                                score += 1;
+                                tokenMatches++;
+                             }
+                        }
+                    });
+                    
+                    // Must successfully match ALL typed tokens to remain in the list
+                    matchesSearch = (tokenMatches === queryTokens.length);
+                }
+                
                 const matchesCat = invState.category === 'all' || p.category_id === invState.category;
                 const matchesStatus = invState.status === 'all' || 
                                       (invState.status === 'active' && p.is_active) || 
                                       (invState.status === 'inactive' && !p.is_active);
-                return matchesSearch && matchesCat && matchesStatus;
+                
+                return { 
+                    product: p, 
+                    score: score, 
+                    isValid: matchesSearch && matchesCat && matchesStatus 
+                };
             });
+
+            let filtered = scoredProducts.filter(x => x.isValid);
 
             // Sorting
             filtered.sort((a, b) => {
-                if (invState.sort === 'newest') return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-                if (invState.sort === 'oldest') return new Date(a.created_at || 0) - new Date(b.created_at || 0);
-                if (invState.sort === 'name-asc') return a.name.localeCompare(b.name);
-                if (invState.sort === 'name-desc') return b.name.localeCompare(a.name);
-                if (invState.sort === 'price-asc') return (a.selling_price || 0) - (b.selling_price || 0);
-                if (invState.sort === 'price-desc') return (b.selling_price || 0) - (a.selling_price || 0);
+                // If actively searching, strictly sort by algorithm relevance score first
+                if (queryTokens.length > 0 && b.score !== a.score) {
+                    return b.score - a.score;
+                }
+                
+                const pA = a.product;
+                const pB = b.product;
+                
+                if (invState.sort === 'newest') return new Date(pB.created_at || 0) - new Date(pA.created_at || 0);
+                if (invState.sort === 'oldest') return new Date(pA.created_at || 0) - new Date(pB.created_at || 0);
+                if (invState.sort === 'name-asc') return pA.name.localeCompare(pB.name);
+                if (invState.sort === 'name-desc') return pB.name.localeCompare(pA.name);
+                if (invState.sort === 'price-asc') return (pA.selling_price || 0) - (pB.selling_price || 0);
+                if (invState.sort === 'price-desc') return (pB.selling_price || 0) - (pA.selling_price || 0);
                 return 0;
             });
+            
+            // Extract the raw products back out for HTML rendering
+            filtered = filtered.map(x => x.product);
 
             let html = `
                 <div style="margin-bottom: 12px; padding: 0 4px; font-size: 13px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
@@ -1134,10 +1366,16 @@
                                         </td>
                                         <td>${cat}</td>
                                         <td>
-                                            <div style="font-weight: bold; font-size: 15px;">₹${p.selling_price} ${discountHtml}</div>
+                                            ${this.state.isQuickEditMode ? 
+                                                `<input type="number" step="0.01" class="quick-edit-input qe-price" data-id="${p.id}" value="${p.selling_price}" style="width: 80px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-weight: bold;">` : 
+                                                `<div style="font-weight: bold; font-size: 15px;">₹${p.selling_price} ${discountHtml}</div>`
+                                            }
                                         </td>
                                         <td>
-                                            ${(p.mrp_price && p.mrp_price > p.selling_price) ? `<span style="font-size: 13px; color: var(--text-muted);">MRP <span style="text-decoration: line-through;">₹${p.mrp_price}</span></span>` : '<span style="color: var(--text-muted);">--</span>'}
+                                            ${this.state.isQuickEditMode ? 
+                                                `<input type="number" step="0.01" class="quick-edit-input qe-mrp" data-id="${p.id}" value="${p.mrp_price || ''}" style="width: 80px; padding: 6px; border: 1px solid var(--border); border-radius: 4px;" placeholder="MRP">` : 
+                                                `${(p.mrp_price && p.mrp_price > p.selling_price) ? `<span style="font-size: 13px; color: var(--text-muted);">MRP <span style="text-decoration: line-through;">₹${p.mrp_price}</span></span>` : '<span style="color: var(--text-muted);">--</span>'}`
+                                            }
                                         </td>
                                         <td>
                                             <span class="status-badge ${p.is_active ? 'status-active' : 'status-inactive'}">
@@ -1178,9 +1416,13 @@
                                         <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">${cat}</div>
                                     </div>
                                     <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
-                                        <span style="font-size: 15px; font-weight: 700; color: var(--text-main);">₹${p.selling_price}</span>
-                                        ${(p.mrp_price && p.mrp_price > p.selling_price) ? `<span style="font-size: 12px; color: var(--text-muted);">MRP <span style="text-decoration: line-through;">₹${p.mrp_price}</span></span>` : ''}
-                                        ${discountHtml}
+                                        ${this.state.isQuickEditMode ? 
+                                            `₹<input type="number" step="0.01" class="quick-edit-input qe-price" data-id="${p.id}" value="${p.selling_price}" style="width: 70px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; font-weight: bold;">
+                                             <input type="number" step="0.01" class="quick-edit-input qe-mrp" data-id="${p.id}" value="${p.mrp_price || ''}" style="width: 70px; padding: 4px; border: 1px solid var(--border); border-radius: 4px;" placeholder="MRP">` : 
+                                            `<span style="font-size: 15px; font-weight: 700; color: var(--text-main);">₹${p.selling_price}</span>
+                                            ${(p.mrp_price && p.mrp_price > p.selling_price) ? `<span style="font-size: 12px; color: var(--text-muted);">MRP <span style="text-decoration: line-through;">₹${p.mrp_price}</span></span>` : ''}
+                                            ${discountHtml}`
+                                        }
                                     </div>
                                 </div>
                                 <div style="display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; flex-shrink: 0; width: 32px;">
@@ -1205,6 +1447,62 @@
 
             document.getElementById('inventory-list-wrapper').innerHTML = html;
             setTimeout(() => CustomUI.styleSelects(), 0);
+        },
+
+        toggleQuickEdit: function() {
+            this.state.isQuickEditMode = !this.state.isQuickEditMode;
+            this.renderProducts();
+        },
+
+        saveQuickEdit: async function() {
+            const btn = document.getElementById('btn-save-quick-edit');
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+
+            const priceInputs = document.querySelectorAll('.qe-price');
+            const mrpInputs = document.querySelectorAll('.qe-mrp');
+            
+            const updatesMap = new Map();
+
+            // Gather all new prices (works for both mobile and desktop inputs safely)
+            priceInputs.forEach(input => {
+                const id = input.dataset.id;
+                if (!updatesMap.has(id)) updatesMap.set(id, { id });
+                updatesMap.get(id).selling_price = parseFloat(input.value) || 0;
+            });
+
+            mrpInputs.forEach(input => {
+                const id = input.dataset.id;
+                if (!updatesMap.has(id)) updatesMap.set(id, { id });
+                updatesMap.get(id).mrp_price = parseFloat(input.value) || null;
+            });
+
+            const promises = [];
+            let updatedCount = 0;
+
+            for (const [id, data] of updatesMap) {
+                const original = this.state.products.find(p => p.id === id);
+                if (original) {
+                    // Only perform database updates on products that were ACTUALLY changed
+                    if (original.selling_price !== data.selling_price || original.mrp_price !== data.mrp_price) {
+                        promises.push(supabase.from('products').update({ 
+                            selling_price: data.selling_price, 
+                            mrp_price: data.mrp_price 
+                        }).eq('id', id));
+                        updatedCount++;
+                    }
+                }
+            }
+
+            // Blast all changes to Supabase concurrently
+            if (promises.length > 0) {
+                await Promise.all(promises);
+            }
+
+            CustomUI.alert(`Successfully updated prices for ${updatedCount} products!`, 'Quick Edit Saved');
+            
+            this.state.isQuickEditMode = false;
+            await this.loadProducts(); // Fully reload to lock in changes
         },
 
         bindProductEvents: function() {
@@ -1295,6 +1593,19 @@
                 imgInput.value = ''; // Reset
             });
 
+            // Smart Link Suggestions on Name Type
+            document.getElementById('product-name').addEventListener('input', () => {
+                this.updateSmartLinkSuggestions();
+            });
+
+            // Accessory Search Suggestions
+            const accSearch = document.getElementById('accessory-search-input');
+            if(accSearch) {
+                accSearch.addEventListener('input', () => {
+                    this.updateAccessorySuggestions();
+                });
+            }
+
             // Auto MRP Logic
             document.getElementById('btn-auto-mrp').addEventListener('click', () => {
                 const sellingPriceInput = document.getElementById('product-price').value;
@@ -1347,7 +1658,15 @@
                 document.getElementById('product-price').value = product.selling_price;
                 document.getElementById('product-mrp').value = product.mrp_price || '';
                 
-                // Read and split the warranty string back into the form
+                // Phase 2: Smart Variant Engine Population
+                if(document.getElementById('product-pack-qty')) document.getElementById('product-pack-qty').value = product.pack_qty || '';
+                if(document.getElementById('product-pack-price')) document.getElementById('product-pack-price').value = product.pack_price || '';
+                if(document.getElementById('product-custom-options')) document.getElementById('product-custom-options').value = product.custom_options || '';
+                
+                AdminApp._currentLinkedIds = new Set(product.linked_product_ids || []);
+                AdminApp._currentAccessoryIds = new Set(product.accessory_ids || []);
+                if(document.getElementById('accessory-search-input')) document.getElementById('accessory-search-input').value = '';
+                
                 if (product.warranty) {
                     const parts = product.warranty.split(' ');
                     document.getElementById('product-warranty-val').value = parts[0] || '';
@@ -1391,8 +1710,21 @@
                 document.getElementById('product-id').value = '';
                 document.getElementById('product-category-id').value = '';
                 document.getElementById('product-warranty-val').value = '';
+                
+                // Clear Phase 2 Variant Engine fields on new product
+                if(document.getElementById('product-pack-qty')) document.getElementById('product-pack-qty').value = '';
+                if(document.getElementById('product-pack-price')) document.getElementById('product-pack-price').value = '';
+                if(document.getElementById('product-custom-options')) document.getElementById('product-custom-options').value = '';
+                
+                AdminApp._currentLinkedIds = new Set();
+                AdminApp._currentAccessoryIds = new Set();
+                if(document.getElementById('accessory-search-input')) document.getElementById('accessory-search-input').value = '';
             }
             this.renderImagePreviews();
+            
+            // Instantly sort the smart links based on the current product name
+            this.updateSmartLinkSuggestions();
+            this.updateAccessorySuggestions();
         },
 
         compressToWebP: function(file) {
@@ -1519,6 +1851,9 @@
                 }
 
                 // 2. Prepare payload
+                const linkedIds = AdminApp._currentLinkedIds ? Array.from(AdminApp._currentLinkedIds) : [];
+                const accessoryIds = AdminApp._currentAccessoryIds ? Array.from(AdminApp._currentAccessoryIds) : [];
+
                 const payload = {
                     name: document.getElementById('product-name').value.trim(),
                     category_id: catId,
@@ -1527,7 +1862,14 @@
                     warranty: warrantyStr,
                     description: document.getElementById('product-description').value.trim(),
                     is_active: document.getElementById('product-active').checked,
-                    image_urls: finalImageUrls
+                    image_urls: finalImageUrls,
+                    
+                    // Smart Variant Engine Saving
+                    pack_qty: document.getElementById('product-pack-qty')?.value ? parseInt(document.getElementById('product-pack-qty').value) : null,
+                    pack_price: document.getElementById('product-pack-price')?.value ? parseFloat(document.getElementById('product-pack-price').value) : null,
+                    custom_options: document.getElementById('product-custom-options')?.value.trim() || null,
+                    linked_product_ids: linkedIds,
+                    accessory_ids: accessoryIds
                 };
 
                 const id = document.getElementById('product-id').value;
@@ -1536,14 +1878,62 @@
                 let res;
 
                 if (id) {
-                    res = await supabase.from('products').update(payload).eq('id', id);
+                    res = await supabase.from('products').update(payload).eq('id', id).select().single();
                 } else {
-                    res = await supabase.from('products').insert(payload);
+                    res = await supabase.from('products').insert(payload).select().single();
                 }
 
                 if (res.error) throw res.error;
+                
+                const savedProductId = res.data.id;
 
-                // 3. ONLY AFTER DB SUCCESS: Clean up old storage images that are no longer referenced
+                // ---------------------------------------------------------
+                // 3. SMART CLUSTER MULTI-DIRECTIONAL LINKING
+                // ---------------------------------------------------------
+                const clusterIds = [savedProductId, ...linkedIds];
+                const promises = [];
+
+                // A. Mutual Linking: Force all items in the cluster to point to each other
+                for (const pid of linkedIds) {
+                    const pToUpdate = this.state.products.find(x => x.id === pid);
+                    if (pToUpdate) {
+                        const existingLinks = pToUpdate.linked_product_ids || [];
+                        const newLinksSet = new Set([...existingLinks, ...clusterIds]);
+                        newLinksSet.delete(pid); // A product shouldn't link to itself
+                        
+                        const newLinksArray = Array.from(newLinksSet);
+                        // Save DB calls: Only update if the links actually changed
+                        if (existingLinks.length !== newLinksArray.length || !existingLinks.every(x => newLinksArray.includes(x))) {
+                            promises.push(supabase.from('products').update({ linked_product_ids: newLinksArray }).eq('id', pid));
+                        }
+                    }
+                }
+
+                // B. Handle Detachment: If we unchecked a box, detach that product from the cluster
+                if (id && existingProduct) {
+                    const oldLinkedIds = existingProduct.linked_product_ids || [];
+                    const removedIds = oldLinkedIds.filter(x => !linkedIds.includes(x));
+                    
+                    for (const rid of removedIds) {
+                        const pToRemove = this.state.products.find(x => x.id === rid);
+                        if (pToRemove) {
+                            const existingLinks = pToRemove.linked_product_ids || [];
+                            // Remove all members of the current active cluster from this detached item
+                            const newLinksArray = existingLinks.filter(x => !clusterIds.includes(x));
+                            
+                            if (existingLinks.length !== newLinksArray.length) {
+                                promises.push(supabase.from('products').update({ linked_product_ids: newLinksArray }).eq('id', rid));
+                            }
+                        }
+                    }
+                }
+
+                // Execute all cross-link updates in parallel for maximum speed
+                if (promises.length > 0) {
+                    await Promise.all(promises);
+                }
+
+                // 4. ONLY AFTER DB SUCCESS: Clean up old storage images that are no longer referenced
                 if (oldImages.length > 0) {
                     const imagesToDelete = oldImages.filter(oldUrl => !finalImageUrls.includes(oldUrl));
                     if (imagesToDelete.length > 0) {
@@ -1603,6 +1993,19 @@
                     btn.textContent = 'Delete Product';
                 }
             } else {
+                // Clean up ghost links from cluster mates so they don't look for a deleted product
+                if (product && product.linked_product_ids && product.linked_product_ids.length > 0) {
+                    const promises = [];
+                    for (const peerId of product.linked_product_ids) {
+                        const peer = this.state.products.find(p => p.id === peerId);
+                        if (peer) {
+                            const newLinks = (peer.linked_product_ids || []).filter(x => x !== id);
+                            promises.push(supabase.from('products').update({ linked_product_ids: newLinks }).eq('id', peerId));
+                        }
+                    }
+                    if (promises.length > 0) await Promise.all(promises);
+                }
+
                 // 2. Only after DB success, clean up storage images
                 if (product && product.image_urls && product.image_urls.length > 0) {
                     const pathsToRemove = product.image_urls.map(url => url.split('/product-images/')[1]).filter(Boolean);
