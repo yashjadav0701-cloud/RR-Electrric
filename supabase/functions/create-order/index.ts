@@ -92,7 +92,26 @@ serve(async (req) => {
         }
     }
 
-    const finalTotal = Math.max(0, subtotal - vipDiscount - couponDiscount);
+    const discountedSubtotal = Math.max(0, subtotal - vipDiscount - couponDiscount);
+
+    // --- 3.5 Process Secure Delivery & Minimum Order ---
+    const { data: configData } = await supabase.from('store_configurations').select('config_value').eq('config_key', 'delivery_settings').single();
+    const deliveryConfig = configData?.config_value || {};
+    
+    const minOrder = parseFloat(deliveryConfig.min_order) || 0;
+    const freeAbove = parseFloat(deliveryConfig.free_above) || 0;
+    const baseCharge = parseFloat(deliveryConfig.charge) || 0;
+
+    if (discountedSubtotal < minOrder && minOrder > 0) {
+        throw new Error(`Minimum order of ₹${minOrder} not reached. Add ₹${(minOrder - discountedSubtotal).toFixed(2)} more to place this order.`);
+    }
+
+    let deliveryCharge = baseCharge;
+    if (freeAbove > 0 && discountedSubtotal >= freeAbove) {
+        deliveryCharge = 0;
+    }
+
+    const finalTotal = discountedSubtotal + deliveryCharge;
 
     // 4. Save Customer
     let customerId;
@@ -146,6 +165,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ order_reference: orderRef }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
     
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
+    // Return 200 so the Supabase client doesn't throw a generic HTTP error, allowing it to read the specific message.
+    return new Response(JSON.stringify({ error: error.message }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
   }
 })

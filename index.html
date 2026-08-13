@@ -10,18 +10,19 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://rrelectrric.netlify.app/">
     <meta property="og:title" content="RR ELECTRRIC — Branded Electrical Products">
-    <meta property="og:description" content="Shop premium electrical products, LED bulbs, MCBs, and switches at unbeatable prices. Fast Nadiad delivery.">
+    <meta property="og:description" content="Shop premium electrical products at unbeatable prices. Fast Nadiad delivery.">
     <meta property="og:image" content="https://rrelectrric.netlify.app/social-preview.png">
 
     <!-- Twitter Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="RR ELECTRRIC — Branded Electrical Products">
-    <meta name="twitter:description" content="Shop premium electrical products, LED bulbs, MCBs, and switches at unbeatable prices. Fast Nadiad delivery.">
+    <meta name="twitter:description" content="Shop premium electrical products at unbeatable prices. Fast Nadiad delivery.">
     <meta name="twitter:image" content="https://rrelectrric.netlify.app/social-preview.png">
+    
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1e293b">
-    <link rel="stylesheet" href="/styles.css?v=1">
-    <link rel="icon" type="image/svg+xml" href="/logo-short.svg?v=1">
+    <link rel="stylesheet" href="/styles.css?v=1.1">
+    <link rel="icon" type="image/svg+xml" href="/assets/logo-short.svg?v=1.1">
     
     <!-- Preconnect to Supabase for faster API handshakes -->
     <link rel="preconnect" href="https://ycckkswajajrqobrohcx.supabase.co" crossorigin>
@@ -32,13 +33,13 @@
 <body>
     <!-- Global Preloader -->
     <div id="global-preloader" class="global-preloader">
-        <img src="/logo-full.svg?v=1" alt="RR" class="preloader-logo">
+        <img src="/assets/logo-full.svg?v=1.1" alt="RR" class="preloader-logo">
     </div>
 
     <header class="site-header">
         <div class="container header-inner">
             <a href="javascript:void(0)" onclick="Store.navigate('home')" class="brand-link" aria-label="RR ELECTRRIC Home" style="display: flex; align-items: center;">
-                <img src="/logo-full.svg?v=1" alt="RR ELECTRRIC" style="height: 44px; width: auto; max-width: 180px; object-fit: contain;">
+                <img src="/assets/logo-full.svg?v=1.1" alt="RR ELECTRRIC" style="height: 44px; width: auto; max-width: 180px; object-fit: contain;">
             </a>
             
             <!-- Desktop Header Navigation Links -->
@@ -80,19 +81,7 @@
                     <div class="hero-bg-glow"></div>
                     <div class="hero-bg-grid"></div>
 
-                    <!-- Lightweight floating icons -->
-                    <div class="hero-float-icon hero-icon-bolt">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                    </div>
-                    <div class="hero-float-icon hero-icon-bulb">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M8.2 14.5A7 7 0 1 1 15.8 14.5C15.1 15.2 15 16.1 15 17H9c0-.9-.1-1.8-.8-2.5z"/></svg>
-                    </div>
-                    <div class="hero-float-icon hero-icon-plug">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7v5M16 7v5M6 11h12v1a6 6 0 0 1-12 0v-1z"/><path d="M12 18v4M9 3v4M15 3v4"/></svg>
-                    </div>
-                    <div class="hero-float-icon hero-icon-chip">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9zM9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3"/></svg>
-                    </div>
+                    <!-- Background graphics only -->
                 </div>
 
                 <div class="container hero-content">
@@ -131,6 +120,22 @@
                             </svg>
                             Shop Products
                         </button>
+                    </div>
+
+                    <!-- Authorized Partner Ribbon -->
+                    <div class="hero-brand-ribbon">
+                        <div class="ribbon-label">
+                            <span class="ribbon-line"></span>
+                            <span class="ribbon-text">AUTHORIZED PARTNER FOR</span>
+                            <span class="ribbon-line"></span>
+                        </div>
+                        <div class="ribbon-track">
+                            <img src="/assets/rr.svg" alt="RR Kabel" class="ribbon-logo">
+                            <img src="/assets/havells.svg" alt="Havells" class="ribbon-logo">
+                            <img src="/assets/l&t.svg" alt="L&T" class="ribbon-logo">
+                            <img src="/assets/anchor.svg" alt="Anchor" class="ribbon-logo">
+                            <img src="/assets/hi-fi.svg" alt="Hi-Fi" class="ribbon-logo">
+                        </div>
                     </div>
 
                     <div class="hero-store-card">
@@ -177,6 +182,18 @@
                         </div>
                     </div>
 
+                </div>
+            </div>
+
+            <!-- PWA Install Banner -->
+            <div id="pwa-install-container" class="container hidden" style="padding-top: 24px; padding-bottom: 8px;">
+                <div class="pwa-install-card">
+                    <img src="/assets/logo-short.svg?v=1.1" alt="RR" class="pwa-install-icon">
+                    <div class="pwa-install-text">
+                        <h4>Install RR ELECTRRIC</h4>
+                        <p>Get quick access from your mobile home screen.</p>
+                    </div>
+                    <button id="btn-install-pwa" class="btn-primary" style="padding: 6px 12px; font-size: 12px; min-width: auto; height: 32px; border-radius: 6px;">Install App</button>
                 </div>
             </div>
 
@@ -347,7 +364,7 @@
 
     <footer class="site-footer">
         <div class="container" style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
-            <img src="/logo-full.svg?v=1" alt="RR ELECTRRIC" class="footer-logo" style="height: 32px; width: auto; opacity: 0.8;">
+            <img src="/assets/logo-full.svg?v=1.1" alt="RR ELECTRRIC" class="footer-logo" style="height: 32px; width: auto; opacity: 0.8;">
             <p>Fast local delivery for branded electrical products across Nadiad.</p>
             <div id="footer-address-text" style="font-size: 13px; color: var(--text-muted); text-align: center; max-width: 400px; line-height: 1.5; margin-bottom: 4px;"></div>
             <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
@@ -382,6 +399,6 @@
         </a>
     </nav>
 
-    <script src="/app.js?v=1"></script>
+    <script src="/app.js?v=1.1"></script>
 </body>
 </html>

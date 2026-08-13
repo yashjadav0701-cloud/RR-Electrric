@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin — RR ELECTRRIC</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" href="/styles.css?v=1">
-    <link rel="stylesheet" href="/admin.css?v=1">
-    <link rel="icon" type="image/svg+xml" href="/logo-short.svg?v=1">
+    <link rel="stylesheet" href="/styles.css?v=1.1">
+    <link rel="stylesheet" href="/admin.css?v=1.1">
+    <link rel="icon" type="image/svg+xml" href="/assets/logo-short.svg?v=1.1">
     
     <!-- Preconnect to Supabase for faster API handshakes -->
     <link rel="preconnect" href="https://ycckkswajajrqobrohcx.supabase.co" crossorigin>
@@ -17,12 +17,12 @@
 <body>
     <!-- Global Preloader -->
     <div id="global-preloader" class="global-preloader">
-        <img src="/logo-full.svg?v=1" alt="RR" class="preloader-logo">
+        <img src="/assets/logo-full.svg?v=1.1" alt="RR" class="preloader-logo">
     </div>
 
     <div id="admin-auth" class="admin-auth-container">
         <div class="auth-card">
-            <img src="/logo-full.svg?v=1" alt="RR ELECTRRIC" width="200" style="margin-bottom: 24px;">
+            <img src="/assets/logo-full.svg?v=1.1" alt="RR ELECTRRIC" width="200" style="margin-bottom: 24px;">
             <h2>Admin Gateway</h2>
             <p>Authentication required.</p>
             <div id="login-error" class="hidden" style="color: var(--danger); margin-bottom: 16px; font-size: 14px;"></div>
@@ -37,8 +37,8 @@
     <div id="admin-app" class="admin-layout hidden">
         <aside class="admin-sidebar">
             <div class="sidebar-brand">
-                <img src="/logo-short.svg?v=1" alt="RR" width="32" class="mobile-only">
-                <img src="/logo-full.svg?v=1" alt="RR ELECTRRIC" width="140" class="desktop-only">
+                <img src="/assets/logo-short.svg?v=1.1" alt="RR" width="32" class="mobile-only">
+                <img src="/assets/logo-full.svg?v=1.1" alt="RR ELECTRRIC" width="140" class="desktop-only">
             </div>
             <nav class="admin-nav">
                 <a href="#dashboard" class="active">
@@ -165,6 +165,20 @@
                                         <label>Maximum Expected Time</label>
                                         <input type="text" id="config-delivery-max" placeholder="e.g. 2 days" required>
                                     </div>
+                                </div>
+                                <div class="form-row" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 16px;">
+                                    <div class="form-group">
+                                        <label>Base Delivery Charge (₹)</label>
+                                        <input type="number" id="config-delivery-charge" min="0" step="1" placeholder="e.g. 40" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Free Delivery Above (₹)</label>
+                                        <input type="number" id="config-delivery-free" min="0" step="1" placeholder="e.g. 499" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Minimum Order Value (₹) <small>(0 to disable)</small></label>
+                                    <input type="number" id="config-delivery-min-order" min="0" step="1" placeholder="e.g. 199" required>
                                 </div>
                             </div>
 
@@ -389,6 +403,6 @@
         </div>
     </div>
 
-    <script src="/admin.js?v=1"></script>
+    <script src="/admin.js?v=1.1"></script>
 </body>
 </html>

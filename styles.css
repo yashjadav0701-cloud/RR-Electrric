@@ -1347,29 +1347,67 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     z-index: 10;
 }
 
-/* GPU-Accelerated, lightweight floating icons (No background containers or backdrop-filter) */
-.hero-float-icon {
-    position: absolute;
+/* Authorized Partner Ribbon (Horizontal Layout, Pure SVGs) */
+.hero-brand-ribbon {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto 20px auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    z-index: 10;
+}
+
+.ribbon-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    opacity: 0.8;
+}
+
+.ribbon-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.4), transparent);
+}
+
+.ribbon-text {
+    font-size: 10px;
+    font-weight: 800;
+    color: #67e8f9;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.ribbon-track {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #67e8f9;
-    z-index: 5; /* Above grid, below text */
-    will-change: transform, opacity;
-    animation: floatTransform 6s ease-in-out infinite alternate, opacityPulse 3s ease-in-out infinite alternate;
+    gap: 32px; /* Increased breathing room for bigger logos */
+    width: 100%;
+    flex-wrap: nowrap; /* Forces strict single-row horizontal arrangement */
 }
 
-.hero-float-icon svg {
-    width: 24px;
-    height: 24px;
-    /* Small, static drop-shadow is vastly cheaper than animating it */
-    filter: drop-shadow(0 0 4px currentColor);
+.ribbon-logo {
+    height: 36px; /* Significantly larger on desktop */
+    width: auto;
+    max-width: 90px; /* Relaxed width limit to prevent squishing */
+    object-fit: contain;
+    /* Softer, tighter white glow so it highlights the shape without looking like a blurry blob */
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5)) drop-shadow(0 1px 1px rgba(255, 255, 255, 0.9));
+    opacity: 0.95;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease;
+    cursor: pointer;
 }
 
-.hero-icon-bolt { top: 18%; left: 12%; color: #fde047; animation-delay: 0s, 0s; }
-.hero-icon-bulb { top: 22%; right: 14%; animation-delay: -1.5s, -1s; }
-.hero-icon-plug { bottom: 20%; left: 16%; animation-delay: -3s, -2s; }
-.hero-icon-chip { bottom: 24%; right: 18%; animation-delay: -4.5s, -3s; }
+.ribbon-logo:hover {
+    transform: scale(1.15) translateY(-2px);
+    filter: drop-shadow(0 4px 10px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 2px rgba(255, 255, 255, 1));
+}
 
 /* Content */
 .hero-content {
@@ -1378,33 +1416,52 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 42px;
-    padding-bottom: 34px;
+    padding-top: 20px; /* Tighter vertical padding */
+    padding-bottom: 12px;
+    width: 100%;
+    overflow: hidden; /* Prevent edge overflow */
+}
+
+.hero-eyebrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: clamp(8px, 2.5vw, 11px);
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #67e8f9;
+    margin-bottom: 6px;
+    white-space: nowrap; /* Forces single line */
 }
 
 .hero-title {
-    max-width: 620px;
+    max-width: 100%;
     margin: 0;
-    font-size: clamp(27px, 5vw, 42px);
-    line-height: 1.08;
+    font-size: clamp(16px, 6.5vw, 38px); /* Aggressive clamp to fit single line */
+    line-height: 1.1;
     font-weight: 850;
-    letter-spacing: -.8px;
+    letter-spacing: -.5px;
     text-shadow: 0 4px 30px rgba(0,0,0,0.8), 0 2px 10px rgba(0,0,0,0.5);
+    white-space: nowrap; /* Forces single line */
 }
 
 .hero-title span {
     display: block;
-    margin-top: 4px;
+    margin-top: 2px;
     color: #7dd3fc;
+    white-space: nowrap; /* Forces single line */
 }
 
 .hero-subtitle {
-    max-width: 480px;
-    margin: 12px auto 10px;
+    width: 100%;
+    max-width: 600px;
+    margin: 6px auto 10px;
     color: #cbd5e1;
-    font-size: 13px;
-    line-height: 1.55;
+    font-size: clamp(8px, 2.6vw, 13px); /* Dynamic scaling for exactly 68 characters */
+    line-height: 1.4;
     text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+    white-space: nowrap; /* Forces single line */
 }
 
 .hero-status-dot {
@@ -1414,45 +1471,23 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     background: #22d3ee;
     box-shadow: 0 0 8px rgba(34,211,238,.9);
     animation: statusPulse 2s ease-in-out infinite;
-}
-
-.hero-title {
-    max-width: 620px;
-    margin: 0;
-    font-size: clamp(27px, 5vw, 42px);
-    line-height: 1.08;
-    font-weight: 850;
-    letter-spacing: -.8px;
-    text-shadow: 0 3px 20px rgba(0,0,0,.28);
-}
-
-.hero-title span {
-    display: block;
-    margin-top: 4px;
-    color: #7dd3fc;
-}
-
-.hero-subtitle {
-    max-width: 480px;
-    margin: 12px auto 10px;
-    color: #cbd5e1;
-    font-size: 13px;
-    line-height: 1.55;
+    flex-shrink: 0;
 }
 
 .hero-delivery {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 6px;
     color: #dbeafe;
-    font-size: 11px;
+    font-size: clamp(9px, 3vw, 11px); /* Ensure it stays one line */
     font-weight: 600;
-    margin-bottom: 17px;
+    margin-bottom: 12px;
+    white-space: nowrap; /* Forces single line */
 }
 
 .hero-delivery svg {
-    width: 17px;
-    height: 17px;
+    width: 15px;
+    height: 15px;
     fill: none;
     stroke: #67e8f9;
     stroke-width: 1.7;
@@ -1461,7 +1496,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 .hero-actions {
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .hero-primary-action {
@@ -1646,18 +1681,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     to { transform: translate3d(-32px, -32px, 0); } /* Aligns perfectly with background-size */
 }
 
-@keyframes floatTransform {
-    0% { transform: translate3d(0, 0, 0); }
-    100% { transform: translate3d(12px, -12px, 0); }
-}
-
 @keyframes glowPulseLight {
     0% { opacity: 0.5; }
-    100% { opacity: 1; }
-}
-
-@keyframes opacityPulse {
-    0% { opacity: 0.35; }
     100% { opacity: 1; }
 }
 
@@ -1674,33 +1699,34 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 /* Mobile Responsive Adjustments */
 @media (max-width: 600px) {
     .hero-section {
-        min-height: 280px; /* Highly compact */
+        min-height: 160px; /* Ultra compact */
     }
 
     .hero-content {
-        padding-top: 20px;
-        padding-bottom: 20px;
+        padding-top: 12px;
+        padding-bottom: 12px;
+        padding-left: 6px;
+        padding-right: 6px;
     }
 
     .hero-title {
-        max-width: 340px;
-        font-size: 25px;
+        max-width: 100%;
+        /* Font size is strictly handled by the fluid clamp() above now */
     }
 
     .hero-subtitle {
-        max-width: 330px;
-        font-size: 12px;
-        margin: 8px auto; /* Tighter margins */
+        max-width: 100%;
+        margin: 4px auto 8px; /* Tighter margins */
+        /* Font size handled by clamp() */
     }
 
-    .hero-float-icon svg {
-        width: 18px;
-        height: 18px;
+    /* Ribbon tightly horizontally packed on mobile */
+    .ribbon-track {
+        gap: 10px; /* Slightly tighter gap to allow for larger images */
     }
-
-    /* Hide 2 icons on mobile to prevent crowding in compact space */
-    .hero-icon-plug, .hero-icon-chip {
-        display: none;
+    .ribbon-logo {
+        height: 30px; /* 35% larger on mobile */
+        max-width: 65px; /* Maximum possible width before horizontal overflow */
     }
 
     .hero-store-card {
@@ -1712,10 +1738,11 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 @media (prefers-reduced-motion: reduce) {
     .hero-bg-glow,
     .hero-bg-grid,
-    .hero-float-icon,
     .hero-status-dot,
+    .ribbon-logo,
     .hero-primary-action::after {
         animation: none !important;
+        transition: none !important;
     }
 }
 
@@ -2277,4 +2304,50 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .modal-form .custom-select-option {
     padding: 10px 6px;
     font-size: 14px;
+}
+
+/* ============================================================
+   PWA INSTALL CARD
+   ============================================================ */
+.pwa-install-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: var(--shadow-md);
+    position: relative;
+    border-left: 4px solid var(--primary);
+}
+
+.pwa-install-icon {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    flex-shrink: 0;
+    background: var(--bg-main);
+    border-radius: 8px;
+    padding: 6px;
+    border: 1px solid var(--border);
+}
+
+.pwa-install-text {
+    flex: 1;
+}
+
+.pwa-install-text h4 {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0 0 2px 0;
+    line-height: 1.2;
+}
+
+.pwa-install-text p {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.3;
 }

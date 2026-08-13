@@ -464,6 +464,10 @@
                                         <span>Coupon Discount ${order.coupons?.code ? `(${order.coupons.code})` : ''}</span>
                                         <span>-₹${order.coupon_discount}</span>
                                     </div>
+                                    <div class="order-totals-row" style="margin-bottom: 6px;">
+                                        <span style="color: var(--text-muted);">Delivery Charge</span>
+                                        <span style="${order.delivery_charge === 0 ? 'color: var(--success); font-weight: 600;' : 'color: var(--text-main);'}">${order.delivery_charge === 0 ? 'FREE' : '₹' + order.delivery_charge}</span>
+                                    </div>
                                     <div class="order-totals-row final" style="font-size: 16px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
                                         <span>Final Total</span>
                                         <span>₹${order.final_total}</span>
@@ -550,6 +554,9 @@
             document.getElementById('config-delivery-area').value = deliverySettings.area || 'Nadiad';
             document.getElementById('config-delivery-min').value = deliverySettings.min_time || '10 minutes';
             document.getElementById('config-delivery-max').value = deliverySettings.max_time || '2 days';
+            document.getElementById('config-delivery-charge').value = deliverySettings.charge !== undefined ? deliverySettings.charge : 40;
+            document.getElementById('config-delivery-free').value = deliverySettings.free_above !== undefined ? deliverySettings.free_above : 499;
+            document.getElementById('config-delivery-min-order').value = deliverySettings.min_order !== undefined ? deliverySettings.min_order : 149;
             
             document.getElementById('config-home-categories').value = (homeSettings.featured_categories || []).join(', ');
         },

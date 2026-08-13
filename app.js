@@ -116,10 +116,82 @@
             currentCategoryParam: null
         },
 
+        normalizeSearchText: function(text) {
+            if (!text) return '';
+            return text.toLowerCase()
+                .replace(/[^a-z0-9\s]/g, ' ') // Remove punctuation
+                .replace(/\b(watts|watt)\b/g, 'w')
+                .replace(/\b(kilowatts|kilowatt|kwatt)\b/g, 'kw')
+                .replace(/\b(volts|volt)\b/g, 'v')
+                .replace(/\b(amps|ampere|amp)\b/g, 'a')
+                .replace(/\b(hertz)\b/g, 'hz')
+                .replace(/(\d+)\s+(w|kw|v|a|hz)\b/g, '$1$2') // Compress "9 w" to "9w"
+                .replace(/\s+/g, ' ') // Remove extra spaces
+                .trim();
+        },
+
+        performSearch: function(query) {
+            if (!query) return [];
+            const originalQuery = query.toLowerCase().trim();
+            const q = this.normalizeSearchText(originalQuery);
+            const queryTokens = q.split(' ').filter(t => t);
+
+            if (queryTokens.length === 0) return [];
+
+            const scoredMatches = this.state.products.map(p => {
+                let score = 0;
+                
+                // Lazy build lightweight search index so we don't lag the initial load
+                if (!p._searchName) {
+                    p._searchName = p.name.toLowerCase();
+                    p._searchNormName = this.normalizeSearchText(p.name);
+                    p._searchCat = (p.categories?.name || '').toLowerCase();
+                    p._searchNormDesc = this.normalizeSearchText(p.description || '');
+                }
+
+                // 1. Exact Phrase Match
+                if (p._searchName.includes(originalQuery)) score += 100;
+                
+                // 2. Exact Normalized Phrase Match
+                if (p._searchNormName.includes(q)) score += 80;
+
+                // 3, 4, 5, 6, 7. Token Matching & Relevance
+                let tokensMatched = 0;
+                queryTokens.forEach(token => {
+                    let tokenScore = 0;
+                    
+                    if (p._searchName.split(' ').includes(token)) tokenScore += 15; // Exact word in name
+                    else if (p._searchNormName.split(' ').includes(token)) tokenScore += 12; // Exact normalized word
+                    else if (p._searchName.includes(token)) tokenScore += 5; // Partial word in name
+                    else if (p._searchNormName.includes(token)) tokenScore += 4; // Partial normalized word
+                    else if (p._searchCat.includes(token)) tokenScore += 3; // Category match
+                    else if (p._searchNormDesc.includes(token)) tokenScore += 1; // Description match
+                    
+                    if (tokenScore > 0) {
+                        tokensMatched++;
+                        score += tokenScore;
+                    }
+                });
+
+                // Reward matching MULTIPLE query terms significantly
+                if (tokensMatched > 0) {
+                    score += (tokensMatched / queryTokens.length) * 50; 
+                }
+
+                return { product: p, score: score };
+            }).filter(m => m.score > 0);
+
+            // Sort strictly by highest relevance score
+            scoredMatches.sort((a, b) => b.score - a.score);
+
+            return scoredMatches.map(m => m.product);
+        },
+
         init: async function() {
             CustomUI.init();
             this._initStartTime = Date.now();
             document.getElementById('year').textContent = new Date().getFullYear();
+            this.initPWA();
             this.bindEvents();
             this.loadCart();
             this.loadCustomerInfo();
@@ -146,6 +218,53 @@
                 const preloader = document.getElementById('global-preloader');
                 if (preloader) preloader.classList.add('hidden');
             }, remainingTime);
+        },
+
+        initPWA: function() {
+            // Safely register Service Worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js').catch(err => console.warn('PWA SW failed:', err));
+                });
+            }
+
+            let deferredPrompt;
+            const installContainer = document.getElementById('pwa-install-container');
+            const installBtn = document.getElementById('btn-install-pwa');
+
+            if (!installContainer) return;
+
+            // Force clear any previous dismissals so the banner always shows when eligible
+            localStorage.removeItem('rr_pwa_dismissed');
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                // Prevent Chrome from automatically showing the native prompt
+                e.preventDefault();
+                // Stash the event so it can be triggered later
+                deferredPrompt = e;
+                // Update UI to notify the user they can add to home screen
+                installContainer.classList.remove('hidden');
+            });
+
+            if (installBtn) {
+                installBtn.addEventListener('click', async () => {
+                    if (!deferredPrompt) return;
+                    // Show the native install prompt
+                    deferredPrompt.prompt();
+                    // Wait for the user to respond to the prompt
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        installContainer.classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+
+            window.addEventListener('appinstalled', () => {
+                // Clear the prompt and hide UI if installed externally
+                installContainer.classList.add('hidden');
+                deferredPrompt = null;
+            });
         },
 
         bindEvents: function() {
@@ -204,11 +323,7 @@
                         // Save last search to personalize 'recommended' sorting
                         localStorage.setItem('rr_last_search', q);
                         
-                        const matches = this.state.products.filter(p => {
-                            const nameMatch = p.name.toLowerCase().includes(q);
-                            const catMatch = (p.categories?.name || '').toLowerCase().includes(q);
-                            return nameMatch || catMatch;
-                        });
+                        const matches = Store.performSearch(q);
                         
                         if (matches.length === 0) {
                             searchResults.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--text-muted);">No results found for "${q}"</div>`;
@@ -296,6 +411,9 @@
                 
                 const storeInfo = configs.find(c => c.config_key === 'store_info')?.config_value || {};
                 this.state.config.storeInfo = storeInfo; // Save for WhatsApp flow
+                
+                const deliverySettings = configs.find(c => c.config_key === 'delivery_settings')?.config_value || {};
+                this.state.config.deliverySettings = deliverySettings;
                 
                 if (storeInfo.name) {
                     document.title = `${storeInfo.name} — Branded Electrical Products in Nadiad`;
@@ -473,11 +591,19 @@
                 // 2. Bring items matching the last search to the top
                 const lastSearch = localStorage.getItem('rr_last_search');
                 if (lastSearch) {
-                    const q = lastSearch.toLowerCase();
+                    const qNorm = this.normalizeSearchText(lastSearch);
+                    const qTokens = qNorm.split(' ').filter(t => t);
+                    
                     sorted.sort((a, b) => {
-                        const aMatch = (a.name.toLowerCase().includes(q) || (a.categories?.name || '').toLowerCase().includes(q)) ? 1 : 0;
-                        const bMatch = (b.name.toLowerCase().includes(q) || (b.categories?.name || '').toLowerCase().includes(q)) ? 1 : 0;
-                        return bMatch - aMatch; // Pushes matches (1) above non-matches (0)
+                        const aStr = this.normalizeSearchText(a.name) + ' ' + (a.categories?.name || '').toLowerCase();
+                        const bStr = this.normalizeSearchText(b.name) + ' ' + (b.categories?.name || '').toLowerCase();
+                        
+                        let aScore = 0, bScore = 0;
+                        qTokens.forEach(t => {
+                            if(aStr.includes(t)) aScore++;
+                            if(bStr.includes(t)) bScore++;
+                        });
+                        return bScore - aScore;
                     });
                 }
             } else if (sortMode === 'price-low') {
@@ -581,11 +707,7 @@
             // Save last search to personalize 'recommended' sorting
             localStorage.setItem('rr_last_search', q);
             
-            const matches = this.state.products.filter(p => {
-                const nameMatch = p.name.toLowerCase().includes(q);
-                const catMatch = (p.categories?.name || '').toLowerCase().includes(q);
-                return nameMatch || catMatch;
-            });
+            const matches = this.performSearch(query);
             
             const grid = document.getElementById('search-grid');
             if (matches.length === 0) {
@@ -1078,7 +1200,31 @@
                 }
             }
 
-            const total = sellingSubtotal - vipDiscount - couponDiscount;
+            const discountedSubtotal = Math.max(0, sellingSubtotal - vipDiscount - couponDiscount);
+            
+            // Phase 3 Delivery & Minimum Order Engine
+            const deliveryConfig = this.state.config.deliverySettings || {};
+            const minOrder = parseFloat(deliveryConfig.min_order) || 0;
+            const freeAbove = parseFloat(deliveryConfig.free_above) || 0;
+            const baseCharge = parseFloat(deliveryConfig.charge) || 0;
+
+            const isBelowMinOrder = discountedSubtotal > 0 && discountedSubtotal < minOrder;
+            const remainingForMinOrder = isBelowMinOrder ? (minOrder - discountedSubtotal) : 0;
+
+            let deliveryCharge = 0;
+            let isFreeDelivery = false;
+            let remainingForFreeDelivery = 0;
+
+            if (discountedSubtotal >= freeAbove && freeAbove > 0) {
+                isFreeDelivery = true;
+            } else {
+                deliveryCharge = baseCharge;
+                if (freeAbove > 0) {
+                    remainingForFreeDelivery = freeAbove - discountedSubtotal;
+                }
+            }
+
+            const finalTotal = discountedSubtotal > 0 ? discountedSubtotal + deliveryCharge : 0;
 
             return {
                 validItems,
@@ -1090,7 +1236,14 @@
                 couponDiscount,
                 appliedCouponObj,
                 couponMsg,
-                total: Math.max(0, total)
+                discountedSubtotal,
+                deliveryCharge,
+                isFreeDelivery,
+                minOrder,
+                isBelowMinOrder,
+                remainingForMinOrder,
+                remainingForFreeDelivery,
+                total: finalTotal
             };
         },
 
@@ -1196,16 +1349,30 @@
                         <span>Coupon Discount ${totals.appliedCouponObj ? `(${totals.appliedCouponObj.code})` : ''}</span>
                         <span>-₹${totals.couponDiscount.toFixed(2)}</span>
                     </div>
+                    <div class="summary-row">
+                        <span>Delivery Charge</span>
+                        <span style="${totals.isFreeDelivery || totals.deliveryCharge === 0 ? 'color: var(--success); font-weight: 600;' : 'color: var(--text-main);'}">${totals.isFreeDelivery || totals.deliveryCharge === 0 ? 'FREE' : '₹' + totals.deliveryCharge.toFixed(2)}</span>
+                    </div>
                     <div class="summary-row total">
                         <span>Final Total</span>
                         <span>₹${totals.total.toFixed(2)}</span>
                     </div>
-                    <button class="btn-checkout" onclick="Store.navigate('checkout')">Proceed to Checkout</button>
+                    <button class="btn-checkout" ${totals.isBelowMinOrder ? 'disabled style="opacity: 0.5; cursor: not-allowed; background: var(--text-muted);"' : ''} onclick="${totals.isBelowMinOrder ? '' : "Store.navigate('checkout')"}">
+                        ${totals.isBelowMinOrder ? 'Minimum Order Not Reached' : 'Proceed to Checkout'}
+                    </button>
                 </div>
             `;
 
+            let deliveryBannerHtml = '';
+            if (totals.isBelowMinOrder && totals.minOrder > 0) {
+                deliveryBannerHtml = `<div style="background: #fee2e2; color: #dc2626; padding: 12px; border-radius: var(--radius); font-size: 14px; font-weight: 600; text-align: center; margin-bottom: 16px; border: 1px solid #fecaca; box-shadow: var(--shadow-sm);">Add ₹${totals.remainingForMinOrder.toFixed(2)} more to place this order (Minimum ₹${totals.minOrder}).</div>`;
+            } else if (!totals.isFreeDelivery && totals.remainingForFreeDelivery > 0 && totals.remainingForFreeDelivery < 600) {
+                deliveryBannerHtml = `<div style="background: #e0f2fe; color: #0369a1; padding: 12px; border-radius: var(--radius); font-size: 14px; font-weight: 600; text-align: center; margin-bottom: 16px; border: 1px solid #bae6fd; box-shadow: var(--shadow-sm);">Add ₹${totals.remainingForFreeDelivery.toFixed(2)} more for FREE delivery!</div>`;
+            }
+
             container.innerHTML = `
                 <div class="cart-items-section">
+                    ${deliveryBannerHtml}
                     ${itemsHtml}
                 </div>
                 <div class="cart-summary-section">
@@ -1301,6 +1468,10 @@
                 <div class="summary-row ${totals.couponDiscount > 0 ? 'discount-text' : ''}">
                     <span>Coupon Discount ${totals.appliedCouponObj ? `(${totals.appliedCouponObj.code})` : ''}</span>
                     <span>-₹${totals.couponDiscount.toFixed(2)}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Delivery Charge</span>
+                    <span style="${totals.isFreeDelivery || totals.deliveryCharge === 0 ? 'color: var(--success); font-weight: 600;' : 'color: var(--text-main);'}">${totals.isFreeDelivery || totals.deliveryCharge === 0 ? 'FREE' : '₹' + totals.deliveryCharge.toFixed(2)}</span>
                 </div>
                 <div class="summary-row total" style="margin-bottom: 24px;">
                     <span>Final Total</span>
@@ -1435,6 +1606,7 @@
             if (totals.productDiscount > 0) msg += `*Product Discount:* -₹${totals.productDiscount.toFixed(2)}\n`;
             if (totals.vipDiscount > 0) msg += `*VIP (${totals.appliedVipName}):* -₹${totals.vipDiscount.toFixed(2)}\n`;
             if (totals.couponDiscount > 0) msg += `*Coupon:* -₹${totals.couponDiscount.toFixed(2)}\n`;
+            msg += `*Delivery:* ${totals.isFreeDelivery || totals.deliveryCharge === 0 ? 'FREE' : '₹' + totals.deliveryCharge.toFixed(2)}\n`;
             msg += `*TOTAL:* ₹${totals.total.toFixed(2)}\n\n`;
             
             msg += `*Delivery:* Nadiad\n\n`;
