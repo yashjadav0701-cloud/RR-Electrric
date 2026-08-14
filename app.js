@@ -1568,40 +1568,46 @@
                 </div>
             `;
 
-            let deliveryBannerHtml = '';
+            let bannerStack = [];
+            
             if (totals.isBelowMinOrder && totals.minOrder > 0) {
-                deliveryBannerHtml = `<div style="background: #fee2e2; color: #dc2626; padding: 10px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 16px; border: 1px solid #fecaca;">Add ₹${totals.remainingForMinOrder.toFixed(2)} more to place this order (Minimum ₹${totals.minOrder}).</div>`;
-            } else if (totals.appliedVipName) {
-                // VIP UNLOCKED BANNER (Golden & Animated)
-                const nextTierText = totals.vipProgressMsg ? `<div style="font-size: 11px; margin-top: 4px; color: #a16207; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${totals.vipProgressMsg}</div>` : '';
-                
-                deliveryBannerHtml = `
-                    <style>
-                        @keyframes vip-unlock-pulse {
-                            0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
-                            70% { box-shadow: 0 0 0 8px rgba(234, 179, 8, 0); }
-                            100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
-                        }
-                    </style>
-                    <div style="background: #fefce8; color: #854d0e; padding: 10px 12px; border-radius: 6px; border: 1px solid #fde047; animation: vip-unlock-pulse 2s infinite; display: flex; flex-direction: column; justify-content: center; margin-bottom: 16px;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 16px; flex-shrink: 0;">🎉</span>
-                            <span style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;"><b>${totals.appliedVipName}</b> unlocked!</span>
+                bannerStack.push(`<div style="background: #fee2e2; color: #dc2626; padding: 10px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 12px; border: 1px solid #fecaca;">Add ₹${totals.remainingForMinOrder.toFixed(2)} more to place this order (Minimum ₹${totals.minOrder}).</div>`);
+            } else {
+                // Free Delivery Check (Always show first if not met)
+                if (!totals.isFreeDelivery && totals.remainingForFreeDelivery > 0) {
+                    bannerStack.push(`<div style="background: #e0f2fe; color: #0369a1; padding: 10px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 12px; border: 1px solid #bae6fd;">Add ₹${totals.remainingForFreeDelivery.toFixed(2)} more for FREE delivery!</div>`);
+                }
+
+                // VIP Checks (Pushed directly below Free Delivery)
+                if (totals.appliedVipName) {
+                    const nextTierText = totals.vipProgressMsg ? `<div style="font-size: 11px; margin-top: 4px; color: #a16207; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${totals.vipProgressMsg}</div>` : '';
+                    bannerStack.push(`
+                        <style>
+                            @keyframes vip-unlock-pulse {
+                                0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
+                                70% { box-shadow: 0 0 0 8px rgba(234, 179, 8, 0); }
+                                100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+                            }
+                        </style>
+                        <div style="background: #fefce8; color: #854d0e; padding: 10px 12px; border-radius: 6px; border: 1px solid #fde047; animation: vip-unlock-pulse 2s infinite; display: flex; flex-direction: column; justify-content: center; margin-bottom: 12px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 16px; flex-shrink: 0;">🎉</span>
+                                <span style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;"><b>${totals.appliedVipName}</b> unlocked!</span>
+                            </div>
+                            ${nextTierText}
                         </div>
-                        ${nextTierText}
-                    </div>
-                `;
-            } else if (totals.vipProgressMsg) {
-                // Standard VIP Incentive Banner
-                deliveryBannerHtml = `
-                    <div style="background: #f0fdf4; color: #15803d; padding: 10px 12px; border-radius: 6px; border: 1px solid #bbf7d0; display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-                        <span style="font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${totals.vipProgressMsg}</span>
-                    </div>
-                `;
-            } else if (!totals.isFreeDelivery && totals.remainingForFreeDelivery > 0 && totals.remainingForFreeDelivery < 600) {
-                deliveryBannerHtml = `<div style="background: #e0f2fe; color: #0369a1; padding: 10px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 16px; border: 1px solid #bae6fd;">Add ₹${totals.remainingForFreeDelivery.toFixed(2)} more for FREE delivery!</div>`;
+                    `);
+                } else if (totals.vipProgressMsg) {
+                    bannerStack.push(`
+                        <div style="background: #f0fdf4; color: #15803d; padding: 10px 12px; border-radius: 6px; border: 1px solid #bbf7d0; display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            <span style="font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${totals.vipProgressMsg}</span>
+                        </div>
+                    `);
+                }
             }
+            
+            let deliveryBannerHtml = bannerStack.length > 0 ? `<div style="margin-bottom: 4px;">${bannerStack.join('')}</div>` : '';
 
             container.innerHTML = `
                 <div class="cart-items-section">
