@@ -387,7 +387,7 @@
                 
                 this.state.products = prodRes.data || [];
                 this.state.categories = catRes.data || [];
-                this.state.vipTiers = vipRes.data || [];
+                this.state.vipTiers = vipRes.data || []; // Active VIP tiers loaded live
                 this.state.coupons = [];
                 
                 // Validate any saved coupon completely via the secure Server-Side Edge Function
@@ -919,27 +919,34 @@
                                     }
                                 }
 
-                                // 3. Bulk Pack Engine
-                                if (p.pack_qty && p.pack_price) {
+                                // 3. Bulk Pack Engine (Multi-Tier)
+                                const tiers = (p.bulk_packs && Array.isArray(p.bulk_packs) && p.bulk_packs.length > 0)
+                                    ? p.bulk_packs
+                                    : (p.pack_qty && p.pack_price ? [{ qty: p.pack_qty, price: p.pack_price }] : []);
+
+                                if (tiers.length > 0) {
                                     const singlePrice = p.selling_price;
-                                    const packUnitCost = p.pack_price / p.pack_qty;
-                                    const savings = (singlePrice - packUnitCost) * p.pack_qty;
-                                    
                                     variantHtml += `
                                         <div class="variant-group">
                                             <div class="variant-label">Package Size</div>
                                             <div class="variant-pill-list" id="pdp-pack-options">
-                                                <div class="pack-pill active" onclick="document.querySelectorAll('#pdp-pack-options .pack-pill').forEach(el=>el.classList.remove('active')); this.classList.add('active');" data-ispack="false">
+                                                <div class="pack-pill active" onclick="document.querySelectorAll('#pdp-pack-options .pack-pill').forEach(el=>el.classList.remove('active')); this.classList.add('active');" data-ispack="false" data-qty="1" data-price="${singlePrice}">
                                                     <div class="pack-pill-title">Pack of 1</div>
                                                     <div class="pack-pill-price">₹${singlePrice}</div>
                                                     <div class="pack-pill-unit">₹${singlePrice.toFixed(2)} / count</div>
                                                 </div>
-                                                <div class="pack-pill" onclick="document.querySelectorAll('#pdp-pack-options .pack-pill').forEach(el=>el.classList.remove('active')); this.classList.add('active');" data-ispack="true">
-                                                    <div class="pack-pill-title">Pack of ${p.pack_qty}</div>
-                                                    <div class="pack-pill-price">₹${p.pack_price}</div>
-                                                    <div class="pack-pill-unit">₹${packUnitCost.toFixed(2)} / count</div>
-                                                    ${savings > 0 ? `<div class="pack-pill-save">Save ₹${savings.toFixed(2)}</div>` : ''}
-                                                </div>
+                                                ${tiers.map(t => {
+                                                    const packUnitCost = t.price / t.qty;
+                                                    const savings = (singlePrice - packUnitCost) * t.qty;
+                                                    return `
+                                                        <div class="pack-pill" onclick="document.querySelectorAll('#pdp-pack-options .pack-pill').forEach(el=>el.classList.remove('active')); this.classList.add('active');" data-ispack="true" data-qty="${t.qty}" data-price="${t.price}">
+                                                            <div class="pack-pill-title">Pack of ${t.qty}</div>
+                                                            <div class="pack-pill-price">₹${t.price}</div>
+                                                            <div class="pack-pill-unit">₹${packUnitCost.toFixed(2)} / count</div>
+                                                            ${savings > 0 ? `<div class="pack-pill-save">Save ₹${savings.toFixed(2)}</div>` : ''}
+                                                        </div>
+                                                    `;
+                                                }).join('')}
                                             </div>
                                         </div>
                                     `;
@@ -1154,12 +1161,16 @@
             if (mobileBadge) mobileBadge.textContent = count;
         },
 
-        addToCart: function(productId, isPack = false, selectedOptions = null) {
+        addToCart: function(productId, packData = null, selectedOptions = null) {
             const p = this.state.products.find(x => x.id === productId);
             if (!p) return;
             
-            // Generate a unique cart item key based on product + pack state + custom options
-            const cartKey = `${productId}_${isPack ? 'pack' : 'single'}_${selectedOptions || 'none'}`;
+            const isPack = !!(packData && packData.isPack && packData.qty > 1);
+            const packQty = isPack ? packData.qty : 1;
+            const packPrice = isPack ? packData.price : null;
+            
+            // Unique cart key per variant tier and option
+            const cartKey = `${productId}_${isPack ? `pack${packQty}` : 'single'}_${selectedOptions || 'none'}`;
             
             const existing = this.state.cart.find(x => x.cartKey === cartKey);
             if (existing) {
@@ -1170,6 +1181,8 @@
                     qty: 1, 
                     cartKey: cartKey,
                     isPack: isPack,
+                    packQty: packQty,
+                    packPrice: packPrice,
                     selectedOptions: selectedOptions
                 });
             }
@@ -1188,14 +1201,18 @@
         },
 
         handlePDPAddToCart: function(productId) {
-            let isPack = false;
+            let packData = { isPack: false, qty: 1, price: 0 };
             let selectedOptions = null;
             
             const packContainer = document.getElementById('pdp-pack-options');
             if (packContainer) {
                 const activePack = packContainer.querySelector('.pack-pill.active');
                 if (activePack && activePack.dataset.ispack === 'true') {
-                    isPack = true;
+                    packData = {
+                        isPack: true,
+                        qty: parseInt(activePack.dataset.qty),
+                        price: parseFloat(activePack.dataset.price)
+                    };
                 }
             }
             
@@ -1208,7 +1225,7 @@
                 }
             }
             
-            this.addToCart(productId, isPack, selectedOptions);
+            this.addToCart(productId, packData, selectedOptions);
         },
 
         updateCartQty: function(cartKey, delta) {
@@ -1293,12 +1310,12 @@
             this.state.cart.forEach(item => {
                 const product = this.state.products.find(p => p.id === item.id);
                 if (product) {
-                    // Phase 4: Handle Pack Math if selected
-                    const isPack = item.isPack && product.pack_qty && product.pack_price;
+                    const isPack = item.isPack && item.packQty > 1 && item.packPrice;
+                    const packQty = isPack ? item.packQty : 1;
                     const baseMrp = (product.mrp_price && product.mrp_price > product.selling_price) ? product.mrp_price : product.selling_price;
                     
-                    const unitPrice = isPack ? product.pack_price : product.selling_price;
-                    const unitMrp = isPack ? (baseMrp * product.pack_qty) : baseMrp;
+                    const unitPrice = isPack ? item.packPrice : product.selling_price;
+                    const unitMrp = isPack ? (baseMrp * packQty) : baseMrp;
                     
                     mrpSubtotal += unitMrp * item.qty;
                     sellingSubtotal += unitPrice * item.qty;
@@ -1308,6 +1325,7 @@
                         qty: item.qty, 
                         cartKey: item.cartKey || item.id,
                         isPack: isPack,
+                        pack_qty: packQty,
                         selectedOptions: item.selectedOptions,
                         calculatedPrice: unitPrice,
                         calculatedMrp: unitMrp
@@ -1317,14 +1335,42 @@
 
             const productDiscount = mrpSubtotal - sellingSubtotal;
 
-            // 2. VIP Logic (Tier with highest min_spend that we qualify for based on sellingSubtotal)
+            // 2. VIP Logic (Live Server-Synced Evaluation & Next-Tier Progress)
             let vipDiscount = 0;
             let appliedVipName = null;
-            const applicableVip = this.state.vipTiers.find(v => sellingSubtotal >= v.min_spend);
+            let nextVipTier = null;
             
-            if (applicableVip) {
-                vipDiscount = (sellingSubtotal * applicableVip.discount_percentage) / 100;
-                appliedVipName = applicableVip.name;
+            // Sort tiers ascending by min_spend to find current qualification and next target
+            const sortedVips = [...this.state.vipTiers].sort((a, b) => a.min_spend - b.min_spend);
+            
+            let qualifiedVip = null;
+            for (const v of sortedVips) {
+                if (sellingSubtotal >= v.min_spend) {
+                    qualifiedVip = v; // Keeps upgrading to the highest tier qualified for
+                } else if (!nextVipTier) {
+                    nextVipTier = v; // The very next tier above current spend
+                }
+            }
+
+            if (qualifiedVip) {
+                vipDiscount = (sellingSubtotal * qualifiedVip.discount_percentage) / 100;
+                appliedVipName = qualifiedVip.name.replace(/\*\*/g, '').trim();
+            }
+
+            let vipProgressMsg = null;
+            if (nextVipTier && sellingSubtotal > 0) {
+                const diff = nextVipTier.min_spend - sellingSubtotal;
+                if (diff > 0) {
+                    const cleanName = nextVipTier.name.replace(/\*\*/g, '').trim();
+                    vipProgressMsg = `Add <b style="color:var(--text-main);">₹${diff.toFixed(2)}</b> for <b>${cleanName}</b>`;
+                }
+            } else if (!qualifiedVip && sortedVips.length > 0 && sellingSubtotal > 0) {
+                const firstVip = sortedVips[0];
+                const diff = firstVip.min_spend - sellingSubtotal;
+                if (diff > 0) {
+                    const cleanName = firstVip.name.replace(/\*\*/g, '').trim();
+                    vipProgressMsg = `Add <b style="color:var(--text-main);">₹${diff.toFixed(2)}</b> for <b>${cleanName}</b>`;
+                }
             }
 
             // 3. Coupon Logic
@@ -1385,6 +1431,7 @@
                 productDiscount,
                 vipDiscount,
                 appliedVipName,
+                vipProgressMsg,
                 couponDiscount,
                 appliedCouponObj,
                 couponMsg,
@@ -1523,9 +1570,37 @@
 
             let deliveryBannerHtml = '';
             if (totals.isBelowMinOrder && totals.minOrder > 0) {
-                deliveryBannerHtml = `<div style="background: #fee2e2; color: #dc2626; padding: 12px; border-radius: var(--radius); font-size: 14px; font-weight: 600; text-align: center; margin-bottom: 16px; border: 1px solid #fecaca; box-shadow: var(--shadow-sm);">Add ₹${totals.remainingForMinOrder.toFixed(2)} more to place this order (Minimum ₹${totals.minOrder}).</div>`;
+                deliveryBannerHtml = `<div style="background: #fee2e2; color: #dc2626; padding: 10px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 16px; border: 1px solid #fecaca;">Add ₹${totals.remainingForMinOrder.toFixed(2)} more to place this order (Minimum ₹${totals.minOrder}).</div>`;
+            } else if (totals.appliedVipName) {
+                // VIP UNLOCKED BANNER (Golden & Animated)
+                const nextTierText = totals.vipProgressMsg ? `<div style="font-size: 11px; margin-top: 4px; color: #a16207; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${totals.vipProgressMsg}</div>` : '';
+                
+                deliveryBannerHtml = `
+                    <style>
+                        @keyframes vip-unlock-pulse {
+                            0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
+                            70% { box-shadow: 0 0 0 8px rgba(234, 179, 8, 0); }
+                            100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+                        }
+                    </style>
+                    <div style="background: #fefce8; color: #854d0e; padding: 10px 12px; border-radius: 6px; border: 1px solid #fde047; animation: vip-unlock-pulse 2s infinite; display: flex; flex-direction: column; justify-content: center; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 16px; flex-shrink: 0;">🎉</span>
+                            <span style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;"><b>${totals.appliedVipName}</b> unlocked!</span>
+                        </div>
+                        ${nextTierText}
+                    </div>
+                `;
+            } else if (totals.vipProgressMsg) {
+                // Standard VIP Incentive Banner
+                deliveryBannerHtml = `
+                    <div style="background: #f0fdf4; color: #15803d; padding: 10px 12px; border-radius: 6px; border: 1px solid #bbf7d0; display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                        <span style="font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${totals.vipProgressMsg}</span>
+                    </div>
+                `;
             } else if (!totals.isFreeDelivery && totals.remainingForFreeDelivery > 0 && totals.remainingForFreeDelivery < 600) {
-                deliveryBannerHtml = `<div style="background: #e0f2fe; color: #0369a1; padding: 12px; border-radius: var(--radius); font-size: 14px; font-weight: 600; text-align: center; margin-bottom: 16px; border: 1px solid #bae6fd; box-shadow: var(--shadow-sm);">Add ₹${totals.remainingForFreeDelivery.toFixed(2)} more for FREE delivery!</div>`;
+                deliveryBannerHtml = `<div style="background: #e0f2fe; color: #0369a1; padding: 10px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 16px; border: 1px solid #bae6fd;">Add ₹${totals.remainingForFreeDelivery.toFixed(2)} more for FREE delivery!</div>`;
             }
 
             container.innerHTML = `
@@ -1587,17 +1662,23 @@
             const totals = this.calculateTotals();
             const summaryContainer = document.getElementById('checkout-summary-container');
 
-            msg += `\n*ITEMS:*\n`;
-            totals.validItems.forEach(item => {
+            let itemsHtml = totals.validItems.map(item => {
+                const itemTotal = (item.calculatedPrice * item.qty).toFixed(2);
+                const mrpHtml = (item.calculatedMrp && item.calculatedMrp > item.calculatedPrice) 
+                    ? `<span style="font-size: 11px; color: var(--text-muted); margin-left: 6px; font-weight: normal;">MRP <span style="text-decoration: line-through;">₹${(item.calculatedMrp * item.qty).toFixed(2)}</span></span>` 
+                    : '';
+                
                 let displayName = item.name;
                 if (item.isPack) displayName += ` (Pack of ${item.pack_qty})`;
+                if (item.selectedOptions) displayName += ` - ${item.selectedOptions}`;
                 
-                msg += `${item.qty} × ${displayName}\n`;
-                if (item.selectedOptions) msg += `   ↳ ${item.selectedOptions}\n`;
-                msg += `₹${item.calculatedPrice} each\n\n`;
-            });
-
-            msg += `*Subtotal:* ₹${totals.subtotal.toFixed(2)}\n`;
+                return `
+                <div class="checkout-item-compact">
+                    <span class="checkout-item-title">${item.qty} × ${displayName}</span>
+                    <span style="font-weight: 600;">₹${itemTotal} ${mrpHtml}</span>
+                </div>
+                `;
+            }).join('');
 
             summaryContainer.innerHTML = `
                 <h3 style="margin-bottom: 16px; font-size:16px;">Order Summary</h3>
@@ -1755,8 +1836,12 @@
             
             msg += `\n*ITEMS:*\n`;
             totals.validItems.forEach(item => {
-                msg += `${item.qty} × ${item.name}\n`;
-                msg += `₹${item.selling_price} each\n\n`;
+                let displayName = item.name;
+                if (item.isPack) displayName += ` (Pack of ${item.pack_qty})`;
+                
+                msg += `${item.qty} × ${displayName}\n`;
+                if (item.selectedOptions) msg += `   ↳ ${item.selectedOptions}\n`;
+                msg += `₹${item.calculatedPrice} each\n\n`;
             });
 
             msg += `*Subtotal:* ₹${totals.subtotal.toFixed(2)}\n`;

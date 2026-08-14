@@ -1146,6 +1146,20 @@
             }
         },
 
+        addBulkPackRow: function(qty = '', price = '') {
+            const container = document.getElementById('bulk-packs-container');
+            if (!container) return;
+            const row = document.createElement('div');
+            row.className = 'bulk-pack-row';
+            row.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr 36px; gap: 8px; align-items: center;';
+            row.innerHTML = `
+                <input type="number" class="bp-qty" min="2" step="1" placeholder="Qty (e.g. 2, 5, 10)" value="${qty}">
+                <input type="number" class="bp-price" min="0" step="0.01" placeholder="Pack Price (₹)" value="${price}">
+                <button type="button" class="btn-danger" onclick="this.parentElement.remove()" style="padding: 0; display: flex; align-items: center; justify-content: center; height: 38px; width: 36px; font-size: 16px;" title="Remove Tier">&times;</button>
+            `;
+            container.appendChild(row);
+        },
+
         initProductsView: async function() {
             this.bindProductEvents();
             await this.loadCategories();
@@ -1575,6 +1589,11 @@
                 }
             });
 
+            // Add Dynamic Bulk Pack Tier Row
+            document.getElementById('btn-add-bulk-pack')?.addEventListener('click', () => {
+                this.addBulkPackRow();
+            });
+
             // Image Selection & Preview
             const imgInput = document.getElementById('product-images');
             imgInput.addEventListener('change', async (e) => {
@@ -1659,8 +1678,16 @@
                 document.getElementById('product-mrp').value = product.mrp_price || '';
                 
                 // Phase 2: Smart Variant Engine Population
-                if(document.getElementById('product-pack-qty')) document.getElementById('product-pack-qty').value = product.pack_qty || '';
-                if(document.getElementById('product-pack-price')) document.getElementById('product-pack-price').value = product.pack_price || '';
+                const bpContainer = document.getElementById('bulk-packs-container');
+                if (bpContainer) {
+                    bpContainer.innerHTML = '';
+                    const tiers = (product.bulk_packs && Array.isArray(product.bulk_packs) && product.bulk_packs.length > 0)
+                        ? product.bulk_packs
+                        : (product.pack_qty && product.pack_price ? [{ qty: product.pack_qty, price: product.pack_price }] : []);
+                    
+                    tiers.forEach(t => this.addBulkPackRow(t.qty, t.price));
+                }
+
                 if(document.getElementById('product-custom-options')) document.getElementById('product-custom-options').value = product.custom_options || '';
                 
                 AdminApp._currentLinkedIds = new Set(product.linked_product_ids || []);
@@ -1712,8 +1739,8 @@
                 document.getElementById('product-warranty-val').value = '';
                 
                 // Clear Phase 2 Variant Engine fields on new product
-                if(document.getElementById('product-pack-qty')) document.getElementById('product-pack-qty').value = '';
-                if(document.getElementById('product-pack-price')) document.getElementById('product-pack-price').value = '';
+                const bpContainerNew = document.getElementById('bulk-packs-container');
+                if (bpContainerNew) bpContainerNew.innerHTML = '';
                 if(document.getElementById('product-custom-options')) document.getElementById('product-custom-options').value = '';
                 
                 AdminApp._currentLinkedIds = new Set();
@@ -1854,6 +1881,18 @@
                 const linkedIds = AdminApp._currentLinkedIds ? Array.from(AdminApp._currentLinkedIds) : [];
                 const accessoryIds = AdminApp._currentAccessoryIds ? Array.from(AdminApp._currentAccessoryIds) : [];
 
+                // Collect dynamic bulk pack tiers FIRST
+                const bulkPacks = [];
+                document.querySelectorAll('.bulk-pack-row').forEach(row => {
+                    const q = parseInt(row.querySelector('.bp-qty')?.value);
+                    const p = parseFloat(row.querySelector('.bp-price')?.value);
+                    if (q > 1 && !isNaN(p) && p > 0) {
+                        bulkPacks.push({ qty: q, price: p });
+                    }
+                });
+                bulkPacks.sort((a, b) => a.qty - b.qty);
+                const primaryPack = bulkPacks[0] || null;
+
                 const payload = {
                     name: document.getElementById('product-name').value.trim(),
                     category_id: catId,
@@ -1865,8 +1904,9 @@
                     image_urls: finalImageUrls,
                     
                     // Smart Variant Engine Saving
-                    pack_qty: document.getElementById('product-pack-qty')?.value ? parseInt(document.getElementById('product-pack-qty').value) : null,
-                    pack_price: document.getElementById('product-pack-price')?.value ? parseFloat(document.getElementById('product-pack-price').value) : null,
+                    pack_qty: primaryPack ? primaryPack.qty : null,
+                    pack_price: primaryPack ? primaryPack.price : null,
+                    bulk_packs: bulkPacks,
                     custom_options: document.getElementById('product-custom-options')?.value.trim() || null,
                     linked_product_ids: linkedIds,
                     accessory_ids: accessoryIds
