@@ -1675,13 +1675,18 @@
                     : '';
                 
                 let displayName = item.name;
-                if (item.isPack) displayName += ` (Pack of ${item.pack_qty})`;
-                if (item.selectedOptions) displayName += ` - ${item.selectedOptions}`;
+                if (item.isPack) displayName += ` <span style="color:var(--primary); font-weight:800; font-size:10px; background:rgba(34,211,238,0.1); padding:2px 6px; border-radius:4px; margin-left:6px; display:inline-block; vertical-align:middle;">Pack of ${item.pack_qty}</span>`;
+                if (item.selectedOptions) displayName += ` <div style="font-size:12px; color:var(--text-muted); margin-top:4px; font-weight:600;">${item.selectedOptions}</div>`;
                 
+                const img = item.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
+
                 return `
-                <div class="checkout-item-compact">
-                    <span class="checkout-item-title">${item.qty} × ${displayName}</span>
-                    <span style="font-weight: 600;">₹${itemTotal} ${mrpHtml}</span>
+                <div style="display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--border);">
+                    <img src="${img}" style="width: 48px; height: 48px; object-fit: contain; background: #ffffff; border: 1px solid var(--border); border-radius: 6px; flex-shrink: 0; padding: 2px;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 13px; font-weight: 600; color: var(--text-main); line-height: 1.4; margin-bottom: 4px;">${item.qty} × ${displayName}</div>
+                        <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">₹${itemTotal} ${mrpHtml}</div>
+                    </div>
                 </div>
                 `;
             }).join('');
@@ -1783,23 +1788,40 @@
                 if (data.error) throw new Error(data.error);
 
                 // Keep button disabled to prevent resubmission
-                btn.textContent = 'Order Confirmed! Opening WhatsApp...';
+                btn.textContent = 'Processing Securely...';
 
-                // Grab totals one last time for the receipt format
-                const totals = this.calculateTotals();
+                // Grab frontend data for the product names & MRP (Server handles the actual billing math)
+                const clientTotals = this.calculateTotals();
+
+                // 1. CREATE SUCCESS ANIMATION OVERLAY
+                const overlay = document.createElement('div');
+                overlay.id = 'order-success-overlay';
+                overlay.innerHTML = `
+                    <style>
+                        @keyframes popInSuccess { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+                        @keyframes slideUpFade { 0% { transform: translateY(20px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+                    </style>
+                    <div style="position: fixed; inset: 0; background: rgba(255,255,255,0.98); z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+                        <div style="width: 80px; height: 80px; border-radius: 50%; background: #22c55e; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; animation: popInSuccess 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; box-shadow: 0 10px 25px -5px rgba(34,197,94,0.4);">
+                            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <h2 style="font-size: 26px; font-weight: 800; color: var(--text-main); margin-bottom: 12px; animation: slideUpFade 0.6s ease 0.2s forwards; opacity: 0;">Order Placed!</h2>
+                        <p style="color: var(--text-muted); font-size: 15px; font-weight: 500; animation: slideUpFade 0.6s ease 0.3s forwards; opacity: 0;">Redirecting to WhatsApp for confirmation...</p>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
 
                 // Clear Cart
                 this.state.cart = [];
                 this.state.appliedCouponCode = null;
                 this.saveCart();
 
-                // Send to WhatsApp
-                this.sendWhatsAppOrder(data.order_reference, customerData, totals);
-
-                // Redirect home in the background
+                // Wait 2.5 seconds, then send to WhatsApp with SERVER math, then route home
                 setTimeout(() => {
+                    this.sendWhatsAppOrder(data.order_reference, customerData, clientTotals, data.receipt);
+                    document.body.removeChild(overlay);
                     this.navigate('home');
-                }, 1000);
+                }, 2500);
 
             } catch (err) {
                 console.error("Order Creation Error:", err);
@@ -1814,7 +1836,7 @@
             }
         },
 
-        sendWhatsAppOrder: function(orderRef, customer, totals) {
+        sendWhatsAppOrder: function(orderRef, customer, clientTotals, serverReceipt) {
             const storeName = this.state.config.storeInfo?.name || 'RR ELECTRRIC';
             let phone = this.state.config.storeInfo?.whatsapp || '';
             
@@ -1841,7 +1863,7 @@
             if (customer.note) msg += `Note: ${customer.note}\n`;
             
             msg += `\n*ITEMS:*\n`;
-            totals.validItems.forEach(item => {
+            clientTotals.validItems.forEach(item => {
                 let displayName = item.name;
                 if (item.isPack) displayName += ` (Pack of ${item.pack_qty})`;
                 
@@ -1850,12 +1872,20 @@
                 msg += `₹${item.calculatedPrice} each\n\n`;
             });
 
-            msg += `*Subtotal:* ₹${totals.subtotal.toFixed(2)}\n`;
-            if (totals.productDiscount > 0) msg += `*Product Discount:* -₹${totals.productDiscount.toFixed(2)}\n`;
-            if (totals.vipDiscount > 0) msg += `*VIP (${totals.appliedVipName}):* -₹${totals.vipDiscount.toFixed(2)}\n`;
-            if (totals.couponDiscount > 0) msg += `*Coupon:* -₹${totals.couponDiscount.toFixed(2)}\n`;
-            msg += `*Delivery:* ${totals.isFreeDelivery || totals.deliveryCharge === 0 ? 'FREE' : '₹' + totals.deliveryCharge.toFixed(2)}\n`;
-            msg += `*TOTAL:* ₹${totals.total.toFixed(2)}\n\n`;
+            // Use Server Receipt for Authoritative Financials
+            const finalSubtotal = serverReceipt ? serverReceipt.subtotal : clientTotals.sellingSubtotal;
+            const finalVip = serverReceipt ? serverReceipt.vip_discount : clientTotals.vipDiscount;
+            const finalVipName = serverReceipt ? serverReceipt.applied_vip_name : clientTotals.appliedVipName;
+            const finalCoupon = serverReceipt ? serverReceipt.coupon_discount : clientTotals.couponDiscount;
+            const finalDelivery = serverReceipt ? serverReceipt.delivery_charge : clientTotals.deliveryCharge;
+            const finalTotalAmt = serverReceipt ? (finalSubtotal - finalVip - finalCoupon + finalDelivery) : clientTotals.total;
+
+            msg += `*Subtotal:* ₹${finalSubtotal.toFixed(2)}\n`;
+            if (clientTotals.productDiscount > 0) msg += `*Product Discount:* -₹${clientTotals.productDiscount.toFixed(2)}\n`;
+            if (finalVip > 0) msg += `*VIP (${finalVipName || 'Discount'}):* -₹${finalVip.toFixed(2)}\n`;
+            if (finalCoupon > 0) msg += `*Coupon:* -₹${finalCoupon.toFixed(2)}\n`;
+            msg += `*Delivery:* ${finalDelivery === 0 ? 'FREE' : '₹' + finalDelivery.toFixed(2)}\n`;
+            msg += `*TOTAL:* ₹${finalTotalAmt.toFixed(2)}\n\n`;
             
             msg += `*Delivery:* Nadiad\n\n`;
             msg += `Please confirm the order and payment method (UPI / COD).`;

@@ -73,6 +73,7 @@ serve(async (req) => {
 
     // 3. SERVER-SIDE VIP ENGINE: Calculate exact discount securely
     let vipDiscount = 0;
+    let appliedVipName = null;
     const { data: vipTiers } = await supabase
         .from('vip_tiers')
         .select('*')
@@ -83,6 +84,7 @@ serve(async (req) => {
         const validVip = vipTiers.find((v: any) => sellingSubtotal >= v.min_spend);
         if (validVip) {
             vipDiscount = (sellingSubtotal * validVip.discount_percentage) / 100;
+            appliedVipName = validVip.name.replace(/\*\*/g, '').trim();
         }
     }
 
@@ -166,6 +168,7 @@ serve(async (req) => {
             customer_id: customerId,
             coupon_id: couponId,
             status: 'pending',
+            subtotal: sellingSubtotal,
             vip_discount: vipDiscount,
             coupon_discount: couponDiscount,
             delivery_charge: deliveryCharge,
@@ -193,7 +196,17 @@ serve(async (req) => {
 
     // 10. SEND SUCCESS RESPONSE BACK TO APP.JS
     return new Response(
-        JSON.stringify({ order_reference: orderRef, final_total: finalTotal }), 
+        JSON.stringify({ 
+            order_reference: orderRef, 
+            final_total: finalTotal,
+            receipt: {
+                subtotal: sellingSubtotal,
+                vip_discount: vipDiscount,
+                applied_vip_name: appliedVipName,
+                coupon_discount: couponDiscount,
+                delivery_charge: deliveryCharge
+            }
+        }), 
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
