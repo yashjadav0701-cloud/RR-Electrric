@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/rr",
+      "destination": "/admin.html"
+    }
+  ]
+}
