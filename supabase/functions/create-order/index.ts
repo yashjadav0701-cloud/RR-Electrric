@@ -7,25 +7,22 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight for the browser
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Initialize Supabase with the SERVICE_ROLE key to bypass RLS and perform secure admin math
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { customer, cart, couponCode, idempotencyKey } = await req.json()
+    const { customer, cart, couponCode, expectedTotal, idempotencyKey } = await req.json()
 
     if (!cart || cart.length === 0) {
       throw new Error("Cart is empty.")
     }
 
-    // 1. SECURE PRICING: Fetch trustworthy product data directly from the database
     const cartIds = cart.map((item: any) => item.id)
     const { data: dbProducts, error: prodErr } = await supabase
         .from('products')
@@ -37,7 +34,6 @@ serve(async (req) => {
     let sellingSubtotal = 0;
     const finalOrderItems = [];
 
-    // 2. VERIFY CART & SMART VARIANTS SECURELY
     for (const item of cart) {
       const dbProd = dbProducts.find((p: any) => p.id === item.id)
       if (!dbProd || !dbProd.is_active) throw new Error(`One or more products in your bag are unavailable.`)
@@ -71,9 +67,8 @@ serve(async (req) => {
       })
     }
 
-    // 3. SERVER-SIDE VIP ENGINE: Calculate exact discount securely
+    // SERVER-SIDE VIP ENGINE (Only fetches Active tiers)
     let vipDiscount = 0;
-    let appliedVipName = null;
     const { data: vipTiers } = await supabase
         .from('vip_tiers')
         .select('*')
@@ -84,11 +79,10 @@ serve(async (req) => {
         const validVip = vipTiers.find((v: any) => sellingSubtotal >= v.min_spend);
         if (validVip) {
             vipDiscount = (sellingSubtotal * validVip.discount_percentage) / 100;
-            appliedVipName = validVip.name.replace(/\*\*/g, '').trim();
         }
     }
 
-    // 4. SERVER-SIDE COUPON ENGINE: Verify and calculate securely
+    // SERVER-SIDE COUPON ENGINE (Validates actively)
     let couponDiscount = 0;
     let couponId = null;
     if (couponCode) {
@@ -118,11 +112,14 @@ serve(async (req) => {
                         couponDiscount = sellingSubtotal;
                     }
                 }
+            } else {
+                throw new Error(`Coupon '${couponCode}' is expired or usage limit reached.`);
             }
+        } else {
+            throw new Error(`Coupon '${couponCode}' is invalid or currently inactive.`);
         }
     }
 
-    // 5. SECURE DELIVERY CALCULATION
     const { data: configData } = await supabase
         .from('store_configurations')
         .select('config_value')
@@ -143,7 +140,11 @@ serve(async (req) => {
     const deliveryCharge = (discountedSubtotal >= freeAbove && freeAbove > 0) ? 0 : baseCharge;
     const finalTotal = discountedSubtotal + deliveryCharge;
 
-    // 6. UPSERT CUSTOMER (Create new or update existing by Phone number)
+    // STRICT PRICE & TIER VALIDATION (Prevents out-of-sync orders)
+    if (expectedTotal !== undefined && Math.abs(finalTotal - expectedTotal) > 0.01) {
+        throw new Error("Prices, VIP tiers, or offers have updated. Please refresh your cart to see the latest totals.");
+    }
+
     const { data: custData, error: custErr } = await supabase
         .from('customers')
         .upsert({
@@ -159,8 +160,7 @@ serve(async (req) => {
     if (custErr) throw custErr;
     const customerId = custData.id;
 
-    // 7. CREATE ORDER RECORD
-    const orderRef = 'RR-' + Math.floor(100000 + Math.random() * 900000); // e.g. RR-839201
+    const orderRef = 'RR-' + Math.floor(100000 + Math.random() * 900000); 
     const { data: orderData, error: orderErr } = await supabase
         .from('orders')
         .insert({
@@ -180,7 +180,6 @@ serve(async (req) => {
         
     if (orderErr) throw orderErr;
 
-    // 8. INSERT ALL ORDER ITEMS
     const itemsToInsert = finalOrderItems.map(item => ({
         order_id: orderData.id,
         ...item
@@ -188,25 +187,13 @@ serve(async (req) => {
     const { error: itemsErr } = await supabase.from('order_items').insert(itemsToInsert)
     if (itemsErr) throw itemsErr;
 
-    // 9. INCREMENT COUPON USAGE (If applied)
     if (couponId) {
         const { data: cData } = await supabase.from('coupons').select('used_count').eq('id', couponId).single()
         await supabase.from('coupons').update({ used_count: (cData?.used_count || 0) + 1 }).eq('id', couponId)
     }
 
-    // 10. SEND SUCCESS RESPONSE BACK TO APP.JS
     return new Response(
-        JSON.stringify({ 
-            order_reference: orderRef, 
-            final_total: finalTotal,
-            receipt: {
-                subtotal: sellingSubtotal,
-                vip_discount: vipDiscount,
-                applied_vip_name: appliedVipName,
-                coupon_discount: couponDiscount,
-                delivery_charge: deliveryCharge
-            }
-        }), 
+        JSON.stringify({ order_reference: orderRef, final_total: finalTotal }), 
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rr-electrric-core-v1';
+const CACHE_NAME = 'rr-electrric-core-v2';
 const SAFE_ASSETS = [
     '/',
     '/index.html',
@@ -6,7 +6,8 @@ const SAFE_ASSETS = [
     '/app.js',
     '/manifest.json',
     '/assets/logo-short.svg',
-    '/assets/logo-full.svg'
+    '/assets/logo-full.svg',
+    '/assets/icon.png'
 ];
 
 self.addEventListener('install', (e) => {

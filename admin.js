@@ -354,11 +354,15 @@
                     mrpSubtotal += itemMrp * item.quantity;
                     sellingSubtotal += item.total_price;
 
+                    let displayName = item.product_name_snapshot;
+                    if (item.is_pack) displayName += ` <span style="color:var(--primary); font-weight:800; font-size:11px; background:rgba(34,211,238,0.1); padding:2px 6px; border-radius:4px; margin-left:6px; display:inline-block; vertical-align:middle;">Pack of ${item.pack_qty}</span>`;
+                    if (item.selected_options) displayName += ` <div style="font-size:12px; color:var(--text-muted); margin-top:4px; font-weight:600;">${item.selected_options}</div>`;
+
                     return `
                     <div class="order-item-row" style="display: flex; gap: 16px; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border);">
-                        <img src="${img}" style="width: 80px; height: 80HVpx; object-fit: contain; border-radius: 6px; border: 1px solid var(--border); background: #ffffff; padding: 4px; flex-shrink: 0; box-shadow: var(--shadow-sm);">
+                        <img src="${img}" style="width: 80px; height: 80px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border); background: #ffffff; padding: 4px; flex-shrink: 0; box-shadow: var(--shadow-sm);">
                         <span style="flex:1; line-height: 1.4; font-size: 14px;">
-                            <span style="font-weight: 700; font-size: 15px;">${item.quantity} ×</span> ${item.product_name_snapshot}
+                            <span style="font-weight: 700; font-size: 15px;">${item.quantity} ×</span> ${displayName}
                         </span>
                     </div>
                     `;

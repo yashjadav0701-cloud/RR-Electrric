@@ -1387,26 +1387,31 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 32px; /* Increased breathing room for bigger logos */
+    gap: 16px;
     width: 100%;
-    flex-wrap: nowrap; /* Forces strict single-row horizontal arrangement */
+    flex-wrap: wrap; /* Allows safe wrapping to prevent cutoff on mobile */
+    padding: 4px 0;
 }
 
 .ribbon-logo {
-    height: 36px; /* Significantly larger on desktop */
+    height: 32px; 
     width: auto;
-    max-width: 90px; /* Relaxed width limit to prevent squishing */
+    max-width: 85px; 
     object-fit: contain;
-    /* Softer, tighter white glow so it highlights the shape without looking like a blurry blob */
-    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5)) drop-shadow(0 1px 1px rgba(255, 255, 255, 0.9));
-    opacity: 0.95;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease;
+    background: #ffffff; /* Integrates internal SVG white backgrounds cleanly */
+    padding: 4px 8px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    opacity: 0.9;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, opacity 0.2s ease;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.ribbon-logo:hover {
-    transform: scale(1.15) translateY(-2px);
-    filter: drop-shadow(0 4px 10px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 2px rgba(255, 255, 255, 1));
+.ribbon-logo:hover, .ribbon-logo:active {
+    transform: scale(1.05) translateY(-2px);
+    opacity: 1;
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4); /* Subtle cyan interactive glow */
 }
 
 /* Content */

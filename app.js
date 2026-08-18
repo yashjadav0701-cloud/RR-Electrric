@@ -210,9 +210,9 @@
             // Initial routing based on URL hash (if any) or default to home
             this.routeInitial();
 
-            // Hide preloader after initial load (minimum 3 seconds)
+            // Hide preloader smoothly after data load (removed artificial 3-second bottleneck)
             const elapsed = Date.now() - this._initStartTime;
-            const remainingTime = Math.max(0, 3000 - elapsed);
+            const remainingTime = Math.max(0, 300 - elapsed); // 300ms minimum to prevent aggressive flashing
             
             setTimeout(() => {
                 const preloader = document.getElementById('global-preloader');
@@ -1775,11 +1775,14 @@
                 // Generate idempotency key to prevent double charging on accidental double taps
                 const idempotencyKey = Date.now().toString() + '-' + Math.random().toString(36).substring(2, 9);
                 
+                const clientTotals = this.calculateTotals();
+
                 const { data, error } = await supabase.functions.invoke('create-order', {
                     body: {
                         customer: customerData,
                         cart: this.state.cart,
                         couponCode: this.state.appliedCouponCode,
+                        expectedTotal: clientTotals.total,
                         idempotencyKey: idempotencyKey
                     }
                 });
@@ -1789,9 +1792,6 @@
 
                 // Keep button disabled to prevent resubmission
                 btn.textContent = 'Processing Securely...';
-
-                // Grab frontend data for the product names & MRP (Server handles the actual billing math)
-                const clientTotals = this.calculateTotals();
 
                 // 1. CREATE SUCCESS ANIMATION OVERLAY
                 const overlay = document.createElement('div');
@@ -1816,9 +1816,9 @@
                 this.state.appliedCouponCode = null;
                 this.saveCart();
 
-                // Wait 2.5 seconds, then send to WhatsApp with SERVER math, then route home
+                // Wait 2.5 seconds, then send to WhatsApp and route home
                 setTimeout(() => {
-                    this.sendWhatsAppOrder(data.order_reference, customerData, clientTotals, data.receipt);
+                    this.sendWhatsAppOrder(data.order_reference, customerData, clientTotals);
                     document.body.removeChild(overlay);
                     this.navigate('home');
                 }, 2500);
