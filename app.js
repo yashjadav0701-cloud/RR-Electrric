@@ -1091,7 +1091,9 @@
                 lightbox.innerHTML = `
                     <div class="lightbox-overlay" onclick="document.getElementById('product-lightbox').classList.add('hidden')"></div>
                     <div class="lightbox-content">
-                        <button class="lightbox-close" onclick="document.getElementById('product-lightbox').classList.add('hidden')">&times;</button>
+                        <button class="lightbox-close" onclick="document.getElementById('product-lightbox').classList.add('hidden')" title="Close">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
                         <div class="panzoom-container" id="panzoom-container">
                             <img src="" id="lightbox-img">
                         </div>
@@ -1102,40 +1104,87 @@
                 const imgEl = document.getElementById('lightbox-img');
                 const container = document.getElementById('panzoom-container');
 
-                // Tap to zoom logic (Centers strictly on the exact tap coordinate)
+                // Advanced Pan & Zoom Logic (Amazon Style)
                 let isZoomed = false;
-                imgEl.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    if (!isZoomed) {
-                        const rect = imgEl.getBoundingClientRect();
-                        const x = ((e.clientX - rect.left) / rect.width) * 100;
-                        const y = ((e.clientY - rect.top) / rect.height) * 100;
-                        imgEl.style.transformOrigin = `${x}% ${y}%`;
-                        imgEl.style.transform = 'scale(2.5)';
-                        imgEl.style.cursor = 'zoom-out';
-                        isZoomed = true;
+                let lastTap = 0;
+                let isDragging = false;
+                let startX, startY;
+                let translateX = 0, translateY = 0;
+                const SCALE = 2.5;
+
+                const resetZoom = () => {
+                    isZoomed = false;
+                    translateX = 0;
+                    translateY = 0;
+                    imgEl.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                    imgEl.style.transform = 'translate(0px, 0px) scale(1)';
+                    imgEl.style.cursor = 'zoom-in';
+                };
+                imgEl.resetZoom = resetZoom;
+
+                imgEl.addEventListener('pointerdown', function(e) {
+                    e.preventDefault(); 
+                    const currentTime = new Date().getTime();
+                    const tapLength = currentTime - lastTap;
+                    
+                    if (tapLength < 300 && tapLength > 0) {
+                        // Double Tap / Double Click
+                        if (!isZoomed) {
+                            isZoomed = true;
+                            imgEl.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                            imgEl.style.transform = `translate(0px, 0px) scale(${SCALE})`;
+                            imgEl.style.cursor = 'grab';
+                        } else {
+                            resetZoom();
+                        }
                     } else {
-                        imgEl.style.transform = 'scale(1)';
-                        imgEl.style.cursor = 'zoom-in';
-                        isZoomed = false;
+                        // Single Tap / Start Drag
+                        if (isZoomed) {
+                            isDragging = true;
+                            startX = e.clientX - translateX;
+                            startY = e.clientY - translateY;
+                            imgEl.style.transition = 'none'; // Remove transition for instant drag response
+                            imgEl.style.cursor = 'grabbing';
+                            imgEl.setPointerCapture(e.pointerId);
+                        }
                     }
+                    lastTap = currentTime;
                 });
 
-                // Follow mouse on desktop when zoomed
-                imgEl.addEventListener('mousemove', function(e) {
-                    if (isZoomed) {
-                        const rect = container.getBoundingClientRect();
-                        const x = ((e.clientX - rect.left) / rect.width) * 100;
-                        const y = ((e.clientY - rect.top) / rect.height) * 100;
-                        imgEl.style.transformOrigin = `${x}% ${y}%`;
-                    }
+                imgEl.addEventListener('pointermove', function(e) {
+                    if (!isDragging || !isZoomed) return;
+                    e.preventDefault();
+                    
+                    // 1. Calculate raw user movement
+                    let tx = e.clientX - startX;
+                    let ty = e.clientY - startY;
+                    
+                    // 2. Mathematically calculate strict boundary walls based on current image size
+                    const maxX = (imgEl.offsetWidth * (SCALE - 1)) / 2;
+                    const maxY = (imgEl.offsetHeight * (SCALE - 1)) / 2;
+                    
+                    // 3. Force the image to stop at the walls using min/max constraints
+                    translateX = Math.max(-maxX, Math.min(maxX, tx));
+                    translateY = Math.max(-maxY, Math.min(maxY, ty));
+                    
+                    imgEl.style.transform = `translate(${translateX}px, ${translateY}px) scale(${SCALE})`;
                 });
+
+                imgEl.addEventListener('pointerup', function(e) {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    imgEl.style.cursor = 'grab';
+                    imgEl.releasePointerCapture(e.pointerId);
+                });
+
+                // Ensure overlay clicks also reset zoom state
+                document.querySelector('.lightbox-overlay').addEventListener('click', resetZoom);
+                document.querySelector('.lightbox-close').addEventListener('click', resetZoom);
             }
             
             const imgEl = document.getElementById('lightbox-img');
             imgEl.src = imgSrc;
-            imgEl.style.transform = 'scale(1)';
-            imgEl.style.cursor = 'zoom-in';
+            if (imgEl.resetZoom) imgEl.resetZoom();
             lightbox.classList.remove('hidden');
         },
 
