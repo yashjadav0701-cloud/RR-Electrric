@@ -2292,9 +2292,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .lightbox-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.92);
-    backdrop-filter: blur(5px);
-    cursor: pointer;
+    background: #ffffff; /* Pure white background like Amazon */
+    cursor: zoom-out;
 }
 .lightbox-content {
     position: relative;
@@ -2309,9 +2308,9 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     position: absolute;
     top: 20px;
     right: 20px;
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: transparent;
+    color: #0f172a; /* Dark sleek button */
+    border: none;
     width: 44px;
     height: 44px;
     border-radius: 50%;
@@ -2321,15 +2320,15 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, background 0.2s ease;
 }
 .lightbox-close:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: #f1f5f9;
     transform: scale(1.05);
 }
 .lightbox-close svg {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     stroke: currentColor;
 }
 .panzoom-container {
@@ -2342,19 +2341,20 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     overflow: hidden;
 }
 #lightbox-img {
-    width: auto;
-    height: auto;
-    max-width: 90vw;
-    max-height: 90vh;
+    width: 100%;
+    height: 100%;
+    max-width: 100vw;
+    max-height: 100vh;
     object-fit: contain;
-    background: #ffffff; /* Provides a solid clean plate */
-    border-radius: 8px; /* Premium smooth corners */
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5); /* Separates image from the dark background */
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
     transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
     will-change: transform;
-    touch-action: none; /* CRITICAL: Prevents mobile browser from interfering with dragging */
+    touch-action: none;
     user-select: none;
     -webkit-user-drag: none;
+    mix-blend-mode: normal;
 }
 
 /* ============================================================
@@ -2768,4 +2768,31 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .cross-sell-btn:hover {
     background: var(--primary);
     color: #ffffff;
+}
+
+.btn-invoice {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f8fafc;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.btn-invoice:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+.btn-invoice svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
 }

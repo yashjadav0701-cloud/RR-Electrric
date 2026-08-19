@@ -442,7 +442,7 @@ body {
 .tabs-container { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
 .tab-btn { background: none; border: none; font-size: 16px; font-weight: 600; color: var(--text-muted); cursor: pointer; padding: 8px 16px; border-radius: var(--radius); transition: all 0.2s; }
 .tab-btn.active { background: var(--text-main); color: white; }
-.orders-layout { display: flex; flex-direction: column; gap: 24px; max-width: 800px; }
+.orders-layout { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 1600px; }
 .admin-order-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
 .order-card-header { background: var(--bg-main); padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
 .order-card-body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
@@ -577,6 +577,390 @@ body {
     .btn-text:hover {
         background: transparent;
     }
+} /* THE FIX: THIS BRACE CLOSES THE CORRUPTED MOBILE MEDIA QUERY */
 
+
+/* ============================================================
+   ADMIN DASHBOARD: WIDESCREEN ORDER LAYOUT & ACTION BUTTONS
+   ============================================================ */
+.admin-order-grid {
+    display: flex;
+    flex-direction: column; 
+    gap: 16px;
+    padding: 16px;
+    background: var(--bg-main);
+    border-top: 1px solid var(--border);
+}
+
+/* WIDESCREEN DESKTOP VIEW */
+@media (min-width: 1024px) {
+    .admin-order-grid {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr) 220px;
+        align-items: start;
+        gap: 24px;
+    }
     
+    .action-buttons-stack {
+        display: flex;
+        flex-direction: column; /* Vertical stacking on PC */
+        gap: 10px;
+        width: 100%;
+    }
+}
 
+.admin-order-col {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+}
+
+.col-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 8px;
+}
+
+/* UNIFIED BUTTON STYLES */
+.btn-admin-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    text-decoration: none;
+}
+
+/* Strict SVG bounds so they never blow up on PC */
+.btn-admin-action svg { 
+    width: 18px !important; 
+    height: 18px !important; 
+    min-width: 18px !important;
+    min-height: 18px !important;
+    fill: none; 
+    stroke: currentColor; 
+    stroke-width: 2; 
+    flex-shrink: 0;
+}
+
+.btn-call { background: var(--bg-surface); color: var(--text-main); border-color: var(--border); }
+.btn-call:hover { background: var(--bg-main); }
+.btn-wa { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.btn-wa:hover { background: #bbf7d0; }
+.btn-accept { background: var(--success); color: #ffffff; }
+.btn-accept:hover { background: #16a34a; }
+.btn-reject { background: var(--danger); color: #ffffff; }
+.btn-reject:hover { background: #ef4444; }
+.btn-invoice { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; }
+.btn-invoice:hover { background: #dbeafe; }
+
+/* MOBILE VIEW (HORIZONTAL 1-LINE, HIDE TEXT) */
+@media (max-width: 1023px) {
+    .action-buttons-stack {
+        display: flex;
+        flex-direction: row !important; /* Horizontal layout for mobile */
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+    }
+    
+    .btn-admin-action {
+        flex: 1; /* Stretch all buttons evenly on 1 line */
+        padding: 14px 0 !important; /* Larger touch targets */
+        height: 48px;
+    }
+
+    .btn-admin-action .btn-text-label {
+        display: none !important; /* Hide text */
+    }
+
+    .btn-admin-action svg {
+        width: 22px !important;
+        height: 22px !important;
+        min-width: 22px !important;
+        min-height: 22px !important;
+        margin: 0 !important; /* Perfect centering */
+    }
+}
+
+/* Stops SVGs from exploding to giant sizes on Desktop */
+.btn-admin-action svg { 
+    width: 18px !important; 
+    height: 18px !important; 
+    min-width: 18px !important;
+    min-height: 18px !important;
+    fill: none; 
+    stroke: currentColor; 
+    stroke-width: 2; 
+    flex-shrink: 0;
+}
+
+.btn-call { background: var(--bg-surface); color: var(--text-main); border-color: var(--border); }
+.btn-call:hover { background: var(--bg-main); }
+.btn-wa { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.btn-wa:hover { background: #bbf7d0; }
+.btn-accept { background: var(--success); color: #ffffff; }
+.btn-accept:hover { background: #16a34a; }
+.btn-reject { background: var(--danger); color: #ffffff; }
+.btn-reject:hover { background: #ef4444; }
+.btn-invoice { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; }
+.btn-invoice:hover { background: #dbeafe; }
+
+/* THE FIX: MOBILE HORIZONTAL BUTTON GRID & HIDE TEXT */
+@media (max-width: 768px) {
+    .action-btn-row {
+        flex-direction: row !important; /* Forces buttons side-by-side */
+    }
+    .btn-admin-action {
+        flex: 1; /* Each button takes up exactly 50% */
+        padding: 12px 0; /* Taller touch targets for mobile */
+    }
+    .btn-admin-action .btn-text-label {
+        display: none !important; /* Hides text on phones */
+    }
+    /* Make SVGs slightly bigger on mobile since there is no text */
+    .btn-admin-action svg {
+        width: 22px !important;
+        height: 22px !important;
+        min-width: 22px !important;
+        min-height: 22px !important;
+    }
+    /* Ensure the full-width invoice button still stretches across the bottom */
+    .btn-invoice.full-width-btn {
+        width: 100%;
+        display: flex;
+    }
+    /* We keep the text for the invoice button so it's clear what it does */
+    .btn-invoice .btn-text-label {
+        display: inline-block !important; 
+    }
+}
+
+/* ============================================================
+   ADMIN DASHBOARD: WIDESCREEN ORDER LAYOUT & INVOICE BUTTON
+   ============================================================ */
+.admin-order-grid {
+    display: flex;
+    flex-direction: column; 
+    gap: 16px;
+    padding: 16px;
+    background: var(--bg-main);
+    border-top: 1px solid var(--border);
+}
+
+@media (min-width: 1024px) {
+    .admin-order-grid {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr) 220px;
+        align-items: start;
+        gap: 24px;
+    }
+}
+
+.admin-order-col {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+}
+
+.col-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 8px;
+}
+
+.action-buttons-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.btn-admin-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.btn-admin-action svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; }
+.btn-call { background: var(--bg-surface); color: var(--text-main); border-color: var(--border); }
+.btn-call:hover { background: var(--bg-main); }
+.btn-wa { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.btn-wa:hover { background: #bbf7d0; }
+.btn-accept { background: var(--success); color: #ffffff; }
+.btn-accept:hover { background: #16a34a; }
+.btn-reject { background: var(--danger); color: #ffffff; }
+.btn-reject:hover { background: #ef4444; }
+
+/* Dedicated Invoice Button Style */
+.btn-invoice { 
+    background: #eff6ff; 
+    color: var(--primary); 
+    border-color: #bfdbfe; 
+}
+.btn-invoice:hover { 
+    background: #dbeafe; 
+}
+
+/* ============================================================
+   ADMIN DASHBOARD: WIDESCREEN ORDER LAYOUT & INVOICE BUTTON
+   ============================================================ */
+.admin-order-grid {
+    display: flex;
+    flex-direction: column; 
+    gap: 16px;
+    padding: 16px;
+    background: var(--bg-main);
+    border-top: 1px solid var(--border);
+}
+
+@media (min-width: 1024px) {
+    .admin-order-grid {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr) 220px;
+        align-items: start;
+        gap: 24px;
+    }
+}
+
+.admin-order-col {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+}
+
+.col-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 8px;
+}
+
+.action-buttons-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.action-btn-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.btn-admin-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+/* THE FIX: STOP SVGS FROM EXPLODING ON DESKTOP */
+.btn-admin-action svg { 
+    width: 18px !important; 
+    height: 18px !important; 
+    min-width: 18px !important;
+    min-height: 18px !important;
+    max-width: 18px !important;
+    max-height: 18px !important;
+    fill: none; 
+    stroke: currentColor; 
+    stroke-width: 2; 
+    flex-shrink: 0;
+}
+
+.btn-call { background: var(--bg-surface); color: var(--text-main); border-color: var(--border); }
+.btn-call:hover { background: var(--bg-main); }
+.btn-wa { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.btn-wa:hover { background: #bbf7d0; }
+.btn-accept { background: var(--success); color: #ffffff; }
+.btn-accept:hover { background: #16a34a; }
+.btn-reject { background: var(--danger); color: #ffffff; }
+.btn-reject:hover { background: #ef4444; }
+.btn-invoice { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; }
+.btn-invoice:hover { background: #dbeafe; }
+
+/* THE FIX: MOBILE HORIZONTAL GRID & HIDE TEXT */
+@media (max-width: 768px) {
+    .action-btn-row {
+        flex-direction: row !important; /* Forces buttons side-by-side */
+    }
+    
+    .btn-admin-action {
+        flex: 1; /* Each button takes up exactly 50% */
+        padding: 12px 0; /* Taller touch targets for mobile */
+    }
+    
+    .btn-admin-action .btn-text-label {
+        display: none !important; /* Hides text on phones */
+    }
+    
+    /* Make SVGs slightly bigger on mobile since there is no text */
+    .btn-admin-action svg {
+        width: 22px !important;
+        height: 22px !important;
+        min-width: 22px !important;
+        min-height: 22px !important;
+    }
+    
+    /* Ensure the full-width invoice button still stretches across the bottom */
+    .btn-invoice.full-width-btn {
+        width: 100%;
+        display: flex;
+    }
+    
+    /* We keep the text for the invoice button so it's clear what it does */
+    .btn-invoice .btn-text-label {
+        display: inline-block !important; 
+    }
+}

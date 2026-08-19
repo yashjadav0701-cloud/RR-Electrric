@@ -1,6 +1,271 @@
 (function() {
     'use strict';
 
+    // --- INVOICE GENERATOR CONFIGURATION ---
+    const InvoiceSettings = {
+        storeName: "RR ELECTRRIC",
+        address: "Shop No 2, Dharmdeep flat, vaishali road, beside sai vatika party plot",
+        phone: "7573967357",
+        email: "rrelectrric@gmail.com",
+        terms: "Thank you for doing business with us.",
+        description: "2 years replacement guarantee",
+        signatoryName: "Rajan R Vaghela",
+        logoUrl: "/assets/logo-full.svg", // Replaced with your full logo
+        signatureUrl: "/assets/sign.png" 
+    };
+
+    function numberToWords(num) {
+        const a = ['','One ','Two ','Three ','Four ', 'Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
+        const b = ['', '', 'Twenty','Thirty','Forty','Fifty', 'Sixty','Seventy','Eighty','Ninety'];
+        if ((num = num.toString()).length > 9) return 'Overflow';
+        let n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+        if (!n) return; let str = '';
+        str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Lakh ' : '';
+        str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+        str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+        str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+        str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) + 'Rupees Only' : 'Rupees Only';
+        return str;
+    }
+
+    window.generateInvoice = async function(orderId, btnElement) {
+        const order = AdminApp.state.orders.find(o => o.id === orderId);
+        if (!order) return CustomUI.alert("Order data not found.");
+
+        const originalBtnText = btnElement.innerHTML;
+        btnElement.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"></path></svg> Generating...`;
+        btnElement.disabled = true;
+
+        try {
+            const c = order.customers;
+            const items = order.order_items;
+            
+            const orderDateObj = new Date(order.created_at);
+            const dDate = orderDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+            const dTime = orderDateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+            const safeCustomerName = c.name.replace(/[^a-zA-Z0-9]/g, '_');
+            const pdfFilename = `${safeCustomerName}-${order.order_reference}.pdf`;
+
+            let totalQty = 0;
+            let finalTotal = 0;
+            let totalMRP = 0;
+            let itemsHTML = '';
+            let warrantiesList = [];
+
+            items.forEach((item, index) => {
+                let itemTotal = item.total_price;
+                let unitPrice = itemTotal / item.quantity;
+                
+                // Fallback to unit price if MRP is not set
+                let mrpPrice = (item.products && item.products.mrp_price > unitPrice) ? item.products.mrp_price : unitPrice;
+                
+                totalQty += item.quantity;
+                finalTotal += itemTotal;
+                totalMRP += (mrpPrice * item.quantity);
+
+                let displayName = item.product_name_snapshot;
+                if (item.is_pack) displayName += ` (Pack of ${item.pack_qty})`;
+                if (item.selected_options) displayName += ` - ${item.selected_options}`;
+
+                if (item.products?.warranty) {
+                    warrantiesList.push(`
+                        <div style="display: flex; align-items: flex-start; gap: 6px; margin-bottom: 6px;">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#000" stroke-width="2.5" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                            <div style="font-size: 12px; line-height: 1.4; color: #333;">
+                                <strong style="color: #000;">${item.products.warranty} Brand Warranty</strong> &mdash; ${item.product_name_snapshot}
+                            </div>
+                        </div>
+                    `);
+                }
+
+                // 6 Columns. Flawless single-border system (Right & Bottom only on cells)
+                itemsHTML += `
+                    <tr style="background: #fff; color: #000;">
+                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">${index + 1}</td>
+                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; font-weight: bold; box-sizing: border-box;">${displayName}</td>
+                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">${item.quantity}</td>
+                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">₹ ${mrpPrice.toFixed(2)}</td>
+                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">₹ ${unitPrice.toFixed(2)}</td>
+                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">₹ ${itemTotal.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            // Dynamically construct Calculation Rows Array to mathematically lock the Rowspan
+            let calcRowsArray = [];
+            
+            let productDiscount = totalMRP - finalTotal;
+            if (productDiscount > 0) {
+                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 12px; box-sizing: border-box;" colspan="2">Product Discount</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 8px 12px; box-sizing: border-box; color: #15803d; font-weight: bold;">- ₹ ${productDiscount.toFixed(2)}</td>`);
+            }
+
+            if (order.vip_discount > 0) {
+                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 12px; box-sizing: border-box;" colspan="2">VIP Discount</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 8px 12px; box-sizing: border-box; color: #15803d; font-weight: bold;">- ₹ ${order.vip_discount.toFixed(2)}</td>`);
+            }
+            if (order.coupon_discount > 0) {
+                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 12px; box-sizing: border-box;" colspan="2">Coupon Discount</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 8px 12px; box-sizing: border-box; color: #15803d; font-weight: bold;">- ₹ ${order.coupon_discount.toFixed(2)}</td>`);
+            }
+            if (order.delivery_charge > 0) {
+                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 12px; box-sizing: border-box;" colspan="2">Delivery Charge</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 8px 12px; box-sizing: border-box;">₹ ${order.delivery_charge.toFixed(2)}</td>`);
+            }
+
+            calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 12px 12px; font-weight: bold; font-size: 15px; box-sizing: border-box; background: #f8fafc;" colspan="2">Final Total</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; font-weight: bold; font-size: 15px; box-sizing: border-box; background: #f8fafc;">₹ ${order.final_total.toFixed(2)}</td>`);
+
+            const rowCount = calcRowsArray.length;
+            let amountInWords = numberToWords(order.final_total);
+            
+            // Amount in words strictly spans exactly 3 columns (#, Item Name, Qty). 
+            // The remaining 3 columns are perfectly consumed by calcRowsArray (Label colspan="2", Value colspan="1").
+            let calculationHTML = `
+                <tr style="color: #000;">
+                    <td colspan="3" rowspan="${rowCount}" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 16px; vertical-align: top; box-sizing: border-box;">
+                        <span style="font-weight: bold; font-size: 11px; text-transform: uppercase; color: #555;">Invoice Amount In Words:</span><br>
+                        <span style="font-weight: bold; font-size: 14px; display: inline-block; margin-top: 8px;">${amountInWords}</span>
+                    </td>
+                    ${calcRowsArray[0]}
+                </tr>
+            `;
+
+            for (let i = 1; i < rowCount; i++) {
+                calculationHTML += `
+                <tr style="color: #000;">
+                    ${calcRowsArray[i]}
+                </tr>`;
+            }
+
+            let descriptionParts = [];
+            if (warrantiesList.length > 0) {
+                descriptionParts.push(`<div style="display: flex; flex-direction: column; gap: 4px;">${warrantiesList.join('')}</div>`);
+            }
+            if (order.notes) {
+                descriptionParts.push(`<strong>Order Note:</strong><br><span style="color: #333;">${order.notes.replace(/\n/g, '<br>')}</span>`);
+            }
+            let descriptionHTML = descriptionParts.join('<br><br>');
+
+            const invoiceWrapper = document.createElement('div');
+            invoiceWrapper.style.position = 'absolute';
+            invoiceWrapper.style.left = '-9999px';
+            invoiceWrapper.style.top = '0';
+            
+            invoiceWrapper.innerHTML = `
+                <div id="pdf-dynamic-box" style="width: 800px; padding: 30px; background: #fff; box-sizing: border-box; font-family: Helvetica, Arial, sans-serif; color: #000;">
+                    <h2 style="text-align: center; font-size: 24px; font-weight: bold; margin: 0 0 20px 0; color: #000;">Tax Invoice</h2>
+                    
+                    <table style="width: 100%; border-collapse: separate; border-spacing: 0; border-top: 1px solid #000; border-left: 1px solid #000; font-size: 14px; background: #fff;">
+                        
+                        <!-- HEADER -->
+                        <tr style="color: #000;">
+                            <td colspan="6" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 20px; box-sizing: border-box;">
+                                <div style="display: flex; align-items: center; gap: 24px;">
+                                    <img src="${InvoiceSettings.logoUrl}" style="max-width: 180px; height: 60px; object-fit: contain;">
+                                    <div>
+                                        <h1 style="margin: 0 0 6px 0; font-size: 22px; font-weight: bold; color: #000;">${InvoiceSettings.storeName}</h1>
+                                        <p style="margin: 0 0 4px 0; font-size: 13px; color: #333;">${InvoiceSettings.address}</p>
+                                        <p style="margin: 0; font-size: 13px; color: #333;">Phone: <strong style="color: #000;">${InvoiceSettings.phone}</strong> &nbsp;|&nbsp; Email: <strong style="color: #000;">${InvoiceSettings.email}</strong></p>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- INFO -->
+                        <tr style="color: #000;">
+                            <td colspan="4" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 16px; vertical-align: top; width: 60%; box-sizing: border-box;">
+                                <p style="margin: 0 0 10px 0; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #555;">Bill To:</p>
+                                <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold; text-transform: capitalize; color: #000;">${c.name}</p>
+                                <p style="margin: 0 0 4px 0; font-size: 13px; color: #000;"><strong>Phone:</strong> ${c.phone}</p>
+                                <p style="margin: 0 0 4px 0; font-size: 13px; color: #000;"><strong>Address:</strong> ${c.address}</p>
+                                <p style="margin: 0; font-size: 13px; color: #000;"><strong>Area:</strong> ${c.area} - Nadiad ${c.landmark ? `<br><strong>Landmark:</strong> ${c.landmark}` : ''}</p>
+                            </td>
+                            <td colspan="2" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 16px; vertical-align: top; width: 40%; box-sizing: border-box;">
+                                <p style="margin: 0 0 10px 0; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #555;">Invoice Details:</p>
+                                <table style="width: 100%; border: none; font-size: 13px; line-height: 1.8; color: #000;">
+                                    <tr><td style="width: 60px; padding: 2px 0; border: none;">No:</td><td style="padding: 2px 0; border: none;"><strong>${order.order_reference}</strong></td></tr>
+                                    <tr><td style="padding: 2px 0; border: none;">Date:</td><td style="padding: 2px 0; border: none;"><strong>${dDate}</strong></td></tr>
+                                    <tr><td style="padding: 2px 0; border: none;">Time:</td><td style="padding: 2px 0; border: none;"><strong>${dTime}</strong></td></tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <!-- TABLE HEADERS (6 Columns) -->
+                        <tr style="background: #f8fafc; font-weight: bold; color: #000;">
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; width: 5%; box-sizing: border-box;">#</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; width: 41%; box-sizing: border-box;">Item Name</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; width: 8%; box-sizing: border-box;">Qty</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; width: 14%; box-sizing: border-box;">MRP</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; width: 14%; box-sizing: border-box;">RR Price</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; width: 18%; box-sizing: border-box;">Amount</td>
+                        </tr>
+
+                        ${itemsHTML}
+
+                        <!-- ITEM TOTALS -->
+                        <tr style="background: #f8fafc; font-weight: bold; color: #000;">
+                            <td colspan="2" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">Total</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">${totalQty}</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">₹ ${totalMRP.toFixed(2)}</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">₹ ${finalTotal.toFixed(2)}</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">₹ ${finalTotal.toFixed(2)}</td>
+                        </tr>
+
+                        <!-- CALCULATIONS -->
+                        ${calculationHTML}
+
+                        <!-- FOOTER -->
+                        <tr style="color: #000;">
+                            <td colspan="4" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 0; vertical-align: top; box-sizing: border-box;">
+                                <div style="border-bottom: 1px solid #000; padding: 8px 16px; font-weight: bold; background: #f8fafc; text-transform: uppercase; font-size: 11px; color: #64748b;">Description & Notes:</div>
+                                <div style="padding: 16px; line-height: 1.6; font-size: 13px;">${descriptionHTML}</div>
+                            </td>
+                            <td colspan="2" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 0; vertical-align: top; box-sizing: border-box;">
+                                <div style="border-bottom: 1px solid #000; padding: 8px 16px; font-weight: bold; background: #f8fafc; text-transform: uppercase; font-size: 11px; color: #64748b;">Store Message:</div>
+                                <div style="padding: 16px; border-bottom: 1px solid #000; line-height: 1.6; font-size: 13px;">${InvoiceSettings.terms}</div>
+                                <div style="padding: 8px 16px; border-bottom: 1px solid #000; font-weight: bold; background: #f8fafc; text-transform: uppercase; font-size: 11px; color: #64748b;">For ${InvoiceSettings.storeName}:</div>
+                                <div style="padding: 16px; text-align: center;">
+                                    <img src="${InvoiceSettings.signatureUrl}" style="height: 50px; margin-bottom: 5px; object-fit: contain;" onerror="this.style.display='none'"><br>
+                                    <span style="font-size: 14px; font-weight: bold;">${InvoiceSettings.signatoryName}</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+
+            document.body.appendChild(invoiceWrapper);
+
+            setTimeout(async () => {
+                try {
+                    const contentBox = document.getElementById('pdf-dynamic-box');
+                    const exactHeight = contentBox.offsetHeight + 2; 
+
+                    const opt = {
+                        margin:       0,
+                        filename:     pdfFilename,
+                        image:        { type: 'jpeg', quality: 0.75 }, 
+                        html2canvas:  { scale: 3, useCORS: true, windowWidth: 800 }, 
+                        jsPDF:        { unit: 'px', format: [800, exactHeight], orientation: 'portrait' }
+                    };
+
+                    await html2pdf().set(opt).from(contentBox).save();
+                } catch (err) {
+                    console.error("PDF Generation Error:", err);
+                    CustomUI.alert("Failed to generate PDF. Check console for details.");
+                } finally {
+                    if (document.body.contains(invoiceWrapper)) {
+                        document.body.removeChild(invoiceWrapper);
+                    }
+                    btnElement.innerHTML = originalBtnText;
+                    btnElement.disabled = false;
+                }
+            }, 150);
+        } catch (err) {
+            console.error("Critical PDF Error:", err);
+            CustomUI.alert("Initialization Failed: " + err.message);
+            btnElement.innerHTML = originalBtnText;
+            btnElement.disabled = false;
+        }
+    };
+
     // Custom UI Engine for Modals & Selects
     const CustomUI = {
         dialogTemplate: `
@@ -12,8 +277,6 @@
                         <button id="custom-dialog-cancel" class="btn-secondary">Cancel</button>
                         <button id="custom-dialog-confirm" class="btn-primary">OK</button>
                     </div>
-                </div>
-            </div>
         `,
         init: function() {
             if (!document.getElementById('custom-dialog')) {
@@ -270,15 +533,25 @@
             tbody.innerHTML = recent.map(o => {
                 const date = new Date(o.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
                 const isPending = o.status === 'pending';
+                
+                // Compact SVG icons to save horizontal space
+                const statusIcon = isPending 
+                    ? `<div style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #fee2e2; color: #991b1b;" title="Pending">
+                           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                       </div>`
+                    : `<div style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #dcfce7; color: #166534;" title="Completed">
+                           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                       </div>`;
+
                 return `
                     <tr style="border-bottom: 1px solid var(--border);">
                         <td style="padding: 12px 16px; font-weight: 600;">${o.order_reference}</td>
-                        <td style="padding: 12px 16px; color: var(--text-muted);">${date}</td>
-                        <td style="padding: 12px 16px; font-weight: 600;">₹${o.final_total}</td>
+                        <td style="padding: 12px 16px; color: var(--text-muted); white-space: nowrap; text-align: center;">${date}</td>
+                        <td style="padding: 12px 16px; font-weight: 600; text-align: center;">₹${o.final_total}</td>
                         <td style="padding: 12px 16px;">
-                            <span class="status-badge ${isPending ? 'status-inactive' : 'status-active'}">
-                                ${isPending ? 'Pending' : 'Completed'}
-                            </span>
+                            <div style="display: flex; justify-content: center;">
+                                ${statusIcon}
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -313,7 +586,7 @@
                 .select(`
                     *,
                     customers (*),
-                    order_items (*, products(image_urls, mrp_price, selling_price)),
+                    order_items (*, products(image_urls, mrp_price, selling_price, warranty)),
                     coupons (code)
                 `)
                 .eq('status', this.state.currentOrderTab)
@@ -377,43 +650,42 @@
                 
                 if (isPending) {
                     actionHtml = `
-                        <div class="order-card-actions" style="display: flex; gap: 6px; flex-wrap: nowrap; align-items: center; width: 100%;">
-                            <a href="tel:${cleanPhone}" class="btn-secondary" style="display:inline-flex; flex:1; align-items:center; justify-content:center; gap:4px; padding: 8px 6px; text-decoration:none; font-size:12px; color:var(--text-main); white-space:nowrap;">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                Call
+                        <div class="order-card-actions" style="display: flex; gap: 8px; flex-wrap: nowrap; align-items: center; width: 100%;">
+                            <a href="tel:${cleanPhone}" title="Call Customer" style="display: flex; flex: 1; align-items: center; justify-content: center; height: 30px; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; color: #0f172a; transition: all 0.2s;">
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                             </a>
-                            <button class="btn-secondary" style="display:inline-flex; flex:1; align-items:center; justify-content:center; gap:4px; padding: 8px 6px; font-size:12px; color:#16a34a; border-color:#bbf7d0; background:#f0fdf4; white-space:nowrap;" onclick="AdminApp.contactCustomer('${c.phone}', '${order.order_reference}')">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                                WhatsApp
+                            <button title="WhatsApp Customer" style="display: flex; flex: 1; align-items: center; justify-content: center; height: 30px; background: #dcfce7; border: 1px solid #bbf7d0; border-radius: 6px; color: #166534; cursor: pointer; transition: all 0.2s;" onclick="AdminApp.contactCustomer('${c.phone}', '${order.order_reference}')">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none"><path d="M11.99 0a11.96 11.96 0 00-10.3 18.06L0 24l6.09-1.6a11.94 11.94 0 105.9-22.4zM12 21.93a9.92 9.92 0 01-5.07-1.38l-.36-.21-3.77.99 1.01-3.68-.24-.37A9.87 9.87 0 1112 21.93zm5.42-7.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.26-.46-2.39-1.4-.88-.74-1.48-1.64-1.65-1.94-.17-.3 0-.46.13-.6.13-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.2-.24-.58-.48-.5-.67-.51-.17 0-.37 0-.57 0-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.06 2.88 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35z"/></svg>
                             </button>
-                            <button class="btn-danger" style="display:inline-flex; flex:1; align-items:center; justify-content:center; gap:4px; padding: 8px 6px; font-size:12px; white-space:nowrap;" onclick="AdminApp.rejectOrder('${order.id}')">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                Reject
+                            <button title="Reject Order" style="display: flex; flex: 1; align-items: center; justify-content: center; height: 30px; background: #ef4444; border: 1px solid #dc2626; border-radius: 6px; color: #fff; cursor: pointer; transition: all 0.2s;" onclick="AdminApp.rejectOrder('${order.id}')">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                             </button>
-                            <button class="btn-primary" style="display:inline-flex; flex:1; align-items:center; justify-content:center; gap:4px; padding: 8px 6px; font-size:12px; background:var(--success); border-color:var(--success); white-space:nowrap;" onclick="AdminApp.acceptOrder('${order.id}')">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                Accept
+                            <button title="Accept Order" style="display: flex; flex: 1; align-items: center; justify-content: center; height: 30px; background: #16a34a; border: 1px solid #15803d; border-radius: 6px; color: #fff; cursor: pointer; transition: all 0.2s;" onclick="AdminApp.acceptOrder('${order.id}')">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
                             </button>
                         </div>
                     `;
                 } else {
                     actionHtml = `
-                        <div class="order-card-actions" style="display: flex; gap: 8px; align-items: center;">
-                            <span style="color:var(--text-muted); font-size:14px; margin-right:auto;">Archived Order</span>
-                            <a href="tel:${cleanPhone}" class="btn-secondary" style="display:inline-flex; align-items:center; gap:6px; padding: 8px 14px; text-decoration:none; font-size:13px; color:var(--text-main);">
+                        <div class="order-card-actions" style="display: flex; gap: 8px; flex-wrap: nowrap; align-items: center; width: 100%;">
+                            <a href="tel:${cleanPhone}" title="Call Customer" style="display: flex; flex: 1; align-items: center; justify-content: center; height: 30px; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; color: #0f172a; transition: all 0.2s;">
                                 <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                Call
                             </a>
-                            <button class="btn-secondary" style="display:inline-flex; align-items:center; gap:6px; padding: 8px 14px; font-size:13px; color:#16a34a; border-color:#bbf7d0; background:#f0fdf4;" onclick="AdminApp.contactCustomer('${c.phone}', '${order.order_reference}')">
-                                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                                WhatsApp
+                            <button title="WhatsApp Customer" style="display: flex; flex: 1; align-items: center; justify-content: center; height: 30px; background: #dcfce7; border: 1px solid #bbf7d0; border-radius: 6px; color: #166534; cursor: pointer; transition: all 0.2s;" onclick="AdminApp.contactCustomer('${c.phone}', '${order.order_reference}')">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none"><path d="M11.99 0a11.96 11.96 0 00-10.3 18.06L0 24l6.09-1.6a11.94 11.94 0 105.9-22.4zM12 21.93a9.92 9.92 0 01-5.07-1.38l-.36-.21-3.77.99 1.01-3.68-.24-.37A9.87 9.87 0 1112 21.93zm5.42-7.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.26-.46-2.39-1.4-.88-.74-1.48-1.64-1.65-1.94-.17-.3 0-.46.13-.6.13-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.2-.24-.58-.48-.5-.67-.51-.17 0-.37 0-.57 0-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.06 2.88 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35z"/></svg>
+                            </button>
+                            <button title="Download Invoice" style="display: flex; flex: 2; align-items: center; justify-content: center; gap: 4px; height: 30px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; color: #1d4ed8; font-weight: 700; font-size: 12px; cursor: pointer; transition: all 0.2s;" onclick="generateInvoice('${order.id}', this)">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                Invoice
                             </button>
                         </div>
                     `;
                 }
 
+                const isArchived = order.status === 'accepted';
+                
                 return `
-                    <div class="admin-order-card" style="border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; background: var(--bg-surface); box-shadow: var(--shadow-sm); padding: 0;">
+                    <div class="admin-order-card" style="border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg-surface); box-shadow: var(--shadow-sm); padding: 0;">
                         <!-- Accordion Header (Summary) -->
                         <div onclick="AdminApp.toggleOrderDetails('${order.id}')" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--bg-surface); transition: background 0.2s;" onmouseover="this.style.background='var(--bg-main)'" onmouseout="this.style.background='var(--bg-surface)'">
                             <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -437,23 +709,25 @@
                             </div>
                         </div>
                         
-                        <!-- Accordion Body (Full Details) -->
+                        <!-- Accordion Body (Full Details - NEW 3 COLUMN GRID) -->
                         <div id="order-details-${order.id}" class="hidden">
-                            <div style="border-top: 1px solid var(--border); background: var(--bg-main); padding: 16px;">
-                                <div class="order-customer-info">
-                                    <div class="order-section-title">Customer Details</div>
-                                    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; margin-top: 12px;">
+                            <div class="admin-order-grid">
+                                
+                                <!-- COLUMN 1: Customer Details -->
+                                <div class="admin-order-col customer-col">
+                                    <h4 class="col-title">CUSTOMER DETAILS</h4>
+                                    <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
                                         <div style="display: flex; gap: 8px; align-items: flex-start;">
-                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="margin-top: 3px; flex-shrink: 0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                                            <strong style="color: var(--text-main); font-size: 15px;">${c.name}</strong>
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--text-muted)" stroke-width="2" style="margin-top: 2px; flex-shrink: 0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                            <strong style="color: var(--text-main); font-size: 14px;">${c.name}</strong>
                                         </div>
                                         <div style="display: flex; gap: 8px; align-items: center;">
-                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="flex-shrink: 0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                            <a href="tel:${cleanPhone}" style="color: var(--primary); text-decoration: none; font-weight: 500;">${c.phone}</a>
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--text-muted)" stroke-width="2" style="flex-shrink: 0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                            <span style="color: var(--primary); font-weight: 500;">${c.phone}</span>
                                         </div>
                                         <div style="display: flex; gap: 8px; align-items: flex-start;">
-                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" style="margin-top: 3px; flex-shrink: 0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                                            <div style="line-height: 1.5; color: var(--text-muted);">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--text-muted)" stroke-width="2" style="margin-top: 2px; flex-shrink: 0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                            <div style="line-height: 1.4; color: var(--text-muted);">
                                                 ${c.address}<br>
                                                 <span style="font-weight: 500; color: var(--text-main);">${c.area} - Nadiad</span>
                                                 ${c.landmark ? `<br>Landmark: ${c.landmark}` : ''}
@@ -461,52 +735,81 @@
                                         </div>
                                     </div>
                                     ${order.notes ? `
-                                        <div style="margin-top:12px; padding:12px; background:#fef3c7; border:1px solid #fde68a; border-radius:4px; font-size:13px;">
-                                            <strong>Notes:</strong><br>${order.notes.replace(/\n/g, '<br>')}
+                                        <div style="margin-top:16px; padding:10px; background:#fefce8; border:1px solid #fef08a; border-radius:4px; font-size:12px; color: #854d0e;">
+                                            <strong style="display:block; margin-bottom:4px;">Order Notes:</strong>${order.notes.replace(/\n/g, '<br>')}
                                         </div>
                                     ` : ''}
                                 </div>
-                                
-                                <div class="order-items-info" style="margin-top: 24px;">
-                                    <div class="order-section-title">Order Items</div>
+
+                                <!-- COLUMN 2: Order Items & Pricing -->
+                                <div class="admin-order-col details-col">
+                                    <h4 class="col-title">ORDER SUMMARY</h4>
                                     <div>${itemsHtml}</div>
                                     
-                                    <div class="order-totals" style="background: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius); border: 1px solid var(--border); margin-top: 16px;">
-                                        <div class="order-totals-row" style="margin-bottom: 6px;">
-                                            <span style="color: var(--text-muted);">Subtotal (MRP)</span>
-                                            <span style="color: var(--text-muted);">₹${mrpSubtotal.toFixed(2)}</span>
+                                    <div class="order-totals" style="padding-top: 12px; margin-top: 12px; border-top: 1px dashed var(--border); font-size: 13px;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; color: var(--text-muted);">
+                                            <span>Subtotal (MRP)</span>
+                                            <span>₹${mrpSubtotal.toFixed(2)}</span>
                                         </div>
                                         ${productDiscount > 0 ? `
-                                            <div class="order-totals-row" style="color: var(--success); margin-bottom: 6px;">
-                                                <span>Product Discount (MRP Savings)</span>
+                                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px; color: var(--success);">
+                                                <span>Product Discount</span>
                                                 <span>-₹${productDiscount.toFixed(2)}</span>
                                             </div>
                                         ` : ''}
-                                        <div class="order-totals-row" style="margin-bottom: 6px; font-weight: 600; color: var(--text-main);">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: 600; color: var(--text-main);">
                                             <span>RR Price</span>
                                             <span>₹${sellingSubtotal.toFixed(2)}</span>
                                         </div>
-                                        <div class="order-totals-row" style="margin-bottom: 6px; color: ${order.vip_discount > 0 ? 'var(--text-main)' : 'var(--text-muted)'};">
-                                            <span>VIP Discount</span>
-                                            <span>-₹${order.vip_discount}</span>
-                                        </div>
-                                        <div class="order-totals-row" style="margin-bottom: 6px; color: ${order.coupon_discount > 0 ? 'var(--text-main)' : 'var(--text-muted)'};">
-                                            <span>Coupon Discount ${order.coupons?.code ? `(${order.coupons.code})` : ''}</span>
-                                            <span>-₹${order.coupon_discount}</span>
-                                        </div>
-                                        <div class="order-totals-row" style="margin-bottom: 6px;">
-                                            <span style="color: var(--text-muted);">Delivery Charge</span>
+                                        ${order.vip_discount > 0 ? `
+                                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px; color: var(--text-main);">
+                                                <span>VIP Discount</span>
+                                                <span>-₹${order.vip_discount}</span>
+                                            </div>
+                                        ` : ''}
+                                        ${order.coupon_discount > 0 ? `
+                                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px; color: var(--text-main);">
+                                                <span>Coupon ${order.coupons?.code ? `(${order.coupons.code})` : ''}</span>
+                                                <span>-₹${order.coupon_discount}</span>
+                                            </div>
+                                        ` : ''}
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                            <span style="color: var(--text-muted);">Delivery</span>
                                             <span style="${order.delivery_charge === 0 ? 'color: var(--success); font-weight: 600;' : 'color: var(--text-main);'}">${order.delivery_charge === 0 ? 'FREE' : '₹' + order.delivery_charge}</span>
                                         </div>
-                                        <div class="order-totals-row final" style="font-size: 16px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
+                                        <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 800; color: var(--text-main); padding-top: 12px; border-top: 1px solid var(--border);">
                                             <span>Final Total</span>
                                             <span>₹${order.final_total}</span>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div style="padding: 16px; border-top: 1px solid var(--border); background: var(--bg-surface);">
-                                ${actionHtml}
+
+                                <!-- COLUMN 3: Actions -->
+                                <div class="admin-order-col actions-col">
+                                    <h4 class="col-title">ACTIONS</h4>
+                                    <div class="action-buttons-stack" style="flex-direction: row !important; gap: 8px;">
+                                        <a href="tel:${cleanPhone}" class="btn-admin-action btn-call" title="Call Customer" style="padding: 0 !important; height: 32px !important; flex: 1;">
+                                            <svg viewBox="0 0 24 24" style="width: 15px !important; height: 15px !important; margin: 0 !important;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                        </a>
+                                        <button class="btn-admin-action btn-wa" title="WhatsApp Customer" style="padding: 0 !important; height: 32px !important; flex: 1;" onclick="AdminApp.contactCustomer('${c.phone}', '${order.order_reference}')">
+                                            <svg viewBox="0 0 24 24" style="width: 16px !important; height: 16px !important; fill: currentColor; stroke: none; margin: 0 !important;"><path d="M11.99 0a11.96 11.96 0 00-10.3 18.06L0 24l6.09-1.6a11.94 11.94 0 105.9-22.4zM12 21.93a9.92 9.92 0 01-5.07-1.38l-.36-.21-3.77.99 1.01-3.68-.24-.37A9.87 9.87 0 1112 21.93zm5.42-7.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.26-.46-2.39-1.4-.88-.74-1.48-1.64-1.65-1.94-.17-.3 0-.46.13-.6.13-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.2-.24-.58-.48-.5-.67-.51-.17 0-.37 0-.57 0-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.06 2.88 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35z"/></svg>
+                                        </button>
+                                        
+                                        ${isPending ? `
+                                        <button class="btn-admin-action btn-reject" title="Reject Order" style="padding: 0 !important; height: 32px !important; flex: 1;" onclick="AdminApp.rejectOrder('${order.id}')">
+                                            <svg viewBox="0 0 24 24" style="width: 16px !important; height: 16px !important; margin: 0 !important;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                        </button>
+                                        <button class="btn-admin-action btn-accept" title="Accept Order" style="padding: 0 !important; height: 32px !important; flex: 1;" onclick="AdminApp.acceptOrder('${order.id}')">
+                                            <svg viewBox="0 0 24 24" style="width: 16px !important; height: 16px !important; margin: 0 !important;" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        </button>
+                                        ` : `
+                                        <button class="btn-admin-action btn-invoice" title="Download Invoice" style="padding: 0 12px !important; height: 32px !important; flex: 2; justify-content: center; gap: 6px;" onclick="generateInvoice('${order.id}', this)">
+                                            <svg viewBox="0 0 24 24" style="width: 14px !important; height: 14px !important; margin: 0 !important;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                            <span style="font-size: 11px; display: inline-block !important;">Invoice</span>
+                                        </button>
+                                        `}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

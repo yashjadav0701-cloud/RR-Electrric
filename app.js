@@ -1,6 +1,17 @@
 (function() {
     'use strict';
-
+    const InvoiceSettings = {
+        storeName: "RR ELECTRRIC",
+        address: "Shop No 2, Dharmdeep flat, vaishali road, beside sai vatika party plot, Nadiad",
+        phone: "7573967357",
+        email: "rrelectrric@gmail.com",
+        terms: "Thank you for doing business with us.",
+        description: "2 years replacement guarantee on applicable items.",
+        signatoryName: "Rajan R Vaghela",
+        // Use your absolute paths for images to prevent PDF generation errors
+        logoUrl: "/assets/icon.png", 
+        signatureUrl: "/assets/signature.png" // You will need to upload a signature.png to your assets folder
+    };
     // Custom UI Engine for Modals & Selects
     const CustomUI = {
         dialogTemplate: `
@@ -1996,7 +2007,7 @@
             window.open(waUrl, '_blank');
         }
     };
-
+    
     // Attach to window so inline HTML onclicks can reach it
     window.Store = Store;
     
