@@ -119,6 +119,8 @@
         normalizeSearchText: function(text) {
             if (!text) return '';
             return text.toLowerCase()
+                .replace(/\bl\s*&\s*t\b/g, 'lnt') // Preserve L&T as unified token
+                .replace(/\bl\s+t\b/g, 'lnt')
                 .replace(/[^a-z0-9\s]/g, ' ') // Remove punctuation
                 .replace(/\b(watts|watt)\b/g, 'w')
                 .replace(/\b(kilowatts|kilowatt|kwatt)\b/g, 'kw')
@@ -146,6 +148,7 @@
                     p._searchName = p.name.toLowerCase();
                     p._searchNormName = this.normalizeSearchText(p.name);
                     p._searchCat = (p.categories?.name || '').toLowerCase();
+                    p._searchNormCat = this.normalizeSearchText(p.categories?.name || '');
                     p._searchNormDesc = this.normalizeSearchText(p.description || '');
                 }
 
@@ -155,17 +158,25 @@
                 // 2. Exact Normalized Phrase Match
                 if (p._searchNormName.includes(q)) score += 80;
 
-                // 3, 4, 5, 6, 7. Token Matching & Relevance
+                // 3. Token Matching & Strict Relevance
                 let tokensMatched = 0;
+                const nameWords = p._searchNormName.split(' ');
+                const catWords = p._searchNormCat.split(' ');
+
                 queryTokens.forEach(token => {
                     let tokenScore = 0;
+                    const isShortToken = token.length <= 2;
                     
-                    if (p._searchName.split(' ').includes(token)) tokenScore += 15; // Exact word in name
-                    else if (p._searchNormName.split(' ').includes(token)) tokenScore += 12; // Exact normalized word
-                    else if (p._searchName.includes(token)) tokenScore += 5; // Partial word in name
-                    else if (p._searchNormName.includes(token)) tokenScore += 4; // Partial normalized word
-                    else if (p._searchCat.includes(token)) tokenScore += 3; // Category match
-                    else if (p._searchNormDesc.includes(token)) tokenScore += 1; // Description match
+                    if (nameWords.includes(token)) {
+                        tokenScore += 30; // Exact full token match in product name
+                    } else if (catWords.includes(token)) {
+                        tokenScore += 20; // Exact token in category
+                    } else if (!isShortToken) {
+                        // Substring partial matches allowed ONLY for tokens longer than 2 letters
+                        if (p._searchNormName.includes(token)) tokenScore += 8;
+                        else if (p._searchNormCat.includes(token)) tokenScore += 5;
+                        else if (p._searchNormDesc.includes(token)) tokenScore += 2;
+                    }
                     
                     if (tokenScore > 0) {
                         tokensMatched++;
@@ -173,8 +184,10 @@
                     }
                 });
 
-                // Reward matching MULTIPLE query terms significantly
-                if (tokensMatched > 0) {
+                // Require all query tokens to match for multi-token queries
+                if (queryTokens.length > 1 && tokensMatched < queryTokens.length) {
+                    score = 0;
+                } else if (tokensMatched > 0) {
                     score += (tokensMatched / queryTokens.length) * 50; 
                 }
 
@@ -582,29 +595,10 @@
             let sorted = [...arr];
             
             if (sortMode === 'recommended') {
-                // 1. Shuffle all products randomly on each refresh
+                // True Random Shuffle: No search bias, strictly random on every load
                 for (let i = sorted.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
-                }
-                
-                // 2. Bring items matching the last search to the top
-                const lastSearch = localStorage.getItem('rr_last_search');
-                if (lastSearch) {
-                    const qNorm = this.normalizeSearchText(lastSearch);
-                    const qTokens = qNorm.split(' ').filter(t => t);
-                    
-                    sorted.sort((a, b) => {
-                        const aStr = this.normalizeSearchText(a.name) + ' ' + (a.categories?.name || '').toLowerCase();
-                        const bStr = this.normalizeSearchText(b.name) + ' ' + (b.categories?.name || '').toLowerCase();
-                        
-                        let aScore = 0, bScore = 0;
-                        qTokens.forEach(t => {
-                            if(aStr.includes(t)) aScore++;
-                            if(bStr.includes(t)) bScore++;
-                        });
-                        return bScore - aScore;
-                    });
                 }
             } else if (sortMode === 'price-low') {
                 sorted.sort((a,b) => a.selling_price - b.selling_price);
@@ -780,11 +774,11 @@
             
             if (totalImages > 1) {
                 // Clone last image for infinite loop start
-                slidesHtml += `<div class="carousel-slide clone"><img src="${images[totalImages - 1]}" alt="${p.name}"></div>`;
+                slidesHtml += `<div class="carousel-slide clone" onclick="Store.openLightbox('${images[totalImages - 1]}')" style="cursor: zoom-in;"><img src="${images[totalImages - 1]}" alt="${p.name}"></div>`;
             }
 
             images.forEach((url, i) => {
-                slidesHtml += `<div class="carousel-slide"><img src="${url}" alt="${p.name}"></div>`;
+                slidesHtml += `<div class="carousel-slide" onclick="Store.openLightbox('${url}')" style="cursor: zoom-in;"><img src="${url}" alt="${p.name}"></div>`;
                 if (totalImages > 1) {
                     dotsHtml += `<div class="dot ${i === 0 ? 'active' : ''}" data-index="${i}"></div>`;
                 }
@@ -792,7 +786,7 @@
 
             if (totalImages > 1) {
                 // Clone first image for infinite loop end
-                slidesHtml += `<div class="carousel-slide clone"><img src="${images[0]}" alt="${p.name}"></div>`;
+                slidesHtml += `<div class="carousel-slide clone" onclick="Store.openLightbox('${images[0]}')" style="cursor: zoom-in;"><img src="${images[0]}" alt="${p.name}"></div>`;
             }
 
             const related = this.state.products
@@ -1087,6 +1081,62 @@
                 track.addEventListener('mouseup', (e) => touchEnd(e.clientX));
                 track.addEventListener('mouseleave', (e) => touchEnd(e.clientX));
             }
+        },
+
+        openLightbox: function(imgSrc) {
+            let lightbox = document.getElementById('product-lightbox');
+            if (!lightbox) {
+                lightbox = document.createElement('div');
+                lightbox.id = 'product-lightbox';
+                lightbox.innerHTML = `
+                    <div class="lightbox-overlay" onclick="document.getElementById('product-lightbox').classList.add('hidden')"></div>
+                    <div class="lightbox-content">
+                        <button class="lightbox-close" onclick="document.getElementById('product-lightbox').classList.add('hidden')">&times;</button>
+                        <div class="panzoom-container" id="panzoom-container">
+                            <img src="" id="lightbox-img">
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(lightbox);
+
+                const imgEl = document.getElementById('lightbox-img');
+                const container = document.getElementById('panzoom-container');
+
+                // Tap to zoom logic (Centers strictly on the exact tap coordinate)
+                let isZoomed = false;
+                imgEl.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (!isZoomed) {
+                        const rect = imgEl.getBoundingClientRect();
+                        const x = ((e.clientX - rect.left) / rect.width) * 100;
+                        const y = ((e.clientY - rect.top) / rect.height) * 100;
+                        imgEl.style.transformOrigin = `${x}% ${y}%`;
+                        imgEl.style.transform = 'scale(2.5)';
+                        imgEl.style.cursor = 'zoom-out';
+                        isZoomed = true;
+                    } else {
+                        imgEl.style.transform = 'scale(1)';
+                        imgEl.style.cursor = 'zoom-in';
+                        isZoomed = false;
+                    }
+                });
+
+                // Follow mouse on desktop when zoomed
+                imgEl.addEventListener('mousemove', function(e) {
+                    if (isZoomed) {
+                        const rect = container.getBoundingClientRect();
+                        const x = ((e.clientX - rect.left) / rect.width) * 100;
+                        const y = ((e.clientY - rect.top) / rect.height) * 100;
+                        imgEl.style.transformOrigin = `${x}% ${y}%`;
+                    }
+                });
+            }
+            
+            const imgEl = document.getElementById('lightbox-img');
+            imgEl.src = imgSrc;
+            imgEl.style.transform = 'scale(1)';
+            imgEl.style.cursor = 'zoom-in';
+            lightbox.classList.remove('hidden');
         },
 
         shareProduct: async function(productId) {
