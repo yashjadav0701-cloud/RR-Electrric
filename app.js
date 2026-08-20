@@ -1722,7 +1722,9 @@
             container.innerHTML = `
                 <div class="cart-items-section">
                     ${deliveryBannerHtml}
-                    ${itemsHtml}
+                    <div class="cart-items-scroll">
+                        ${itemsHtml}
+                    </div>
                 </div>
                 <div class="cart-summary-section">
                     ${summaryHtml}

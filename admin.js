@@ -70,24 +70,24 @@
 
                 if (item.products?.warranty) {
                     warrantiesList.push(`
-                        <div style="display: flex; align-items: flex-start; gap: 6px; margin-bottom: 6px;">
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#000" stroke-width="2.5" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                            <div style="font-size: 12px; line-height: 1.4; color: #333;">
+                        <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#000" stroke-width="2.5" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                            <div style="font-size: 16px; line-height: 1.4; color: #333;">
                                 <strong style="color: #000;">${item.products.warranty} Brand Warranty</strong> &mdash; ${item.product_name_snapshot}
                             </div>
                         </div>
                     `);
                 }
 
-                // 6 Columns. Flawless single-border system (Right & Bottom only on cells)
+                // 6 Columns. Flawless single-border system (Right & Bottom only on cells). Scaled for 1080px.
                 itemsHTML += `
                     <tr style="background: #fff; color: #000;">
-                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">${index + 1}</td>
-                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; font-weight: bold; box-sizing: border-box;">${displayName}</td>
-                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">${item.quantity}</td>
-                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">₹ ${mrpPrice.toFixed(2)}</td>
-                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">₹ ${unitPrice.toFixed(2)}</td>
-                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">₹ ${itemTotal.toFixed(2)}</td>
+                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">${index + 1}</td>
+                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; font-weight: bold; box-sizing: border-box;">${displayName}</td>
+                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">${item.quantity}</td>
+                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">₹ ${mrpPrice.toFixed(2)}</td>
+                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">₹ ${unitPrice.toFixed(2)}</td>
+                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">₹ ${itemTotal.toFixed(2)}</td>
                     </tr>
                 `;
             });
@@ -97,31 +97,30 @@
             
             let productDiscount = totalMRP - finalTotal;
             if (productDiscount > 0) {
-                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 12px; box-sizing: border-box;" colspan="2">Product Discount</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 8px 12px; box-sizing: border-box; color: #15803d; font-weight: bold;">- ₹ ${productDiscount.toFixed(2)}</td>`);
+                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px 16px; box-sizing: border-box;" colspan="2">Product Discount</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 10px 16px; box-sizing: border-box; color: #15803d; font-weight: bold;">- ₹ ${productDiscount.toFixed(2)}</td>`);
             }
 
             if (order.vip_discount > 0) {
-                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 12px; box-sizing: border-box;" colspan="2">VIP Discount</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 8px 12px; box-sizing: border-box; color: #15803d; font-weight: bold;">- ₹ ${order.vip_discount.toFixed(2)}</td>`);
+                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px 16px; box-sizing: border-box;" colspan="2">VIP Discount</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 10px 16px; box-sizing: border-box; color: #15803d; font-weight: bold;">- ₹ ${order.vip_discount.toFixed(2)}</td>`);
             }
             if (order.coupon_discount > 0) {
-                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 12px; box-sizing: border-box;" colspan="2">Coupon Discount</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 8px 12px; box-sizing: border-box; color: #15803d; font-weight: bold;">- ₹ ${order.coupon_discount.toFixed(2)}</td>`);
+                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px 16px; box-sizing: border-box;" colspan="2">Coupon Discount</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 10px 16px; box-sizing: border-box; color: #15803d; font-weight: bold;">- ₹ ${order.coupon_discount.toFixed(2)}</td>`);
             }
             if (order.delivery_charge > 0) {
-                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 12px; box-sizing: border-box;" colspan="2">Delivery Charge</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 8px 12px; box-sizing: border-box;">₹ ${order.delivery_charge.toFixed(2)}</td>`);
+                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px 16px; box-sizing: border-box;" colspan="2">Delivery Charge</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 10px 16px; box-sizing: border-box;">₹ ${order.delivery_charge.toFixed(2)}</td>`);
             }
 
-            calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 12px 12px; font-weight: bold; font-size: 15px; box-sizing: border-box; background: #f8fafc;" colspan="2">Final Total</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; font-weight: bold; font-size: 15px; box-sizing: border-box; background: #f8fafc;">₹ ${order.final_total.toFixed(2)}</td>`);
+            calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 16px 16px; font-weight: bold; font-size: 20px; box-sizing: border-box; background: #f8fafc;" colspan="2">Final Total</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; font-weight: bold; font-size: 20px; box-sizing: border-box; background: #f8fafc;">₹ ${order.final_total.toFixed(2)}</td>`);
 
             const rowCount = calcRowsArray.length;
             let amountInWords = numberToWords(order.final_total);
             
             // Amount in words strictly spans exactly 3 columns (#, Item Name, Qty). 
-            // The remaining 3 columns are perfectly consumed by calcRowsArray (Label colspan="2", Value colspan="1").
             let calculationHTML = `
                 <tr style="color: #000;">
-                    <td colspan="3" rowspan="${rowCount}" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 16px; vertical-align: top; box-sizing: border-box;">
-                        <span style="font-weight: bold; font-size: 11px; text-transform: uppercase; color: #555;">Invoice Amount In Words:</span><br>
-                        <span style="font-weight: bold; font-size: 14px; display: inline-block; margin-top: 8px;">${amountInWords}</span>
+                    <td colspan="3" rowspan="${rowCount}" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 20px; vertical-align: top; box-sizing: border-box;">
+                        <span style="font-weight: bold; font-size: 15px; text-transform: uppercase; color: #555;">Invoice Amount In Words:</span><br>
+                        <span style="font-weight: bold; font-size: 19px; display: inline-block; margin-top: 10px;">${amountInWords}</span>
                     </td>
                     ${calcRowsArray[0]}
                 </tr>
@@ -136,7 +135,7 @@
 
             let descriptionParts = [];
             if (warrantiesList.length > 0) {
-                descriptionParts.push(`<div style="display: flex; flex-direction: column; gap: 4px;">${warrantiesList.join('')}</div>`);
+                descriptionParts.push(`<div style="display: flex; flex-direction: column; gap: 6px;">${warrantiesList.join('')}</div>`);
             }
             if (order.notes) {
                 descriptionParts.push(`<strong>Order Note:</strong><br><span style="color: #333;">${order.notes.replace(/\n/g, '<br>')}</span>`);
@@ -144,25 +143,25 @@
             let descriptionHTML = descriptionParts.join('<br><br>');
 
             const invoiceWrapper = document.createElement('div');
-            invoiceWrapper.style.position = 'absolute';
-            invoiceWrapper.style.left = '-9999px';
-            invoiceWrapper.style.top = '0';
+            // DEVICE-INDEPENDENT FIX: Use fixed absolute positioning completely decoupled from viewport scaling and scroll.
+            invoiceWrapper.style.cssText = 'position: fixed; top: 0; left: 0; width: 1080px; z-index: -9999; opacity: 0.001; pointer-events: none; margin: 0; padding: 0; border: none; overflow: visible;';
             
+            // Scaled fonts and paddings to perfectly map to a 1080px document
             invoiceWrapper.innerHTML = `
-                <div id="pdf-dynamic-box" style="width: 800px; padding: 38px; background: #fff; box-sizing: border-box; font-family: Helvetica, Arial, sans-serif; color: #000;">
-                    <h2 style="text-align: center; font-size: 24px; font-weight: bold; margin: 0 0 20px 0; color: #000;">Tax Invoice</h2>
+                <div id="pdf-dynamic-box" style="width: 1080px; padding: 48px; background: #fff; box-sizing: border-box; font-family: Helvetica, Arial, sans-serif; color: #000; margin: 0; position: relative;">
+                    <h2 style="text-align: center; font-size: 32px; font-weight: bold; margin: 0 0 28px 0; color: #000;">Tax Invoice</h2>
                     
-                    <table style="width: 100%; border-collapse: separate; border-spacing: 0; border-top: 1px solid #000; border-left: 1px solid #000; font-size: 14px; background: #fff;">
+                    <table style="width: 100%; border-collapse: separate; border-spacing: 0; border-top: 1px solid #000; border-left: 1px solid #000; font-size: 19px; background: #fff; margin: 0; padding: 0;">
                         
                         <!-- HEADER -->
                         <tr style="color: #000;">
-                            <td colspan="6" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 20px; box-sizing: border-box;">
-                                <div style="display: flex; align-items: center; gap: 24px;">
-                                    <img src="${InvoiceSettings.logoUrl}" style="max-width: 180px; height: 60px; object-fit: contain;">
+                            <td colspan="6" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 28px; box-sizing: border-box;">
+                                <div style="display: flex; align-items: center; gap: 32px;">
+                                    <img src="${InvoiceSettings.logoUrl}" style="max-width: 240px; height: 80px; object-fit: contain;">
                                     <div>
-                                        <h1 style="margin: 0 0 6px 0; font-size: 22px; font-weight: bold; color: #000;">${InvoiceSettings.storeName}</h1>
-                                        <p style="margin: 0 0 4px 0; font-size: 13px; color: #333;">${InvoiceSettings.address}</p>
-                                        <p style="margin: 0; font-size: 13px; color: #333;">Phone: <strong style="color: #000;">${InvoiceSettings.phone}</strong> &nbsp;|&nbsp; Email: <strong style="color: #000;">${InvoiceSettings.email}</strong></p>
+                                        <h1 style="margin: 0 0 8px 0; font-size: 30px; font-weight: bold; color: #000;">${InvoiceSettings.storeName}</h1>
+                                        <p style="margin: 0 0 6px 0; font-size: 18px; color: #333;">${InvoiceSettings.address}</p>
+                                        <p style="margin: 0; font-size: 18px; color: #333;">Phone: <strong style="color: #000;">${InvoiceSettings.phone}</strong> &nbsp;|&nbsp; Email: <strong style="color: #000;">${InvoiceSettings.email}</strong></p>
                                     </div>
                                 </div>
                             </td>
@@ -170,42 +169,42 @@
 
                         <!-- INFO -->
                         <tr style="color: #000;">
-                            <td colspan="4" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 16px; vertical-align: top; width: 60%; box-sizing: border-box;">
-                                <p style="margin: 0 0 10px 0; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #555;">Bill To:</p>
-                                <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold; text-transform: capitalize; color: #000;">${c.name}</p>
-                                <p style="margin: 0 0 4px 0; font-size: 13px; color: #000;"><strong>Phone:</strong> ${c.phone}</p>
-                                <p style="margin: 0 0 4px 0; font-size: 13px; color: #000;"><strong>Address:</strong> ${c.address}</p>
-                                <p style="margin: 0; font-size: 13px; color: #000;"><strong>Area:</strong> ${c.area} - Nadiad ${c.landmark ? `<br><strong>Landmark:</strong> ${c.landmark}` : ''}</p>
+                            <td colspan="4" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 22px; vertical-align: top; width: 60%; box-sizing: border-box;">
+                                <p style="margin: 0 0 12px 0; font-size: 15px; font-weight: bold; text-transform: uppercase; color: #555;">Bill To:</p>
+                                <p style="margin: 0 0 10px 0; font-size: 22px; font-weight: bold; text-transform: capitalize; color: #000;">${c.name}</p>
+                                <p style="margin: 0 0 6px 0; font-size: 18px; color: #000;"><strong>Phone:</strong> ${c.phone}</p>
+                                <p style="margin: 0 0 6px 0; font-size: 18px; color: #000;"><strong>Address:</strong> ${c.address}</p>
+                                <p style="margin: 0; font-size: 18px; color: #000;"><strong>Area:</strong> ${c.area} - Nadiad ${c.landmark ? `<br><strong>Landmark:</strong> ${c.landmark}` : ''}</p>
                             </td>
-                            <td colspan="2" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 16px; vertical-align: top; width: 40%; box-sizing: border-box;">
-                                <p style="margin: 0 0 10px 0; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #555;">Invoice Details:</p>
-                                <table style="width: 100%; border: none; font-size: 13px; line-height: 1.8; color: #000;">
-                                    <tr><td style="width: 60px; padding: 2px 0; border: none;">No:</td><td style="padding: 2px 0; border: none;"><strong>${order.order_reference}</strong></td></tr>
+                            <td colspan="2" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 22px; vertical-align: top; width: 40%; box-sizing: border-box;">
+                                <p style="margin: 0 0 12px 0; font-size: 15px; font-weight: bold; text-transform: uppercase; color: #555;">Invoice Details:</p>
+                                <table style="width: 100%; border: none; font-size: 18px; line-height: 1.8; color: #000; margin: 0; padding: 0;">
+                                    <tr><td style="width: 80px; padding: 2px 0; border: none;">No:</td><td style="padding: 2px 0; border: none;"><strong>${order.order_reference}</strong></td></tr>
                                     <tr><td style="padding: 2px 0; border: none;">Date:</td><td style="padding: 2px 0; border: none;"><strong>${dDate}</strong></td></tr>
                                     <tr><td style="padding: 2px 0; border: none;">Time:</td><td style="padding: 2px 0; border: none;"><strong>${dTime}</strong></td></tr>
                                 </table>
                             </td>
                         </tr>
 
-                        <!-- TABLE HEADERS (6 Columns) -->
+                        <!-- TABLE HEADERS -->
                         <tr style="background: #f8fafc; font-weight: bold; color: #000;">
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; width: 5%; box-sizing: border-box;">#</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; width: 41%; box-sizing: border-box;">Item Name</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; width: 8%; box-sizing: border-box;">Qty</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; width: 14%; box-sizing: border-box;">MRP</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; width: 14%; box-sizing: border-box;">RR Price</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; width: 18%; box-sizing: border-box;">Amount</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; width: 5%; box-sizing: border-box;">#</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; width: 41%; box-sizing: border-box;">Item Name</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; width: 8%; box-sizing: border-box;">Qty</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; width: 14%; box-sizing: border-box;">MRP</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; width: 14%; box-sizing: border-box;">RR Price</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; width: 18%; box-sizing: border-box;">Amount</td>
                         </tr>
 
                         ${itemsHTML}
 
                         <!-- ITEM TOTALS -->
                         <tr style="background: #f8fafc; font-weight: bold; color: #000;">
-                            <td colspan="2" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">Total</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">${totalQty}</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">₹ ${totalMRP.toFixed(2)}</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">₹ ${finalTotal.toFixed(2)}</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px; text-align: center; box-sizing: border-box;">₹ ${finalTotal.toFixed(2)}</td>
+                            <td colspan="2" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">Total</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">${totalQty}</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">₹ ${totalMRP.toFixed(2)}</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">₹ ${finalTotal.toFixed(2)}</td>
+                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">₹ ${finalTotal.toFixed(2)}</td>
                         </tr>
 
                         <!-- CALCULATIONS -->
@@ -214,16 +213,16 @@
                         <!-- FOOTER -->
                         <tr style="color: #000;">
                             <td colspan="4" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 0; vertical-align: top; box-sizing: border-box;">
-                                <div style="border-bottom: 1px solid #000; padding: 8px 16px; font-weight: bold; background: #f8fafc; text-transform: uppercase; font-size: 11px; color: #64748b;">Description & Notes:</div>
-                                <div style="padding: 16px; line-height: 1.6; font-size: 13px;">${descriptionHTML}</div>
+                                <div style="border-bottom: 1px solid #000; padding: 12px 22px; font-weight: bold; background: #f8fafc; text-transform: uppercase; font-size: 15px; color: #64748b;">Description & Notes:</div>
+                                <div style="padding: 22px; line-height: 1.6; font-size: 18px;">${descriptionHTML}</div>
                             </td>
                             <td colspan="2" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 0; vertical-align: top; box-sizing: border-box;">
-                                <div style="border-bottom: 1px solid #000; padding: 8px 16px; font-weight: bold; background: #f8fafc; text-transform: uppercase; font-size: 11px; color: #64748b;">Store Message:</div>
-                                <div style="padding: 16px; border-bottom: 1px solid #000; line-height: 1.6; font-size: 13px;">${InvoiceSettings.terms}</div>
-                                <div style="padding: 8px 16px; border-bottom: 1px solid #000; font-weight: bold; background: #f8fafc; text-transform: uppercase; font-size: 11px; color: #64748b;">For ${InvoiceSettings.storeName}:</div>
-                                <div style="padding: 16px; text-align: center;">
-                                    <img src="${InvoiceSettings.signatureUrl}" style="height: 50px; margin-bottom: 5px; object-fit: contain;" onerror="this.style.display='none'"><br>
-                                    <span style="font-size: 14px; font-weight: bold;">${InvoiceSettings.signatoryName}</span>
+                                <div style="border-bottom: 1px solid #000; padding: 12px 22px; font-weight: bold; background: #f8fafc; text-transform: uppercase; font-size: 15px; color: #64748b;">Store Message:</div>
+                                <div style="padding: 22px; border-bottom: 1px solid #000; line-height: 1.6; font-size: 18px; margin: 0;">${InvoiceSettings.terms}</div>
+                                <div style="padding: 12px 22px; border-bottom: 1px solid #000; font-weight: bold; background: #f8fafc; text-transform: uppercase; font-size: 15px; color: #64748b;">For ${InvoiceSettings.storeName}:</div>
+                                <div style="padding: 22px; text-align: center;">
+                                    <img src="${InvoiceSettings.signatureUrl}" style="height: 68px; margin-bottom: 6px; object-fit: contain;" onerror="this.style.display='none'"><br>
+                                    <span style="font-size: 19px; font-weight: bold;">${InvoiceSettings.signatoryName}</span>
                                 </div>
                             </td>
                         </tr>
@@ -240,16 +239,32 @@
                     // Allow DOM a brief moment to finish rendering all dynamic elements/SVGs before measuring height
                     await new Promise(resolve => setTimeout(resolve, 150));
 
-                    // Use getBoundingClientRect for sub-pixel accuracy to prevent fractional overflow pagination
+                    // Use getBoundingClientRect to capture exact fractional pixels
                     const exactHeight = Math.ceil(contentBox.getBoundingClientRect().height) + 2; 
 
                     const opt = {
-                        margin:       0, 
+                        margin:       0, // Native margin handled flawlessly by the HTML 48px padding
                         filename:     pdfFilename,
-                        image:        { type: 'jpeg', quality: 0.75 }, // Compressed to drastically reduce file size
-                        html2canvas:  { scale: 4, useCORS: true, windowWidth: 800 }, // 4x scale: Perfect balance of Retina sharpness and low MB size
-                        jsPDF:        { unit: 'px', format: [800, exactHeight], orientation: 'portrait' },
-                        pagebreak:    { mode: 'avoid-all' } 
+                        image:        { type: 'jpeg', quality: 0.85 }, // Great quality, low MB size
+                        html2canvas:  { 
+                            scale: 3, 
+                            useCORS: true, 
+                            windowWidth: 1080, // Force logical window
+                            width: 1080, // Force canvas width
+                            windowHeight: exactHeight, // Force logical height
+                            height: exactHeight, // Force canvas height
+                            scrollX: 0,
+                            scrollY: 0,
+                            x: 0, // Enforce left coordinate explicitly on the fixed container
+                            y: 0  // Enforce top coordinate explicitly on the fixed container
+                        }, 
+                        jsPDF:        { 
+                            unit: 'px', 
+                            format: [1080, exactHeight], 
+                            orientation: 'portrait',
+                            hotfixes: ['px_scaling'] // Ensures 1 CSS px = 1 PDF px
+                        },
+                        pagebreak:    { mode: 'avoid-all' } // Strictly enforce ONE continuous bill-roll
                     };
 
                     await html2pdf().set(opt).from(contentBox).save();
@@ -638,10 +653,10 @@
                     if (item.selected_options) displayName += ` <div style="font-size:12px; color:var(--text-muted); margin-top:4px; font-weight:600;">${item.selected_options}</div>`;
 
                     return `
-                    <div class="order-item-row" style="display: flex; gap: 16px; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border);">
-                        <img src="${img}" style="width: 80px; height: 80px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border); background: #ffffff; padding: 4px; flex-shrink: 0; box-shadow: var(--shadow-sm);">
-                        <span style="flex:1; line-height: 1.4; font-size: 14px;">
-                            <span style="font-weight: 700; font-size: 15px;">${item.quantity} ×</span> ${displayName}
+                    <div class="order-item-row" style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed var(--border);">
+                        <img src="${img}" style="width: 48px; height: 48px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border); background: #ffffff; padding: 3px; flex-shrink: 0; box-shadow: var(--shadow-sm);">
+                        <span style="flex:1; line-height: 1.3; font-size: 13px;">
+                            <span style="font-weight: 700; font-size: 14px;">${item.quantity} ×</span> ${displayName}
                         </span>
                     </div>
                     `;
@@ -717,7 +732,7 @@
                         
                         <!-- Accordion Body (Full Details - NEW 3 COLUMN GRID) -->
                         <div id="order-details-${order.id}" class="hidden">
-                            <div class="admin-order-grid">
+                            <div class="admin-order-grid" style="align-items: stretch;">
                                 
                                 <!-- COLUMN 1: Customer Details -->
                                 <div class="admin-order-col customer-col">
@@ -745,14 +760,9 @@
                                             <strong style="display:block; margin-bottom:4px;">Order Notes:</strong>${order.notes.replace(/\n/g, '<br>')}
                                         </div>
                                     ` : ''}
-                                </div>
-
-                                <!-- COLUMN 2: Order Items & Pricing -->
-                                <div class="admin-order-col details-col">
-                                    <h4 class="col-title">ORDER SUMMARY</h4>
-                                    <div>${itemsHtml}</div>
                                     
-                                    <div class="order-totals" style="padding-top: 12px; margin-top: 12px; border-top: 1px dashed var(--border); font-size: 13px;">
+                                    <h4 class="col-title" style="margin-top: 24px;">BILL SUMMARY</h4>
+                                    <div class="order-totals" style="font-size: 13px;">
                                         <div style="display: flex; justify-content: space-between; margin-bottom: 6px; color: var(--text-muted);">
                                             <span>Subtotal (MRP)</span>
                                             <span>₹${mrpSubtotal.toFixed(2)}</span>
@@ -788,6 +798,12 @@
                                             <span>₹${order.final_total}</span>
                                         </div>
                                     </div>
+                                </div>
+
+                                <!-- COLUMN 2: Order Items -->
+                                <div class="admin-order-col details-col">
+                                    <h4 class="col-title">ORDER ITEMS</h4>
+                                    <div style="flex: 1; min-height: 0; max-height: 420px; overflow-y: auto; overflow-x: hidden; padding-right: 6px; scrollbar-width: thin;">${itemsHtml}</div>
                                 </div>
 
                                 <!-- COLUMN 3: Actions -->
