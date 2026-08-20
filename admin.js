@@ -149,7 +149,7 @@
             invoiceWrapper.style.top = '0';
             
             invoiceWrapper.innerHTML = `
-                <div id="pdf-dynamic-box" style="width: 800px; padding: 30px; background: #fff; box-sizing: border-box; font-family: Helvetica, Arial, sans-serif; color: #000;">
+                <div id="pdf-dynamic-box" style="width: 800px; padding: 38px; background: #fff; box-sizing: border-box; font-family: Helvetica, Arial, sans-serif; color: #000;">
                     <h2 style="text-align: center; font-size: 24px; font-weight: bold; margin: 0 0 20px 0; color: #000;">Tax Invoice</h2>
                     
                     <table style="width: 100%; border-collapse: separate; border-spacing: 0; border-top: 1px solid #000; border-left: 1px solid #000; font-size: 14px; background: #fff;">
@@ -236,14 +236,20 @@
             setTimeout(async () => {
                 try {
                     const contentBox = document.getElementById('pdf-dynamic-box');
-                    const exactHeight = contentBox.offsetHeight + 2; 
+                    
+                    // Allow DOM a brief moment to finish rendering all dynamic elements/SVGs before measuring height
+                    await new Promise(resolve => setTimeout(resolve, 150));
+
+                    // Use getBoundingClientRect for sub-pixel accuracy to prevent fractional overflow pagination
+                    const exactHeight = Math.ceil(contentBox.getBoundingClientRect().height) + 2; 
 
                     const opt = {
-                        margin:       0,
+                        margin:       0, 
                         filename:     pdfFilename,
-                        image:        { type: 'jpeg', quality: 0.75 }, 
-                        html2canvas:  { scale: 3, useCORS: true, windowWidth: 800 }, 
-                        jsPDF:        { unit: 'px', format: [800, exactHeight], orientation: 'portrait' }
+                        image:        { type: 'jpeg', quality: 0.75 }, // Compressed to drastically reduce file size
+                        html2canvas:  { scale: 4, useCORS: true, windowWidth: 800 }, // 4x scale: Perfect balance of Retina sharpness and low MB size
+                        jsPDF:        { unit: 'px', format: [800, exactHeight], orientation: 'portrait' },
+                        pagebreak:    { mode: 'avoid-all' } 
                     };
 
                     await html2pdf().set(opt).from(contentBox).save();
