@@ -568,33 +568,28 @@
             const img = p.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
             
             let discountHtml = '';
+            let compareString = '';
             if (p.mrp_price && p.mrp_price > p.selling_price) {
                 const off = Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100);
-                discountHtml = `<div class="product-discount-badge">${off}% OFF</div>`;
+                discountHtml = `<span style="color: var(--success); font-weight: 700; font-size: 12px; margin-left: 8px;">${off}% OFF</span>`;
+                compareString = `<span style="color: var(--slate-400); font-size: 12px; text-decoration: line-through; margin-left: 6px;">₹${p.mrp_price}</span>`;
             }
-
-            // Build dynamic comparison string (MRP only)
-            let comparisonHtml = [];
-            if (p.mrp_price && p.mrp_price > p.selling_price) {
-                comparisonHtml.push(`<span>MRP <span style="text-decoration: line-through;">₹${p.mrp_price}</span></span>`);
-            }
-            let compareString = comparisonHtml.join('');
 
             return `
                 <a href="javascript:void(0)" onclick="Store.navigate('product', '${p.id}')" class="store-product-card">
-                    ${discountHtml}
                     <div class="img-wrapper">
                         <img src="${img}" alt="${p.name}" loading="lazy">
                     </div>
-                    <div class="details">
-                        <h3>${p.name}</h3>
-                        <div class="price-row" style="align-items: flex-end;">
-                            <div class="price-col" style="gap: 2px;">
-                                <span class="selling-price" style="line-height: 1;">₹${p.selling_price}</span>
-                                ${compareString ? `<div style="font-size: 11px; color: var(--text-muted); display: flex; align-items: center; flex-wrap: wrap; line-height: 1.2; margin-top: 4px;">${compareString}</div>` : '<span></span>'}
-                            </div>
-                            <button type="button" class="btn-add-cart-small" style="flex-shrink: 0;" onclick="event.preventDefault(); event.stopPropagation(); Store.addToCart('${p.id}')" aria-label="Add to Bag">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <div class="store-product-card-details">
+                        <div class="store-product-card-price-row">
+                            <span class="selling-price">₹${p.selling_price}</span>
+                            ${compareString}
+                            ${discountHtml}
+                        </div>
+                        <h3 class="store-product-card-title">${p.name}</h3>
+                        <div class="store-product-card-action">
+                            <button type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 12px; border-radius: var(--radius-sm);" onclick="event.preventDefault(); event.stopPropagation(); Store.addToCart('${p.id}')" aria-label="Add to Bag">
+                                Add
                             </button>
                         </div>
                     </div>
@@ -842,34 +837,31 @@
                         <div style="margin-bottom: 16px;"></div>
                         
                         ${(() => {
-                            let pricingHtml = `<div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">`;
+                            let pricingHtml = `<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--slate-200);">`;
 
                             // Left side: Price & MRP
-                            pricingHtml += `<div style="display: flex; flex-direction: column;">`;
-                            pricingHtml += `<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">`;
-                            pricingHtml += `<div style="font-size: 32px; font-weight: 800; color: var(--text-main); line-height: 1;">₹${p.selling_price}</div>`;
+                            pricingHtml += `<div style="display: flex; flex-direction: column; gap: 8px;">`;
+                            pricingHtml += `<div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">`;
+                            pricingHtml += `<span style="font-size: 32px; font-weight: 800; color: var(--slate-900); line-height: 1;">₹${p.selling_price}</span>`;
                             
                             if (p.mrp_price && p.mrp_price > p.selling_price) {
                                 const off = Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100);
-                                pricingHtml += `<div style="background: #fee2e2; color: #dc2626; padding: 4px 8px; border-radius: 4px; font-weight: 800; font-size: 14px; line-height: 1;">${off}% OFF</div>`;
+                                pricingHtml += `<span style="font-size: 16px; color: var(--slate-400); text-decoration: line-through; font-weight: 500;">₹${p.mrp_price}</span>`;
+                                pricingHtml += `<span style="color: var(--success); font-weight: 700; font-size: 14px;">${off}% OFF</span>`;
                             }
                             pricingHtml += `</div>`;
-                            
-                            if (p.mrp_price && p.mrp_price > p.selling_price) {
-                                pricingHtml += `<div style="font-size: 14px; color: var(--text-muted); font-weight: 500;">MRP <span style="text-decoration: line-through;">₹${p.mrp_price}</span></div>`;
-                            }
                             pricingHtml += `</div>`;
 
                             // Right side: Warranty Badge
                             if (p.warranty) {
                                 pricingHtml += `
-                                    <div class="pdp-warranty-badge" style="display: flex; align-items: center; gap: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 8px 12px; border-radius: var(--radius); box-shadow: var(--shadow-sm); flex-shrink: 0;">
-                                        <div style="color: var(--success); display: flex; align-items: center; justify-content: center;">
+                                    <div class="pdp-warranty-badge" style="display: flex; align-items: center; gap: 10px; background: var(--slate-50); border: 1px solid var(--slate-200); padding: 10px 14px; border-radius: var(--radius-md); flex-shrink: 0;">
+                                        <div style="color: var(--slate-700); display: flex; align-items: center; justify-content: center;">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                                         </div>
                                         <div style="display: flex; flex-direction: column;">
-                                            <div style="font-size: 10px; color: var(--success); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1; margin-bottom: 3px;">Brand Warranty</div>
-                                            <div style="font-size: 14px; font-weight: 800; color: var(--text-main); line-height: 1;">${p.warranty}</div>
+                                            <div style="font-size: 11px; color: var(--slate-500); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1; margin-bottom: 2px;">Warranty</div>
+                                            <div style="font-size: 14px; font-weight: 700; color: var(--slate-900); line-height: 1;">${p.warranty}</div>
                                         </div>
                                     </div>
                                 `;
@@ -1590,23 +1582,24 @@
                 
                 return `
                     <div class="cart-item">
-                        <img src="${img}" class="cart-item-img" alt="${item.name}">
+                        <div class="cart-item-img-wrapper">
+                            <img src="${img}" class="cart-item-img" alt="${item.name}">
+                        </div>
                         <div class="cart-item-details">
-                            <div class="cart-item-title" style="line-height:1.4;">${displayName}</div>
+                            <div class="cart-item-title">${displayName}</div>
                             <div class="cart-item-price">₹${item.calculatedPrice} ${mrpHtml}</div>
                             <div class="cart-qty-row">
                                 <div class="cart-qty-controls">
                                     <button class="cart-qty-btn" aria-label="Decrease quantity" onclick="Store.updateCartQty('${item.cartKey}', -1)">
-                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                                     </button>
                                     <div class="cart-qty-val">${item.qty}</div>
                                     <button class="cart-qty-btn" aria-label="Increase quantity" onclick="Store.updateCartQty('${item.cartKey}', 1)">
-                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                                     </button>
                                 </div>
                                 <button class="cart-remove-btn" aria-label="Remove item" onclick="Store.removeFromCart('${item.cartKey}')">
-                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                    Remove
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                 </button>
                             </div>
                         </div>
