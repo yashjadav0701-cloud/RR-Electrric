@@ -1916,6 +1916,40 @@
                 `;
                 document.body.appendChild(overlay);
 
+                // --- PUSH TO GOOGLE SHEETS DRAFT ---
+                try {
+                    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxvptAZYKVS9Q6OHQIpJ5knL0JYQDZ_a_IQd2VuRIz3lr0_Qs9z84AaHdfsvHPU/exec"; // PASTE YOUR SPREADSHEET API URL HERE
+                    const sheetPayload = {
+                        source: "WEBSITE",
+                        orderId: data.order_reference,
+                        date: new Date().toISOString(),
+                        deliveryCharge: clientTotals.isFreeDelivery || clientTotals.deliveryCharge === 0 ? "FREE" : clientTotals.deliveryCharge,
+                        customer: {
+                            name: customerData.name,
+                            phone: customerData.phone,
+                            address: customerData.address,
+                            area: customerData.area,
+                            note: customerData.note || ""
+                        },
+                        items: this.state.cart.map(item => {
+                            const p = this.state.products.find(x => x.id === item.id);
+                            return {
+                                name: p ? p.name : "Unknown Product",
+                                qty: item.qty || item.quantity
+                            };
+                        })
+                    };
+                    
+                    fetch(googleScriptUrl, {
+                        method: "POST",
+                        body: JSON.stringify(sheetPayload),
+                        headers: { "Content-Type": "text/plain;charset=utf-8" }
+                    }).catch(err => console.warn("Sheet push failed:", err));
+                } catch (e) {
+                    console.warn("Sheet prep failed:", e);
+                }
+                // -----------------------------------
+
                 // Clear Cart
                 this.state.cart = [];
                 this.state.appliedCouponCode = null;
@@ -1962,8 +1996,18 @@
             msg += `*Customer:*\n`;
             msg += `Name: ${customer.name}\n`;
             msg += `Mobile: ${customer.phone}\n`;
-            msg += `Address: ${customer.address}\n`;
-            msg += `Area: ${customer.area}\n`;
+            
+            let rawCombined = [customer.address, customer.area, "Nadiad"].filter(Boolean).join(", ").replace(/\n/g, ",");
+            let uniqueParts = [];
+            let seen = new Set();
+            rawCombined.split(",").forEach(part => {
+                let trimmed = part.trim();
+                if (trimmed && !seen.has(trimmed.toLowerCase())) {
+                    seen.add(trimmed.toLowerCase());
+                    uniqueParts.push(trimmed);
+                }
+            });
+            msg += `Address: ${uniqueParts.join(", ")}\n`;
             if (customer.landmark) msg += `Landmark: ${customer.landmark}\n`;
             if (customer.note) msg += `Note: ${customer.note}\n`;
             

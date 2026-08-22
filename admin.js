@@ -33,255 +33,46 @@
         if (!order) return CustomUI.alert("Order data not found.");
 
         const originalBtnText = btnElement.innerHTML;
-        btnElement.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"></path></svg> Generating...`;
+        btnElement.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"></path></svg> Loading...`;
         btnElement.disabled = true;
 
         try {
-            const c = order.customers;
-            const items = order.order_items;
-            
-            const orderDateObj = new Date(order.created_at);
-            const dDate = orderDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
-            const dTime = orderDateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxvptAZYKVS9Q6OHQIpJ5knL0JYQDZ_a_IQd2VuRIz3lr0_Qs9z84AaHdfsvHPU/exec"; // PASTE YOUR SPREADSHEET API URL HERE
 
-            const safeCustomerName = c.name.replace(/[^a-zA-Z0-9]/g, '_');
-            const pdfFilename = `${safeCustomerName}-${order.order_reference}.pdf`;
+            const payload = {
+                source: "ADMIN_PANEL",
+                orderId: order.order_reference,
+                date: order.created_at,
+                deliveryCharge: order.delivery_charge === 0 ? "FREE" : order.delivery_charge,
+                customer: {
+                    name: order.customers.name,
+                    phone: order.customers.phone,
+                    address: order.customers.address,
+                    area: order.customers.area,
+                    note: order.notes || ""
+                },
+                items: order.order_items.map(item => ({
+                    name: item.product_name_snapshot,
+                    qty: item.quantity
+                }))
+            };
 
-            let totalQty = 0;
-            let finalTotal = 0;
-            let totalMRP = 0;
-            let itemsHTML = '';
-            let warrantiesList = [];
-
-            items.forEach((item, index) => {
-                let itemTotal = item.total_price;
-                let unitPrice = itemTotal / item.quantity;
-                
-                // Fallback to unit price if MRP is not set
-                let mrpPrice = (item.products && item.products.mrp_price > unitPrice) ? item.products.mrp_price : unitPrice;
-                
-                totalQty += item.quantity;
-                finalTotal += itemTotal;
-                totalMRP += (mrpPrice * item.quantity);
-
-                let displayName = item.product_name_snapshot;
-                if (item.is_pack) displayName += ` (Pack of ${item.pack_qty})`;
-                if (item.selected_options) displayName += ` - ${item.selected_options}`;
-
-                if (item.products?.warranty) {
-                    warrantiesList.push(`
-                        <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#000" stroke-width="2.5" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                            <div style="font-size: 16px; line-height: 1.4; color: #333;">
-                                <strong style="color: #000;">${item.products.warranty} Brand Warranty</strong> &mdash; ${item.product_name_snapshot}
-                            </div>
-                        </div>
-                    `);
-                }
-
-                // 6 Columns. Flawless single-border system (Right & Bottom only on cells). Scaled for 1080px.
-                itemsHTML += `
-                    <tr style="background: #fff; color: #000;">
-                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">${index + 1}</td>
-                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; font-weight: bold; box-sizing: border-box;">${displayName}</td>
-                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">${item.quantity}</td>
-                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">₹ ${mrpPrice.toFixed(2)}</td>
-                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">₹ ${unitPrice.toFixed(2)}</td>
-                        <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">₹ ${itemTotal.toFixed(2)}</td>
-                    </tr>
-                `;
+            const response = await fetch(googleScriptUrl, {
+                method: "POST",
+                body: JSON.stringify(payload),
+                headers: { "Content-Type": "text/plain;charset=utf-8" }
             });
 
-            // Dynamically construct Calculation Rows Array to mathematically lock the Rowspan
-            let calcRowsArray = [];
-            
-            let productDiscount = totalMRP - finalTotal;
-            if (productDiscount > 0) {
-                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px 16px; box-sizing: border-box;" colspan="2">Product Discount</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 10px 16px; box-sizing: border-box; color: #15803d; font-weight: bold;">- ₹ ${productDiscount.toFixed(2)}</td>`);
+            const result = await response.json();
+            if (result.status === "success") {
+                CustomUI.alert("Order successfully loaded into your Google Sheet Draft!", "Success");
+            } else {
+                CustomUI.alert("Sheet Error: " + result.message, "Error");
             }
-
-            if (order.vip_discount > 0) {
-                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px 16px; box-sizing: border-box;" colspan="2">VIP Discount</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 10px 16px; box-sizing: border-box; color: #15803d; font-weight: bold;">- ₹ ${order.vip_discount.toFixed(2)}</td>`);
-            }
-            if (order.coupon_discount > 0) {
-                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px 16px; box-sizing: border-box;" colspan="2">Coupon Discount</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 10px 16px; box-sizing: border-box; color: #15803d; font-weight: bold;">- ₹ ${order.coupon_discount.toFixed(2)}</td>`);
-            }
-            if (order.delivery_charge > 0) {
-                calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 10px 16px; box-sizing: border-box;" colspan="2">Delivery Charge</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; padding: 10px 16px; box-sizing: border-box;">₹ ${order.delivery_charge.toFixed(2)}</td>`);
-            }
-
-            calcRowsArray.push(`<td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 16px 16px; font-weight: bold; font-size: 20px; box-sizing: border-box; background: #f8fafc;" colspan="2">Final Total</td><td style="border-right: 1px solid #000; border-bottom: 1px solid #000; text-align: center; font-weight: bold; font-size: 20px; box-sizing: border-box; background: #f8fafc;">₹ ${order.final_total.toFixed(2)}</td>`);
-
-            const rowCount = calcRowsArray.length;
-            let amountInWords = numberToWords(order.final_total);
-            
-            // Amount in words strictly spans exactly 3 columns (#, Item Name, Qty). 
-            let calculationHTML = `
-                <tr style="color: #000;">
-                    <td colspan="3" rowspan="${rowCount}" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 20px; vertical-align: top; box-sizing: border-box;">
-                        <span style="font-weight: bold; font-size: 15px; text-transform: uppercase; color: #555;">Invoice Amount In Words:</span><br>
-                        <span style="font-weight: bold; font-size: 19px; display: inline-block; margin-top: 10px;">${amountInWords}</span>
-                    </td>
-                    ${calcRowsArray[0]}
-                </tr>
-            `;
-
-            for (let i = 1; i < rowCount; i++) {
-                calculationHTML += `
-                <tr style="color: #000;">
-                    ${calcRowsArray[i]}
-                </tr>`;
-            }
-
-            let descriptionParts = [];
-            if (warrantiesList.length > 0) {
-                descriptionParts.push(`<div style="display: flex; flex-direction: column; gap: 6px;">${warrantiesList.join('')}</div>`);
-            }
-            if (order.notes) {
-                descriptionParts.push(`<strong>Order Note:</strong><br><span style="color: #333;">${order.notes.replace(/\n/g, '<br>')}</span>`);
-            }
-            let descriptionHTML = descriptionParts.join('<br><br>');
-
-            const invoiceWrapper = document.createElement('div');
-            // DEVICE-INDEPENDENT FIX: Use fixed absolute positioning completely decoupled from viewport scaling and scroll.
-            invoiceWrapper.style.cssText = 'position: fixed; top: 0; left: 0; width: 1080px; z-index: -9999; opacity: 0.001; pointer-events: none; margin: 0; padding: 0; border: none; overflow: visible;';
-            
-            // Scaled fonts and paddings to perfectly map to a 1080px document
-            invoiceWrapper.innerHTML = `
-                <div id="pdf-dynamic-box" style="width: 1080px; padding: 48px; background: #fff; box-sizing: border-box; font-family: Helvetica, Arial, sans-serif; color: #000; margin: 0; position: relative;">
-                    <h2 style="text-align: center; font-size: 32px; font-weight: bold; margin: 0 0 28px 0; color: #000;">Tax Invoice</h2>
-                    
-                    <table style="width: 100%; border-collapse: separate; border-spacing: 0; border-top: 1px solid #000; border-left: 1px solid #000; font-size: 19px; background: #fff; margin: 0; padding: 0;">
-                        
-                        <!-- HEADER -->
-                        <tr style="color: #000;">
-                            <td colspan="6" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 28px; box-sizing: border-box;">
-                                <div style="display: flex; align-items: center; gap: 32px;">
-                                    <img src="${InvoiceSettings.logoUrl}" style="max-width: 240px; height: 80px; object-fit: contain;">
-                                    <div>
-                                        <h1 style="margin: 0 0 8px 0; font-size: 30px; font-weight: bold; color: #000;">${InvoiceSettings.storeName}</h1>
-                                        <p style="margin: 0 0 6px 0; font-size: 18px; color: #333;">${InvoiceSettings.address}</p>
-                                        <p style="margin: 0; font-size: 18px; color: #333;">Phone: <strong style="color: #000;">${InvoiceSettings.phone}</strong> &nbsp;|&nbsp; Email: <strong style="color: #000;">${InvoiceSettings.email}</strong></p>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <!-- INFO -->
-                        <tr style="color: #000;">
-                            <td colspan="4" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 22px; vertical-align: top; width: 60%; box-sizing: border-box;">
-                                <p style="margin: 0 0 12px 0; font-size: 15px; font-weight: bold; text-transform: uppercase; color: #555;">Bill To:</p>
-                                <p style="margin: 0 0 10px 0; font-size: 22px; font-weight: bold; text-transform: capitalize; color: #000;">${c.name}</p>
-                                <p style="margin: 0 0 6px 0; font-size: 18px; color: #000;"><strong>Phone:</strong> ${c.phone}</p>
-                                <p style="margin: 0 0 6px 0; font-size: 18px; color: #000;"><strong>Address:</strong> ${c.address}</p>
-                                <p style="margin: 0; font-size: 18px; color: #000;"><strong>Area:</strong> ${c.area} - Nadiad ${c.landmark ? `<br><strong>Landmark:</strong> ${c.landmark}` : ''}</p>
-                            </td>
-                            <td colspan="2" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 22px; vertical-align: top; width: 40%; box-sizing: border-box;">
-                                <p style="margin: 0 0 12px 0; font-size: 15px; font-weight: bold; text-transform: uppercase; color: #555;">Invoice Details:</p>
-                                <table style="width: 100%; border: none; font-size: 18px; line-height: 1.8; color: #000; margin: 0; padding: 0;">
-                                    <tr><td style="width: 80px; padding: 2px 0; border: none;">No:</td><td style="padding: 2px 0; border: none;"><strong>${order.order_reference}</strong></td></tr>
-                                    <tr><td style="padding: 2px 0; border: none;">Date:</td><td style="padding: 2px 0; border: none;"><strong>${dDate}</strong></td></tr>
-                                    <tr><td style="padding: 2px 0; border: none;">Time:</td><td style="padding: 2px 0; border: none;"><strong>${dTime}</strong></td></tr>
-                                </table>
-                            </td>
-                        </tr>
-
-                        <!-- TABLE HEADERS -->
-                        <tr style="background: #f8fafc; font-weight: bold; color: #000;">
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; width: 5%; box-sizing: border-box;">#</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; width: 41%; box-sizing: border-box;">Item Name</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; width: 8%; box-sizing: border-box;">Qty</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; width: 14%; box-sizing: border-box;">MRP</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; width: 14%; box-sizing: border-box;">RR Price</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; width: 18%; box-sizing: border-box;">Amount</td>
-                        </tr>
-
-                        ${itemsHTML}
-
-                        <!-- ITEM TOTALS -->
-                        <tr style="background: #f8fafc; font-weight: bold; color: #000;">
-                            <td colspan="2" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">Total</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">${totalQty}</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">₹ ${totalMRP.toFixed(2)}</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">₹ ${finalTotal.toFixed(2)}</td>
-                            <td style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 14px; text-align: center; box-sizing: border-box;">₹ ${finalTotal.toFixed(2)}</td>
-                        </tr>
-
-                        <!-- CALCULATIONS -->
-                        ${calculationHTML}
-
-                        <!-- FOOTER -->
-                        <tr style="color: #000;">
-                            <td colspan="4" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 0; vertical-align: top; box-sizing: border-box;">
-                                <div style="border-bottom: 1px solid #000; padding: 12px 22px; font-weight: bold; background: #f8fafc; text-transform: uppercase; font-size: 15px; color: #64748b;">Description & Notes:</div>
-                                <div style="padding: 22px; line-height: 1.6; font-size: 18px;">${descriptionHTML}</div>
-                            </td>
-                            <td colspan="2" style="border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 0; vertical-align: top; box-sizing: border-box;">
-                                <div style="border-bottom: 1px solid #000; padding: 12px 22px; font-weight: bold; background: #f8fafc; text-transform: uppercase; font-size: 15px; color: #64748b;">Store Message:</div>
-                                <div style="padding: 22px; border-bottom: 1px solid #000; line-height: 1.6; font-size: 18px; margin: 0;">${InvoiceSettings.terms}</div>
-                                <div style="padding: 12px 22px; border-bottom: 1px solid #000; font-weight: bold; background: #f8fafc; text-transform: uppercase; font-size: 15px; color: #64748b;">For ${InvoiceSettings.storeName}:</div>
-                                <div style="padding: 22px; text-align: center;">
-                                    <img src="${InvoiceSettings.signatureUrl}" style="height: 68px; margin-bottom: 6px; object-fit: contain;" onerror="this.style.display='none'"><br>
-                                    <span style="font-size: 19px; font-weight: bold;">${InvoiceSettings.signatoryName}</span>
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            `;
-
-            document.body.appendChild(invoiceWrapper);
-
-            setTimeout(async () => {
-                try {
-                    const contentBox = document.getElementById('pdf-dynamic-box');
-                    
-                    // Allow DOM a brief moment to finish rendering all dynamic elements/SVGs before measuring height
-                    await new Promise(resolve => setTimeout(resolve, 150));
-
-                    // Use getBoundingClientRect to capture exact fractional pixels
-                    const exactHeight = Math.ceil(contentBox.getBoundingClientRect().height) + 2; 
-
-                    const opt = {
-                        margin:       0, // Native margin handled flawlessly by the HTML 48px padding
-                        filename:     pdfFilename,
-                        image:        { type: 'jpeg', quality: 0.85 }, // Great quality, low MB size
-                        html2canvas:  { 
-                            scale: 3, 
-                            useCORS: true, 
-                            windowWidth: 1080, // Force logical window
-                            width: 1080, // Force canvas width
-                            windowHeight: exactHeight, // Force logical height
-                            height: exactHeight, // Force canvas height
-                            scrollX: 0,
-                            scrollY: 0,
-                            x: 0, // Enforce left coordinate explicitly on the fixed container
-                            y: 0  // Enforce top coordinate explicitly on the fixed container
-                        }, 
-                        jsPDF:        { 
-                            unit: 'px', 
-                            format: [1080, exactHeight], 
-                            orientation: 'portrait',
-                            hotfixes: ['px_scaling'] // Ensures 1 CSS px = 1 PDF px
-                        },
-                        pagebreak:    { mode: 'avoid-all' } // Strictly enforce ONE continuous bill-roll
-                    };
-
-                    await html2pdf().set(opt).from(contentBox).save();
-                } catch (err) {
-                    console.error("PDF Generation Error:", err);
-                    CustomUI.alert("Failed to generate PDF. Check console for details.");
-                } finally {
-                    if (document.body.contains(invoiceWrapper)) {
-                        document.body.removeChild(invoiceWrapper);
-                    }
-                    btnElement.innerHTML = originalBtnText;
-                    btnElement.disabled = false;
-                }
-            }, 150);
         } catch (err) {
-            console.error("Critical PDF Error:", err);
-            CustomUI.alert("Initialization Failed: " + err.message);
+            console.error("Sheet Sync Error:", err);
+            CustomUI.alert("Failed to connect to Google Sheets.", "Connection Error");
+        } finally {
             btnElement.innerHTML = originalBtnText;
             btnElement.disabled = false;
         }
@@ -695,9 +486,9 @@
                             <button title="WhatsApp Customer" style="display: flex; flex: 1; align-items: center; justify-content: center; height: 30px; background: #dcfce7; border: 1px solid #bbf7d0; border-radius: 6px; color: #166534; cursor: pointer; transition: all 0.2s;" onclick="AdminApp.contactCustomer('${c.phone}', '${order.order_reference}')">
                                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none"><path d="M11.99 0a11.96 11.96 0 00-10.3 18.06L0 24l6.09-1.6a11.94 11.94 0 105.9-22.4zM12 21.93a9.92 9.92 0 01-5.07-1.38l-.36-.21-3.77.99 1.01-3.68-.24-.37A9.87 9.87 0 1112 21.93zm5.42-7.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.26-.46-2.39-1.4-.88-.74-1.48-1.64-1.65-1.94-.17-.3 0-.46.13-.6.13-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.2-.24-.58-.48-.5-.67-.51-.17 0-.37 0-.57 0-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.06 2.88 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35z"/></svg>
                             </button>
-                            <button title="Download Invoice" style="display: flex; flex: 2; align-items: center; justify-content: center; gap: 4px; height: 30px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; color: #1d4ed8; font-weight: 700; font-size: 12px; cursor: pointer; transition: all 0.2s;" onclick="generateInvoice('${order.id}', this)">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                Invoice
+                            <button title="Load into Spreadsheet" style="display: flex; flex: 2; align-items: center; justify-content: center; gap: 4px; height: 30px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; color: #1d4ed8; font-weight: 700; font-size: 12px; cursor: pointer; transition: all 0.2s;" onclick="generateInvoice('${order.id}', this)">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                To Sheet
                             </button>
                         </div>
                     `;
@@ -825,9 +616,9 @@
                                             <svg viewBox="0 0 24 24" style="width: 16px !important; height: 16px !important; margin: 0 !important;" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                         </button>
                                         ` : `
-                                        <button class="btn-admin-action btn-invoice" title="Download Invoice" style="padding: 0 12px !important; height: 32px !important; flex: 2; justify-content: center; gap: 6px;" onclick="generateInvoice('${order.id}', this)">
-                                            <svg viewBox="0 0 24 24" style="width: 14px !important; height: 14px !important; margin: 0 !important;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                            <span style="font-size: 11px; display: inline-block !important;">Invoice</span>
+                                        <button class="btn-admin-action btn-invoice" title="Load into Spreadsheet" style="padding: 0 12px !important; height: 32px !important; flex: 2; justify-content: center; gap: 6px;" onclick="generateInvoice('${order.id}', this)">
+                                            <svg viewBox="0 0 24 24" style="width: 14px !important; height: 14px !important; margin: 0 !important;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                                            <span style="font-size: 11px; display: inline-block !important;">To Sheet</span>
                                         </button>
                                         `}
                                     </div>
@@ -1265,7 +1056,10 @@
             const deliverySettings = {
                 area: document.getElementById('config-delivery-area').value.trim(),
                 min_time: document.getElementById('config-delivery-min').value.trim(),
-                max_time: document.getElementById('config-delivery-max').value.trim()
+                max_time: document.getElementById('config-delivery-max').value.trim(),
+                charge: parseFloat(document.getElementById('config-delivery-charge').value) || 0,
+                free_above: parseFloat(document.getElementById('config-delivery-free').value) || 0,
+                min_order: parseFloat(document.getElementById('config-delivery-min-order').value) || 0
             };
             
             const homeSettings = {
