@@ -504,8 +504,8 @@
             }
         },
 
-        navigate: function(view, param = null, pushHistory = true) {
-            if (pushHistory) {
+        navigate: function(view, param = null, pushHistory = true, replaceHistory = false) {
+            if (pushHistory || replaceHistory) {
                 let hash = '';
                 if (view === 'product') hash = `#product-${param}`;
                 if (view === 'categories') hash = `#categories`;
@@ -513,7 +513,12 @@
                 if (view === 'search') hash = `#search-${encodeURIComponent(param)}`;
                 if (view === 'cart') hash = `#cart`;
                 if (view === 'checkout') hash = `#checkout`;
-                window.history.pushState({ view, param }, '', hash || window.location.pathname);
+                
+                if (replaceHistory) {
+                    window.history.replaceState({ view, param }, '', hash || window.location.pathname);
+                } else {
+                    window.history.pushState({ view, param }, '', hash || window.location.pathname);
+                }
             }
             this.renderView(view, param);
         },
@@ -567,29 +572,30 @@
         generateProductCardHTML: function(p) {
             const img = p.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
             
-            let discountHtml = '';
+            let badgeHtml = '';
             let compareString = '';
             if (p.mrp_price && p.mrp_price > p.selling_price) {
                 const off = Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100);
-                discountHtml = `<span style="color: var(--success); font-weight: 700; font-size: 12px; margin-left: 8px;">${off}% OFF</span>`;
+                // Badge moved to top-left of image
+                badgeHtml = `<div class="product-discount-badge">${off}% OFF</div>`;
                 compareString = `<span style="color: var(--slate-400); font-size: 12px; text-decoration: line-through; margin-left: 6px;">₹${p.mrp_price}</span>`;
             }
 
             return `
                 <a href="javascript:void(0)" onclick="Store.navigate('product', '${p.id}')" class="store-product-card">
                     <div class="img-wrapper">
+                        ${badgeHtml}
                         <img src="${img}" alt="${p.name}" loading="lazy">
                     </div>
                     <div class="store-product-card-details">
                         <div class="store-product-card-price-row">
                             <span class="selling-price">₹${p.selling_price}</span>
                             ${compareString}
-                            ${discountHtml}
                         </div>
                         <h3 class="store-product-card-title">${p.name}</h3>
                         <div class="store-product-card-action">
-                            <button type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 12px; border-radius: var(--radius-sm);" onclick="event.preventDefault(); event.stopPropagation(); Store.addToCart('${p.id}')" aria-label="Add to Bag">
-                                Add
+                            <button type="button" class="btn-add-icon-only" onclick="event.preventDefault(); event.stopPropagation(); Store.addToCart('${p.id}')" aria-label="Add to Bag">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path><line x1="12" y1="10" x2="12" y2="16"></line><line x1="9" y1="13" x2="15" y2="13"></line></svg>
                             </button>
                         </div>
                     </div>
@@ -795,17 +801,49 @@
                 slidesHtml += `<div class="carousel-slide clone" onclick="Store.openLightbox('${images[0]}')" style="cursor: zoom-in;"><img src="${images[0]}" alt="${p.name}"></div>`;
             }
 
-            const related = this.state.products
-                .filter(x => x.category_id === p.category_id && x.id !== p.id)
-                .slice(0, 4);
+            const relatedProducts = this.state.products
+                .filter(x => x.id !== p.id && x.is_active !== false)
+                .map(x => {
+                    let score = 0;
+                    if (x.category_id === p.category_id) score += 50;
+                    const currentNameWords = p.name.toLowerCase().split(' ').filter(w => w.length > 3);
+                    currentNameWords.forEach(word => {
+                        if (x.name.toLowerCase().includes(word)) score += 10;
+                    });
+                    return { product: x, score: score };
+                })
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 30)
+                .map(item => item.product);
 
             let relatedHtml = '';
-            if (related.length > 0) {
+            if (relatedProducts.length > 0) {
                 relatedHtml = `
                     <div style="padding: 16px; margin-top: 24px; border-top: 1px solid var(--border);">
                         <h2 style="font-size: 18px; margin-bottom: 16px;">You may also like</h2>
-                        <div class="products-grid">
-                            ${related.map(r => this.generateProductCardHTML(r)).join('')}
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                            ${relatedProducts.map(rel => {
+                                const img = rel.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
+                                const discount = rel.mrp_price && rel.selling_price < rel.mrp_price ? Math.round(((rel.mrp_price - rel.selling_price) / rel.mrp_price) * 100) : 0;
+                                return `
+                                    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm); cursor: pointer;" onclick="Store.navigate('product', '${rel.id}')">
+                                        <div>
+                                            <div style="position: relative; width: 100%; height: 110px; background: #f8fafc; border-radius: 6px; overflow: hidden; margin-bottom: 6px;">
+                                                <img src="${img}" style="width: 100%; height: 100%; object-fit: contain;" alt="${rel.name}">
+                                                ${discount > 0 ? `<span style="position: absolute; top: 4px; left: 4px; background: #ef4444; color: white; font-size: 8px; font-weight: 800; padding: 2px 4px; border-radius: 3px;">${discount}% OFF</span>` : ''}
+                                            </div>
+                                            <div style="font-size: 12px; font-weight: 600; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 32px; margin-bottom: 4px; line-height: 1.2;" title="${rel.name}">${rel.name}</div>
+                                        </div>
+                                        <div>
+                                            <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; flex-wrap: wrap;">
+                                                <span style="font-size: 13px; font-weight: 800; color: var(--text-main);">₹${rel.selling_price}</span>
+                                                ${rel.mrp_price && rel.mrp_price > rel.selling_price ? `<span style="font-size: 10px; color: var(--text-muted); text-decoration: line-through;">₹${rel.mrp_price}</span>` : ''}
+                                            </div>
+                                            <button onclick="event.stopPropagation(); Store.addToCart('${rel.id}')" style="width: 100%; background: var(--primary); color: white; border: none; padding: 5px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">+ Add</button>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                 `;
@@ -837,7 +875,7 @@
                         <div style="margin-bottom: 16px;"></div>
                         
                         ${(() => {
-                            let pricingHtml = `<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--slate-200);">`;
+                            let pricingHtml = `<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 5px; margin-bottom: 2px; padding-bottom: 2px; border-bottom: 1px solid var(--slate-200);">`;
 
                             // Left side: Price & MRP
                             pricingHtml += `<div style="display: flex; flex-direction: column; gap: 8px;">`;
@@ -876,26 +914,7 @@
                             if ((p.linked_product_ids && p.linked_product_ids.length > 0) || p.custom_options || (p.pack_qty && p.pack_price)) {
                                 variantHtml += `<div class="variant-engine-container">`;
                                 
-                                // 1. Linked Products (Smart Link Engine)
-                                if (p.linked_product_ids && p.linked_product_ids.length > 0) {
-                                    const linkedProds = this.state.products.filter(x => p.linked_product_ids.includes(x.id));
-                                    if (linkedProds.length > 0) {
-                                        const allLinked = [p, ...linkedProds].sort((a,b) => a.selling_price - b.selling_price);
-                                        variantHtml += `
-                                            <div class="variant-group">
-                                                <div class="variant-label">Available Variations</div>
-                                                <div class="variant-pill-list">
-                                                    ${allLinked.map(lp => {
-                                                        let shortName = lp.name.length > 22 ? lp.name.substring(0, 22) + '...' : lp.name;
-                                                        return `<a href="javascript:void(0)" onclick="Store.navigate('product', '${lp.id}')" class="variant-pill ${lp.id === p.id ? 'active' : ''}">${shortName}</a>`;
-                                                    }).join('')}
-                                                </div>
-                                            </div>
-                                        `;
-                                    }
-                                }
-
-                                // 2. Custom Options (Colors, etc.)
+                                // 1. Custom Options (Colors, etc.)
                                 if (p.custom_options) {
                                     const parts = p.custom_options.split(':');
                                     const label = parts.length > 1 ? parts[0].trim() : 'Options';
@@ -916,7 +935,7 @@
                                     }
                                 }
 
-                                // 3. Bulk Pack Engine (Multi-Tier)
+                                // 2. Bulk Pack Engine (Multi-Tier)
                                 const tiers = (p.bulk_packs && Array.isArray(p.bulk_packs) && p.bulk_packs.length > 0)
                                     ? p.bulk_packs
                                     : (p.pack_qty && p.pack_price ? [{ qty: p.pack_qty, price: p.pack_price }] : []);
@@ -949,6 +968,49 @@
                                     `;
                                 }
 
+                                // 3. Linked Products (Smart Link Engine - Moved to bottom)
+                                if (p.linked_product_ids && p.linked_product_ids.length > 0) {
+                                    const linkedProds = this.state.products.filter(x => p.linked_product_ids.includes(x.id));
+                                    if (linkedProds.length > 0) {
+                                        const allLinked = [p, ...linkedProds].sort((a,b) => a.selling_price - b.selling_price);
+                                        variantHtml += `
+                                            <div class="variant-group">
+                                                <div class="variant-label" style="margin-bottom: 4px;">Available Variations</div>
+                                                <div class="variant-card-list">
+                                                    ${allLinked.map(lp => {
+                                                        const img = lp.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
+                                                        let discountHtml = '';
+                                                        let mrpHtml = '';
+                                                        if (lp.mrp_price && lp.mrp_price > lp.selling_price) {
+                                                            const off = Math.round(((lp.mrp_price - lp.selling_price) / lp.mrp_price) * 100);
+                                                            discountHtml = `<span class="vc-discount">${off}% OFF</span>`;
+                                                            mrpHtml = `<span class="vc-mrp">₹${lp.mrp_price}</span>`;
+                                                        }
+                                                        const isActive = lp.id === p.id;
+                                                        
+                                                        return `
+                                                            <a href="javascript:void(0)" onclick="Store.navigate('product', '${lp.id}', false, true)" class="variant-card ${isActive ? 'active' : ''}">
+                                                                ${isActive ? '<div class="vc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>' : ''}
+                                                                <div class="vc-img-wrapper">
+                                                                    <img src="${img}" alt="${lp.name}" loading="lazy">
+                                                                </div>
+                                                                <div class="vc-details">
+                                                                    <div class="vc-title" title="${lp.name}">${lp.name}</div>
+                                                                    <div class="vc-price-row">
+                                                                        <span class="vc-price">₹${lp.selling_price}</span>
+                                                                        ${mrpHtml}
+                                                                        ${discountHtml}
+                                                                    </div>
+                                                                </div>
+                                                            </a>
+                                                        `;
+                                                    }).join('')}
+                                                </div>
+                                            </div>
+                                        `;
+                                    }
+                                }
+
                                 variantHtml += `</div>`;
                             }
                             return variantHtml;
@@ -956,33 +1018,7 @@
                         
                         ${p.description ? `<div class="pdp-desc" style="margin-top: 16px;">${p.description.replace(/\n/g, '<br>')}</div>` : ''}
                         
-                        ${(() => {
-                            let crossSellHtml = '';
-                            if (p.accessory_ids && p.accessory_ids.length > 0) {
-                                const accessories = this.state.products.filter(x => p.accessory_ids.includes(x.id) && x.is_active);
-                                if (accessories.length > 0) {
-                                    crossSellHtml += `
-                                        <div class="cross-sell-container">
-                                            <div class="cross-sell-title">Frequently Bought Together</div>
-                                            <div class="cross-sell-grid">
-                                                ${accessories.map(acc => {
-                                                    const img = acc.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
-                                                    return `
-                                                        <div class="cross-sell-card">
-                                                            <img src="${img}" class="cross-sell-img" alt="${acc.name}" onclick="Store.navigate('product', '${acc.id}')" style="cursor: pointer;">
-                                                            <div class="cross-sell-name" onclick="Store.navigate('product', '${acc.id}')" style="cursor: pointer;" title="${acc.name}">${acc.name}</div>
-                                                            <div class="cross-sell-price">₹${acc.selling_price}</div>
-                                                            <button class="cross-sell-btn" onclick="Store.addToCart('${acc.id}')">+ Add</button>
-                                                        </div>
-                                                    `;
-                                                }).join('')}
-                                            </div>
-                                        </div>
-                                    `;
-                                }
-                            }
-                            return crossSellHtml;
-                        })()}
+                        <div id="pdp-cross-sell-container"></div>
 
                         <button class="btn-add-cart-large" onclick="Store.handlePDPAddToCart('${p.id}')">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
@@ -1083,6 +1119,46 @@
                 });
                 track.addEventListener('mouseup', (e) => touchEnd(e.clientX));
                 track.addEventListener('mouseleave', (e) => touchEnd(e.clientX));
+            }
+
+            // Asynchronously load cross-sells to prevent slowing down the main page load
+            this.loadCrossSells(p.id, p.category_id);
+        },
+
+        loadCrossSells: async function(productId, categoryId) {
+            const container = document.getElementById('pdp-cross-sell-container');
+            if (!container) return;
+            
+            try {
+                const { data, error } = await supabase.rpc('get_fbt_products', { p_id: productId, c_id: categoryId });
+                if (error || !data || data.length === 0) return;
+                
+                // Map the returned secure IDs back to our pre-loaded safe frontend product details
+                const recs = data.map(d => this.state.products.find(p => p.id === d.rec_id)).filter(Boolean);
+                
+                if (recs.length > 0) {
+                    const html = `
+                        <div class="cross-sell-container">
+                            <div class="cross-sell-title">Frequently Bought Together</div>
+                            <div class="cross-sell-grid">
+                                ${recs.map(acc => {
+                                    const img = acc.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
+                                    return `
+                                        <div class="cross-sell-card">
+                                            <img src="${img}" class="cross-sell-img" alt="${acc.name}" onclick="Store.navigate('product', '${acc.id}')" style="cursor: pointer;">
+                                            <div class="cross-sell-name" onclick="Store.navigate('product', '${acc.id}')" style="cursor: pointer;" title="${acc.name}">${acc.name}</div>
+                                            <div class="cross-sell-price">₹${acc.selling_price}</div>
+                                            <button class="cross-sell-btn" onclick="Store.addToCart('${acc.id}')">+ Add</button>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML = html;
+                }
+            } catch (err) {
+                console.warn('Cross-sell background calculation skipped.');
             }
         },
 

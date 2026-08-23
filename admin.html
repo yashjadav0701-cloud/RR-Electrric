@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin — RR ELECTRRIC</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" href="/styles.css?v=4.0">
-    <link rel="stylesheet" href="/admin.css?v=4.0">
-    <link rel="icon" type="image/svg+xml" href="/assets/logo-short.svg?v=4.0">
+    <link rel="stylesheet" href="/styles.css?v=4.1">
+    <link rel="stylesheet" href="/admin.css?v=4.1">
+    <link rel="icon" type="image/svg+xml" href="/assets/logo-short.svg?v=4.1">
     
     <!-- Preconnect to Supabase for faster API handshakes -->
     <link rel="preconnect" href="https://ycckkswajajrqobrohcx.supabase.co" crossorigin>
@@ -17,12 +17,12 @@
 <body>
     <!-- Global Preloader -->
     <div id="global-preloader" class="global-preloader">
-        <img src="/assets/logo-full.svg?v=4.0" alt="RR" class="preloader-logo">
+        <img src="/assets/logo-full.svg?v=4.1" alt="RR" class="preloader-logo">
     </div>
 
     <div id="admin-auth" class="admin-auth-container">
         <div class="auth-card">
-            <img src="/assets/logo-full.svg?v=4.0" alt="RR ELECTRRIC" width="200" style="margin-bottom: 24px;">
+            <img src="/assets/logo-full.svg?v=4.1" alt="RR ELECTRRIC" width="200" style="margin-bottom: 24px;">
             <h2>Admin Gateway</h2>
             <p>Authentication required.</p>
             <div id="login-error" class="hidden" style="color: var(--danger); margin-bottom: 16px; font-size: 14px;"></div>
@@ -37,8 +37,8 @@
     <div id="admin-app" class="admin-layout hidden">
         <aside class="admin-sidebar">
             <div class="sidebar-brand">
-                <img src="/assets/logo-short.svg?v=4.0" alt="RR" width="32" class="mobile-only">
-                <img src="/assets/logo-full.svg?v=4.0" alt="RR ELECTRRIC" width="140" class="desktop-only">
+                <img src="/assets/logo-short.svg?v=4.1" alt="RR" width="32" class="mobile-only">
+                <img src="/assets/logo-full.svg?v=4.1" alt="RR ELECTRRIC" width="140" class="desktop-only">
             </div>
             <nav class="admin-nav">
                 <a href="#dashboard" class="active">
@@ -317,15 +317,14 @@
                 </div>
                 <!-- END SMART VARIANT ENGINE BOX -->
 
-                <!-- CROSS-SELLING ENGINE BOX -->
+                <!-- CROSS-SELLING ENGINE BOX (AUTO + MANUAL) -->
                 <div style="border: 1px solid var(--border); padding: 14px; border-radius: var(--radius); background: var(--bg-main); margin-bottom: 16px;">
                     <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 14px; color: var(--success); display: flex; align-items: center; gap: 6px;">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20v-4"></path></svg>
-                        Cross-Selling Engine (Accessories)
+                        Frequently Bought Together (Auto & Manual)
                     </h4>
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label>Frequently Bought Together <small>(e.g. Link Switches to this Plate)</small></label>
-                        <input type="text" id="accessory-search-input" placeholder="Type to search for accessories..." style="margin-bottom: 8px;" autocomplete="off">
+                        <input type="text" id="accessory-search-input" placeholder="Type to search or let AI auto-select..." style="margin-bottom: 8px;" autocomplete="off">
                         <div id="product-accessory-ids-container" class="linked-products-container" style="height: 180px;"></div>
                     </div>
                 </div>
@@ -450,6 +449,6 @@
         </div>
     </div>
 
-    <script src="/admin.js?v=4.0"></script>
+    <script src="/admin.js?v=4.1"></script>
 </body>
 </html>

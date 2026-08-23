@@ -1133,54 +1133,110 @@
                 .trim();
         },
 
+        // ROBUST AMAZON-STYLE BASE IDENTITY EXTRACTOR
+        extractBaseModel: function(name) {
+            if (!name) return '';
+            let base = name.toLowerCase();
+            
+            // Remove safe special characters
+            base = base.replace(/[^\w\s-]/g, ' ');
+
+            // Strip colors, color temperatures (e.g. 6500k, 3000k), and descriptive modifiers
+            base = base.replace(/\b(red|blue|white|warm white|cool day light|yellow|green|black|grey|gray|ivory|gold|silver|off-white|rgb|crystal white)\b/gi, ''); 
+            base = base.replace(/\b(\d+(?:\.\d+)?)\s*(w|kw|v|kv|a|ma|mah|ah|k)\b/gi, ''); // Wattages, Voltage, Amperage, Kelvin ratings
+            base = base.replace(/\b(\d+)\s*(module|m|way|pole|p|pin|gang)\b/gi, ''); // Structural variants
+            base = base.replace(/\b(sp|dp|tp|tpn|b22|e27|e14|base)\b/gi, ''); // Tech specs & socket bases
+            base = base.replace(/\b(\d+(?:\.\d+)?)\s*(mm|cm|inch|m|meter|sqmm|sq mm|kg|g|gm|ml|ltr|liter)\b/gi, ''); // Dimensions & Weights
+            base = base.replace(/\b(pack of \d+|pack|set of \d+|\d+\s*pk|inverter|stellar bright|stellarbright|bright)\b/gi, ''); // Pack sizes & sub-brand descriptors
+            
+            // Cleanup extra spaces
+            return base.replace(/\s+/g, ' ').trim();
+        },
+
         updateSmartLinkSuggestions: function() {
             const nameInput = document.getElementById('product-name').value;
             const container = document.getElementById('product-linked-ids-container');
             if (!container) return;
 
             const currentProductId = document.getElementById('product-id').value;
+            const currentCategoryId = document.getElementById('product-category-id').value;
+            
+            if (!AdminApp._currentLinkedIds) AdminApp._currentLinkedIds = new Set();
+            if (!AdminApp._manuallyUncheckedLinked) AdminApp._manuallyUncheckedLinked = new Set();
+
+            const currentBaseModel = AdminApp.extractBaseModel(nameInput);
             const q = this.normalizeSearchText(nameInput);
             const queryTokens = q.split(' ').filter(t => t);
 
             let scoredProducts = this.state.products.filter(p => p.id !== currentProductId).map(p => {
                 let score = 0;
-                
-                // Pin already selected items to the very top permanently
-                if (AdminApp._currentLinkedIds && AdminApp._currentLinkedIds.has(p.id)) {
-                    score += 10000;
+                let isAuto = false;
+
+                if (!p._searchNormName) {
+                    p._searchNormName = AdminApp.normalizeSearchText(p.name);
+                    p._baseModel = AdminApp.extractBaseModel(p.name);
                 }
 
-                // Score remaining products based on matching name tokens
-                if (queryTokens.length > 0) {
-                    if (!p._searchNormName) {
-                        p._searchNormName = this.normalizeSearchText(p.name);
-                        p._searchCat = (p.categories?.name || '').toLowerCase();
-                    }
+                const pTokens = p._searchNormName.split(' ').filter(t => t);
+                let exactMatches = 0;
+                queryTokens.forEach(token => {
+                    if (pTokens.includes(token)) exactMatches++;
+                });
 
+                const matchRatio = queryTokens.length > 0 ? (exactMatches / Math.max(queryTokens.length, pTokens.length)) : 0;
+                const sameCategory = p.category_id === currentCategoryId;
+
+                // 🚀 FLEXIBLE "ALMOST MATCH" AUTO-SELECTION RULE:
+                // If they are in the same category and share a high token match ratio (>= 45%), auto-select them!
+                if (sameCategory && matchRatio >= 0.45 && !AdminApp._manuallyUncheckedLinked.has(p.id)) {
+                    AdminApp._currentLinkedIds.add(p.id);
+                    isAuto = true;
+                    score += 50000;
+                } else if (currentBaseModel.length > 3 && p._baseModel === currentBaseModel && !AdminApp._manuallyUncheckedLinked.has(p.id)) {
+                    AdminApp._currentLinkedIds.add(p.id);
+                    isAuto = true;
+                    score += 50000;
+                }
+
+                // Score remaining items for sorting arrangement
+                if (queryTokens.length > 0) {
                     queryTokens.forEach(token => {
-                        if (p._searchNormName.split(' ').includes(token)) score += 10; // Exact word match
-                        else if (p._searchNormName.includes(token)) score += 3; // Partial match
-                        else if (p._searchCat.includes(token)) score += 1; // Category match
+                        if (p._searchNormName.includes(token)) score += 10;
                     });
                 }
 
-                return { product: p, score: score };
+                if (AdminApp._currentLinkedIds.has(p.id)) {
+                    score += 100000;
+                }
+
+                return { product: p, score: score, isAuto: isAuto };
             });
 
-            // Sort by highest score first, then alphabetical
             scoredProducts.sort((a, b) => {
                 if (b.score !== a.score) return b.score - a.score;
                 return a.product.name.localeCompare(b.product.name);
             });
 
-            // Rebuild HTML cleanly with checkboxes and images
+            if (queryTokens.length > 0) {
+                 const checkedCount = AdminApp._currentLinkedIds.size;
+                 const limit = Math.max(30, checkedCount + 10);
+                 scoredProducts = scoredProducts.slice(0, limit);
+            }
+
             container.innerHTML = scoredProducts.map(m => {
-                const isChecked = (AdminApp._currentLinkedIds && AdminApp._currentLinkedIds.has(m.product.id)) ? 'checked' : '';
+                const isChecked = AdminApp._currentLinkedIds.has(m.product.id) ? 'checked' : '';
+                let badge = '';
+                if (m.isAuto) {
+                    badge = `<span style="font-size:10px; font-weight:800; color:var(--primary); background:#eff6ff; padding:2px 6px; border-radius:4px; margin-left:6px; vertical-align:middle; display:inline-block;">ALMOST MATCH</span>`;
+                } else if (isChecked) {
+                    badge = `<span style="font-size:10px; font-weight:800; color:var(--primary); background:#eff6ff; padding:2px 6px; border-radius:4px; margin-left:6px; vertical-align:middle; display:inline-block;">LINKED</span>`;
+                }
+                
                 const img = m.product.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
                 return `
                     <label class="linked-product-row">
                         <img src="${img}" alt="">
-                        <span>${m.product.name}</span>
+                        <span>${m.product.name} ${badge}</span>
                         <input type="checkbox" value="${m.product.id}" ${isChecked} onchange="AdminApp.toggleLinkedProduct('${m.product.id}', this.checked)">
                     </label>
                 `;
@@ -1189,10 +1245,97 @@
 
         toggleLinkedProduct: function(id, isChecked) {
             if (!AdminApp._currentLinkedIds) AdminApp._currentLinkedIds = new Set();
+            if (!AdminApp._manuallyUncheckedLinked) AdminApp._manuallyUncheckedLinked = new Set();
+            
             if (isChecked) {
                 AdminApp._currentLinkedIds.add(id);
+                AdminApp._manuallyUncheckedLinked.delete(id);
             } else {
                 AdminApp._currentLinkedIds.delete(id);
+                AdminApp._manuallyUncheckedLinked.add(id);
+            }
+        },
+
+        updateAccessorySuggestions: function() {
+            const searchInput = document.getElementById('accessory-search-input')?.value || '';
+            const container = document.getElementById('product-accessory-ids-container');
+            if (!container) return;
+
+            const currentProductId = document.getElementById('product-id').value;
+            const q = this.normalizeSearchText(searchInput);
+            const queryTokens = q.split(' ').filter(t => t);
+
+            let scoredProducts = this.state.products.filter(p => p.id !== currentProductId).map(p => {
+                let score = 0;
+                let reason = AdminApp._rpcAccessories?.[p.id] || null;
+                
+                if (reason) {
+                    score += 5000; 
+                }
+                
+                if (AdminApp._currentAccessoryIds && AdminApp._currentAccessoryIds.has(p.id)) {
+                    score += 10000; 
+                }
+
+                if (queryTokens.length > 0) {
+                    if (!p._searchNormName) {
+                        p._searchNormName = this.normalizeSearchText(p.name);
+                        p._searchCat = (p.categories?.name || '').toLowerCase();
+                    }
+
+                    queryTokens.forEach(token => {
+                        if (p._searchNormName.split(' ').includes(token)) score += 10;
+                        else if (p._searchNormName.includes(token)) score += 3;
+                        else if (p._searchCat.includes(token)) score += 1;
+                    });
+                } else if (!AdminApp._currentAccessoryIds || !AdminApp._currentAccessoryIds.has(p.id)) {
+                    score -= 1;
+                }
+
+                return { product: p, score: score, reason: reason };
+            });
+
+            scoredProducts.sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                return a.product.name.localeCompare(b.product.name);
+            });
+
+            if (queryTokens.length === 0) {
+                const checkedCount = AdminApp._currentAccessoryIds ? AdminApp._currentAccessoryIds.size : 0;
+                const limit = Math.max(50, checkedCount + 10);
+                scoredProducts = scoredProducts.slice(0, limit);
+            }
+
+            container.innerHTML = scoredProducts.map(m => {
+                const isChecked = (AdminApp._currentAccessoryIds && AdminApp._currentAccessoryIds.has(m.product.id)) ? 'checked' : '';
+                let badge = '';
+                if (m.reason) {
+                    badge = `<span style="font-size:10px; font-weight:800; color:var(--success); background:#dcfce7; padding:2px 6px; border-radius:4px; margin-left:6px; vertical-align:middle; display:inline-block;">${m.reason.toUpperCase()}</span>`;
+                } else if (isChecked) {
+                    badge = `<span style="font-size:10px; font-weight:800; color:var(--success); background:#dcfce7; padding:2px 6px; border-radius:4px; margin-left:6px; vertical-align:middle; display:inline-block;">LINKED</span>`;
+                }
+
+                const img = m.product.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
+                return `
+                    <label class="linked-product-row">
+                        <img src="${img}" alt="">
+                        <span>${m.product.name} ${badge}</span>
+                        <input type="checkbox" value="${m.product.id}" ${isChecked} onchange="AdminApp.toggleAccessory('${m.product.id}', this.checked)">
+                    </label>
+                `;
+            }).join('');
+        },
+
+        toggleAccessory: function(id, isChecked) {
+            if (!AdminApp._currentAccessoryIds) AdminApp._currentAccessoryIds = new Set();
+            if (!AdminApp._manuallyUncheckedAccessories) AdminApp._manuallyUncheckedAccessories = new Set();
+            
+            if (isChecked) {
+                AdminApp._currentAccessoryIds.add(id);
+                AdminApp._manuallyUncheckedAccessories.delete(id);
+            } else {
+                AdminApp._currentAccessoryIds.delete(id);
+                AdminApp._manuallyUncheckedAccessories.add(id);
             }
         },
 
@@ -1207,13 +1350,17 @@
 
             let scoredProducts = this.state.products.filter(p => p.id !== currentProductId).map(p => {
                 let score = 0;
+                let reason = AdminApp._rpcAccessories?.[p.id] || null;
                 
-                // Pin already selected items to the very top permanently
+                // Auto-select AI recommendations
+                if (reason && !AdminApp._manuallyUncheckedAccessories?.has(p.id)) {
+                    AdminApp._currentAccessoryIds.add(p.id);
+                }
+                
                 if (AdminApp._currentAccessoryIds && AdminApp._currentAccessoryIds.has(p.id)) {
                     score += 10000;
                 }
 
-                // Score remaining products based on matching name tokens from the accessory search box
                 if (queryTokens.length > 0) {
                     if (!p._searchNormName) {
                         p._searchNormName = this.normalizeSearchText(p.name);
@@ -1226,34 +1373,31 @@
                         else if (p._searchCat.includes(token)) score += 1;
                     });
                 } else if (!AdminApp._currentAccessoryIds || !AdminApp._currentAccessoryIds.has(p.id)) {
-                    // Push down non-selected items if there is no search active
                     score -= 1;
                 }
 
-                return { product: p, score: score };
+                return { product: p, score: score, reason: reason };
             });
 
-            // Sort by highest score first, then alphabetical
             scoredProducts.sort((a, b) => {
                 if (b.score !== a.score) return b.score - a.score;
                 return a.product.name.localeCompare(b.product.name);
             });
 
-            // Limit to top 50 to render fast unless there's a specific search
             if (queryTokens.length === 0) {
                 const checkedCount = AdminApp._currentAccessoryIds ? AdminApp._currentAccessoryIds.size : 0;
                 const limit = Math.max(50, checkedCount + 10);
                 scoredProducts = scoredProducts.slice(0, limit);
             }
 
-            // Rebuild HTML cleanly with checkboxes and images
             container.innerHTML = scoredProducts.map(m => {
                 const isChecked = (AdminApp._currentAccessoryIds && AdminApp._currentAccessoryIds.has(m.product.id)) ? 'checked' : '';
+                const reasonBadge = m.reason ? `<span style="font-size:10px; font-weight:800; color:var(--success); background:#dcfce7; padding:2px 6px; border-radius:4px; margin-left:6px; vertical-align:middle; display:inline-block;">${m.reason.toUpperCase()}</span>` : '';
                 const img = m.product.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
                 return `
                     <label class="linked-product-row">
                         <img src="${img}" alt="">
-                        <span>${m.product.name}</span>
+                        <span>${m.product.name} ${reasonBadge}</span>
                         <input type="checkbox" value="${m.product.id}" ${isChecked} onchange="AdminApp.toggleAccessory('${m.product.id}', this.checked)">
                     </label>
                 `;
@@ -1262,10 +1406,14 @@
 
         toggleAccessory: function(id, isChecked) {
             if (!AdminApp._currentAccessoryIds) AdminApp._currentAccessoryIds = new Set();
+            if (!AdminApp._manuallyUncheckedAccessories) AdminApp._manuallyUncheckedAccessories = new Set();
+            
             if (isChecked) {
                 AdminApp._currentAccessoryIds.add(id);
+                AdminApp._manuallyUncheckedAccessories.delete(id);
             } else {
                 AdminApp._currentAccessoryIds.delete(id);
+                AdminApp._manuallyUncheckedAccessories.add(id);
             }
         },
 
@@ -1815,7 +1963,30 @@
                 
                 AdminApp._currentLinkedIds = new Set(product.linked_product_ids || []);
                 AdminApp._currentAccessoryIds = new Set(product.accessory_ids || []);
+                AdminApp._manuallyUncheckedLinked = new Set();
+                AdminApp._manuallyUncheckedAccessories = new Set();
+                AdminApp._rpcAccessories = {};
+                
                 if(document.getElementById('accessory-search-input')) document.getElementById('accessory-search-input').value = '';
+
+                // 🚀 WAKE UP THE VARIANT ENGINE IMMEDIATELY ON LOAD
+                this.updateSmartLinkSuggestions();
+
+                // Run AI FBT Suggestions and Auto-Check them
+                if (product.id && window.supabase) {
+                    supabase.rpc('get_fbt_products', { p_id: product.id, c_id: product.category_id }).then(({data}) => {
+                        if (data) {
+                            data.forEach(d => {
+                                AdminApp._rpcAccessories[d.rec_id] = d.reason;
+                                // Auto-check if not manually unchecked during this edit session
+                                if (!AdminApp._manuallyUncheckedAccessories.has(d.rec_id)) {
+                                    AdminApp._currentAccessoryIds.add(d.rec_id);
+                                }
+                            });
+                            this.updateAccessorySuggestions();
+                        }
+                    });
+                }
                 
                 if (product.warranty) {
                     const parts = product.warranty.split(' ');
@@ -1868,7 +2039,13 @@
                 
                 AdminApp._currentLinkedIds = new Set();
                 AdminApp._currentAccessoryIds = new Set();
+                AdminApp._manuallyUncheckedLinked = new Set();
+                AdminApp._manuallyUncheckedAccessories = new Set();
+                AdminApp._rpcAccessories = {};
                 if(document.getElementById('accessory-search-input')) document.getElementById('accessory-search-input').value = '';
+                
+                // 🚀 CLEAR THE VARIANT ENGINE ON NEW PRODUCT
+                this.updateSmartLinkSuggestions();
             }
             this.renderImagePreviews();
             

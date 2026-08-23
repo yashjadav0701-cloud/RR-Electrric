@@ -641,20 +641,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 .mrp-price { font-size: 12px; }
 
-.product-discount-badge {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    background-color: #dcfce7;
-    color: var(--success); 
-    font-weight: 700;
-    font-size: 11px;
-    padding: 4px 8px;
-    border-radius: var(--radius-sm);
-    letter-spacing: 0.5px;
-    box-shadow: var(--shadow-sm);
-    z-index: 10;
-}
+
 
 .status-badge {
     display: inline-flex;
@@ -717,27 +704,6 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     overflow: hidden;
     background: #ffffff;
     border-bottom: 1px solid var(--slate-100);
-}
-
-.carousel-wrapper {
-    position: relative;
-    width: 100%;
-    max-width: 380px; /* Safe size for mobile */
-    aspect-ratio: 1; /* MAGIC FIX: Forces the box to be a large square, ignoring image size! */
-    margin: 0 auto;
-    background: #ffffff; /* Restores the clean white background */
-    border-radius: var(--radius); 
-    overflow: hidden; 
-    border: 1px solid var(--border); /* Restores the clean border */
-}
-
-@media (min-width: 768px) {
-    .carousel-wrapper {
-        max-width: 100% !important; /* Forces it to fill the entire desktop column */
-    }
-}
-
-.store-product-card .img-wrapper {
     aspect-ratio: 1;
     padding: 16px;
     display: flex;
@@ -792,7 +758,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 .store-product-card-action {
     margin-top: auto;
-    padding-top: 12px;
+    padding-top: 8px; /* Tighter padding since the button is compact */
     display: flex;
     justify-content: flex-end;
 }
@@ -1828,38 +1794,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     margin-bottom: 24px;
 }
 
-.inventory-filters {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr); /* Creates 3 equal columns for the dropdowns */
-    gap: 12px;
-    width: 100%;
-}
 
-/* Force the search input to span across all 3 columns on the top row */
-#inv-search-input {
-    grid-column: 1 / -1; 
-}
-
-/* Switch to Single Horizontal Row on Desktop/Tablet */
-@media (min-width: 768px) {
-    .inventory-toolbar {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-    }
-    
-    .inventory-filters {
-        /* Gives the search bar 2x the space of the dropdowns */
-        grid-template-columns: 2fr 1fr 1fr 1fr; 
-        flex: 1;
-        margin-right: 24px;
-    }
-    
-    /* Reset the search bar so it fits in the single desktop row */
-    #inv-search-input {
-        grid-column: auto;
-    }
-}
 
 /* ============================================================
    EXACT ADMIN FILTER LAYOUT (Search top, 3 dropdowns side-by-side)
@@ -2287,15 +2222,13 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
    SMART VARIANT ENGINE (PHASE 3)
    ============================================================ */
 .variant-engine-container {
-    margin-top: 16px;
-    margin-bottom: 16px;
+    margin-top: 0;
+    margin-bottom: 12px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    border-top: 1px dashed var(--border);
     border-bottom: 1px dashed var(--border);
-    padding-top: 16px;
-    padding-bottom: 16px;
+    padding-bottom: 12px;
 }
 
 .variant-group {
@@ -2317,7 +2250,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     flex-wrap: nowrap; /* Forces horizontal layout */
     overflow-x: auto; /* Enables scrolling */
     gap: 8px;
-    padding-bottom: 4px; /* Space for invisible scrollbar */
+    padding: 6px 4px 16px 4px; /* Adds invisible space for the active box-shadow glow */
+    margin-left: -4px; /* Pulls it back to align perfectly with the title text */
     scrollbar-width: none; /* Firefox */
     -webkit-overflow-scrolling: touch; /* Smooth iOS swipe */
 }
@@ -2351,10 +2285,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 .variant-pill.active {
-    border-color: var(--primary);
-    background: rgba(34, 211, 238, 0.08); /* Subtle RR Blue glow */
+    border: 1px solid var(--primary);
+    background: rgba(2, 132, 199, 0.02);
     color: var(--primary);
-    box-shadow: 0 0 0 1px var(--primary);
+    box-shadow: 0 0 0 1px var(--primary), 0 6px 16px rgba(6, 182, 212, 0.22);
 }
 
 /* 2. Bulk Pack Pill (Larger, more analytical data) */
@@ -2379,9 +2313,9 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 .pack-pill.active {
-    border-color: var(--primary);
-    background: rgba(34, 211, 238, 0.08);
-    box-shadow: 0 0 0 1px var(--primary);
+    border: 1px solid var(--primary);
+    background: rgba(2, 132, 199, 0.02);
+    box-shadow: 0 0 0 1px var(--primary), 0 6px 16px rgba(6, 182, 212, 0.22);
 }
 
 .pack-pill-title {
@@ -2588,30 +2522,219 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     color: #ffffff;
 }
 
-.btn-invoice {
+
+
+/* ============================================================
+   COMPACT VARIANT CARDS (PDP)
+   ============================================================ */
+.variant-card-list {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 12px;
+    padding: 6px 4px 16px 4px; /* Padding accommodates box-shadow glows and scrollbar */
+    margin-left: -4px; /* Offsets the visual padding */
+    scrollbar-width: none; /* Firefox */
+    -webkit-overflow-scrolling: touch;
+}
+
+.variant-card-list::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+.variant-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    min-width: 130px;
+    max-width: 130px;
+    text-decoration: none;
+    position: relative;
+    transition: all var(--duration-normal) var(--ease-standard);
+    flex-shrink: 0; /* Prevents squishing on small screens */
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.variant-card:hover {
+    border-color: var(--slate-300);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.variant-card.active {
+    border: 1px solid var(--primary);
+    box-shadow: 0 0 0 1px var(--primary), 0 6px 16px rgba(6, 182, 212, 0.22);
+    background: rgba(2, 132, 199, 0.02);
+}
+
+.variant-card.active:hover {
+    transform: none; /* Keeps it grounded when currently selected */
+}
+
+.vc-check {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 18px;
+    height: 18px;
+    background: var(--primary);
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.vc-check svg {
+    width: 10px;
+    height: 10px;
+}
+
+.vc-img-wrapper {
+    width: 100%;
+    height: 90px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border-bottom: 1px solid var(--slate-100);
+    transition: border-color var(--duration-fast);
+}
+
+.vc-img-wrapper img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+}
+
+.variant-card.active .vc-img-wrapper {
+    border-bottom-color: rgba(2, 132, 199, 0.15);
+}
+
+.vc-details {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+
+.vc-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--slate-600);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    transition: color var(--duration-fast);
+}
+
+.variant-card.active .vc-title {
+    color: var(--slate-900);
+    font-weight: 700;
+}
+
+.vc-price-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    column-gap: 6px;
+    row-gap: 2px;
+    margin-top: auto; /* Always pushes the price to the bottom if the title is short */
+}
+
+.vc-price {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--slate-900);
+}
+
+.vc-mrp {
+    font-size: 10px;
+    color: var(--slate-400);
+    text-decoration: line-through;
+    font-weight: 500;
+}
+
+.vc-discount {
+    font-size: 10px;
+    color: var(--success);
+    font-weight: 800;
+}
+
+/* ============================================================
+   UPGRADED PRODUCT CARD VISUALS (Discount Badge & Icon Button)
+   ============================================================ */
+
+/* High-Contrast Discount Badge on Image */
+
+.product-discount-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: #ef4444; /* Restrained energy red */
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 10px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3); /* Subtle red shadow */
+    z-index: 10;
+    text-transform: uppercase;
+}
+
+/* Compact SVG Shopping Bag Add Button */
+.btn-add-icon-only {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    background: #f8fafc;
-    color: #334155;
-    border: 1px solid #cbd5e1;
-    padding: 8px 14px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 700;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%; /* Perfect circle */
+    background: var(--slate-50);
+    border: 1px solid var(--border);
+    color: var(--primary); /* RR Blue icon */
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
+    margin-left: auto; /* Pushes it strictly to the right side */
 }
-.btn-invoice:hover {
-    background: #e2e8f0;
-    color: #0f172a;
-    border-color: #94a3b8;
-}
-.btn-invoice svg {
+
+.btn-add-icon-only svg {
     width: 16px;
     height: 16px;
-    stroke: currentColor;
-    stroke-width: 2;
-    fill: none;
+    transition: transform 0.2s ease;
+}
+
+/* Hover State - Subtle Blue Activation */
+.btn-add-icon-only:hover {
+    background: #eff6ff; /* Very light blue */
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.15); /* Soft blue shadow */
+}
+
+.btn-add-icon-only:hover svg {
+    transform: scale(1.1); /* Slight icon pop */
+}
+
+/* Active/Press State */
+.btn-add-icon-only:active {
+    transform: scale(0.95) translateY(0);
+    box-shadow: none;
+    background: #dbeafe;
 }
 
