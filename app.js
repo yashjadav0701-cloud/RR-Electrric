@@ -595,7 +595,7 @@
                         <h3 class="store-product-card-title">${p.name}</h3>
                         <div class="store-product-card-action">
                             <button type="button" class="btn-add-icon-only" onclick="event.preventDefault(); event.stopPropagation(); Store.addToCart('${p.id}')" aria-label="Add to Bag">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path><line x1="12" y1="10" x2="12" y2="16"></line><line x1="9" y1="13" x2="15" y2="13"></line></svg>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             </button>
                         </div>
                     </div>
@@ -822,28 +822,7 @@
                     <div style="padding: 16px; margin-top: 24px; border-top: 1px solid var(--border);">
                         <h2 style="font-size: 18px; margin-bottom: 16px;">You may also like</h2>
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                            ${relatedProducts.map(rel => {
-                                const img = rel.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
-                                const discount = rel.mrp_price && rel.selling_price < rel.mrp_price ? Math.round(((rel.mrp_price - rel.selling_price) / rel.mrp_price) * 100) : 0;
-                                return `
-                                    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm); cursor: pointer;" onclick="Store.navigate('product', '${rel.id}')">
-                                        <div>
-                                            <div style="position: relative; width: 100%; height: 110px; background: #f8fafc; border-radius: 6px; overflow: hidden; margin-bottom: 6px;">
-                                                <img src="${img}" style="width: 100%; height: 100%; object-fit: contain;" alt="${rel.name}">
-                                                ${discount > 0 ? `<span style="position: absolute; top: 4px; left: 4px; background: #ef4444; color: white; font-size: 8px; font-weight: 800; padding: 2px 4px; border-radius: 3px;">${discount}% OFF</span>` : ''}
-                                            </div>
-                                            <div style="font-size: 12px; font-weight: 600; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 32px; margin-bottom: 4px; line-height: 1.2;" title="${rel.name}">${rel.name}</div>
-                                        </div>
-                                        <div>
-                                            <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; flex-wrap: wrap;">
-                                                <span style="font-size: 13px; font-weight: 800; color: var(--text-main);">₹${rel.selling_price}</span>
-                                                ${rel.mrp_price && rel.mrp_price > rel.selling_price ? `<span style="font-size: 10px; color: var(--text-muted); text-decoration: line-through;">₹${rel.mrp_price}</span>` : ''}
-                                            </div>
-                                            <button onclick="event.stopPropagation(); Store.addToCart('${rel.id}')" style="width: 100%; background: var(--primary); color: white; border: none; padding: 5px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">+ Add</button>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
+                            ${relatedProducts.map(rel => this.generateProductCardHTML(rel)).join('')}
                         </div>
                     </div>
                 `;
@@ -868,8 +847,8 @@
                                 <div class="pdp-cat">${p.categories?.name || ''}</div>
                                 <h1 class="pdp-title" style="margin-bottom: 0;">${p.name}</h1>
                             </div>
-                            <button class="icon-btn" onclick="Store.shareProduct('${p.id}')" aria-label="Share Product" style="flex-shrink: 0; background: var(--bg-surface); border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                            <button class="icon-btn" onclick="Store.shareProduct('${p.id}')" aria-label="Share Product" style="flex-shrink: 0; width: 42px; height: 42px; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 50%; color: var(--slate-700); box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);">
+                                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
                             </button>
                         </div>
                         <div style="margin-bottom: 16px;"></div>
@@ -972,7 +951,9 @@
                                 if (p.linked_product_ids && p.linked_product_ids.length > 0) {
                                     const linkedProds = this.state.products.filter(x => p.linked_product_ids.includes(x.id));
                                     if (linkedProds.length > 0) {
-                                        const allLinked = [p, ...linkedProds].sort((a,b) => a.selling_price - b.selling_price);
+                                        // Sort the siblings by price, but ALWAYS keep the active product 'p' in the very first position
+                                        const sortedLinked = linkedProds.sort((a,b) => a.selling_price - b.selling_price);
+                                        const allLinked = [p, ...sortedLinked];
                                         variantHtml += `
                                             <div class="variant-group">
                                                 <div class="variant-label" style="margin-bottom: 4px;">Available Variations</div>
@@ -1141,17 +1122,7 @@
                         <div class="cross-sell-container">
                             <div class="cross-sell-title">Frequently Bought Together</div>
                             <div class="cross-sell-grid">
-                                ${recs.map(acc => {
-                                    const img = acc.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
-                                    return `
-                                        <div class="cross-sell-card">
-                                            <img src="${img}" class="cross-sell-img" alt="${acc.name}" onclick="Store.navigate('product', '${acc.id}')" style="cursor: pointer;">
-                                            <div class="cross-sell-name" onclick="Store.navigate('product', '${acc.id}')" style="cursor: pointer;" title="${acc.name}">${acc.name}</div>
-                                            <div class="cross-sell-price">₹${acc.selling_price}</div>
-                                            <button class="cross-sell-btn" onclick="Store.addToCart('${acc.id}')">+ Add</button>
-                                        </div>
-                                    `;
-                                }).join('')}
+                                ${recs.map(acc => this.generateProductCardHTML(acc)).join('')}
                             </div>
                         </div>
                     `;
@@ -1675,7 +1646,7 @@
                                     </button>
                                 </div>
                                 <button class="cart-remove-btn" aria-label="Remove item" onclick="Store.removeFromCart('${item.cartKey}')">
-                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                                 </button>
                             </div>
                         </div>
@@ -1800,16 +1771,38 @@
                 </div>
             `;
 
-            // Recommendation Engine (Products matching cart categories, not currently in cart)
+            // Recommendation Engine (Products matching cart categories + fillers)
             const cartCatIds = [...new Set(totals.validItems.map(x => x.category_id))];
             const cartItemIds = totals.validItems.map(x => x.id);
-            const recs = this.state.products
-                .filter(p => cartCatIds.includes(p.category_id) && !cartItemIds.includes(p.id))
-                .slice(0, 4);
+            
+            // First try to get related items
+            let recs = this.state.products.filter(p => cartCatIds.includes(p.category_id) && !cartItemIds.includes(p.id));
+            
+            // If we have less than 12 related items, fill the rest with random active products
+            if (recs.length < 12) {
+                const fillCount = 12 - recs.length;
+                const fillerProducts = this.state.products
+                    .filter(p => !cartItemIds.includes(p.id) && !recs.find(r => r.id === p.id))
+                    .sort(() => 0.5 - Math.random()) // Randomize
+                    .slice(0, fillCount);
+                
+                recs = [...recs, ...fillerProducts];
+            }
+            
+            // Cap at 12
+            recs = recs.slice(0, 12);
 
             const recSection = document.getElementById('cart-recommendations');
             if (recs.length > 0) {
-                document.getElementById('cart-recs-grid').innerHTML = recs.map(p => this.generateProductCardHTML(p)).join('');
+                const recGrid = document.getElementById('cart-recs-grid');
+                
+                // Enforce tight 3-column grid specifically for cart
+                recGrid.className = ''; 
+                recGrid.style.display = 'grid';
+                recGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                recGrid.style.gap = '10px';
+                
+                recGrid.innerHTML = recs.map(rel => this.generateProductCardHTML(rel)).join('');
                 recSection.classList.remove('hidden');
             } else {
                 recSection.classList.add('hidden');

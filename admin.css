@@ -42,64 +42,37 @@ body {
     cursor: pointer;
 }
 
-/* Layout */
-.admin-layout {
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
-}
-
-.admin-sidebar {
-    width: 250px;
-    background: var(--bg-surface);
-    border-right: 1px solid var(--border);
+.admin-main {
+    flex: 1;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    background-color: var(--bg-tech);
 }
 
-.sidebar-brand {
-    padding: 24px 16px;
-    border-bottom: 1px solid var(--border);
-}
-
-.admin-nav {
-    flex: 1;
-    padding: 16px 0;
-}
-
-.admin-nav a {
+.admin-topbar {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--border-subtle);
+    position: sticky;
+    top: 0;
+    z-index: 10;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 24px;
-    color: var(--text-muted);
-    text-decoration: none;
-    font-weight: 500;
-    transition: all var(--duration-fast) var(--ease-standard);
 }
 
-.admin-nav a svg {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    transition: color var(--duration-fast);
+#view-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--slate-900);
+    margin: 0;
+    letter-spacing: -0.02em;
 }
 
-.admin-nav a:hover {
-    background: var(--slate-50);
-    color: var(--text-main);
-}
-
-.admin-nav a.active {
-    background: var(--slate-50);
-    color: var(--primary);
-    font-weight: 600;
-    border-right: 3px solid var(--primary);
-}
-
-.sidebar-footer {
-    padding: 16px;
-    border-top: 1px solid var(--border);
+.admin-content-area {
+    padding: 32px;
 }
 
 .btn-text {
@@ -150,6 +123,79 @@ body {
 
 .admin-content-area {
     padding: 32px;
+}
+
+/* ============================================================
+   DASHBOARD METRICS GRID (Premium SaaS Edition)
+   ============================================================ */
+.dashboard-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+}
+
+@media (min-width: 768px) {
+    .dashboard-metrics-grid { gap: 24px; }
+}
+
+.metric-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+    position: relative;
+    padding-top: 4px; /* Room for accent strip */
+}
+
+/* Color Accents for each specific card */
+.metric-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--slate-200);
+    transition: background 0.3s ease;
+}
+
+/* Specific colors: 1st=Pending (Red), 2nd=Revenue (Green), 3rd=Products (Blue) */
+.metric-card:nth-child(1)::before { background: var(--danger); }
+.metric-card:nth-child(2)::before { background: var(--success); }
+.metric-card:nth-child(3)::before { background: var(--primary); }
+
+.metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(2, 132, 199, 0.15);
+}
+
+.metric-label {
+    padding: 16px 20px 8px;
+    color: var(--slate-500);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.metric-value {
+    padding: 0 20px 24px;
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+@media (max-width: 767px) {
+    .metric-value { font-size: 24px; padding: 0 12px 16px; text-align: center; }
+    .metric-label { font-size: 10px; padding: 12px 12px 6px; justify-content: center; }
 }
 
 /* Master Inventory Styles */
@@ -321,15 +367,6 @@ body {
     .admin-main { padding-bottom: 70px; }
     .admin-content-area { padding: 16px; }
 
-@media (max-width: 360px) {
-    .admin-content-area {
-        padding: 12px 8px;
-    }
-    .auth-card {
-        padding: 20px 16px;
-    }
-}
-
     .admin-sidebar {
         width: 100%;
         height: auto;
@@ -337,66 +374,84 @@ body {
         bottom: 0;
         left: 0;
         right: 0;
+        display: flex; /* STRICTLY ENFORCE ROW LAYOUT */
         flex-direction: row;
-        background: var(--bg-surface);
+        align-items: stretch;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         border-right: none;
-        border-top: 1px solid var(--border);
+        border-top: 1px solid var(--border-subtle);
         z-index: 1000;
         padding-bottom: env(safe-area-inset-bottom);
-        box-shadow: 0 -1px 4px rgba(0,0,0,0.05);
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
     }
     .sidebar-brand { display: none; }
     
     .admin-nav {
-        flex: 1;
+        flex: 4; /* Takes up 4 parts of the bar */
         display: flex;
         flex-direction: row;
         padding: 0;
-        justify-content: space-around;
-        align-items: center;
+        margin: 0;
     }
     
-        .admin-nav a {
+    .sidebar-footer {
+        flex: 1; /* Takes up 1 part of the bar */
+        display: flex;
+        padding: 0;
+        border: none;
+        margin: 0;
+    }
+
+    .admin-nav a,
+    .sidebar-footer .btn-text {
         flex: 1;
+        display: flex;
         flex-direction: column;
+        align-items: center;
+        justify-content: center;
         gap: 4px;
-        padding: 10px 0;
+        padding: 12px 0;
         text-align: center;
         font-size: 10px;
-        border-right: none;
-        color: var(--text-muted);
+        font-weight: 700;
+        border-radius: 0;
+        border: none;
+        color: var(--slate-500);
         position: relative;
-        transition: color var(--duration-fast);
         -webkit-tap-highlight-color: transparent;
     }
 
-    .admin-nav a:hover,
+    /* Lock SVG sizes */
+    .admin-nav a svg,
+    .sidebar-footer .btn-text svg {
+        width: 22px !important;
+        height: 22px !important;
+        margin: 0 auto;
+        transition: transform 0.2s;
+    }
+
+    /* Active state for navigation */
     .admin-nav a.active {
         background: transparent;
         color: var(--primary);
-        border-right: none;
-        border-top: 2px solid var(--primary);
+    }
+    
+    .admin-nav a.active svg {
+        transform: translateY(-2px);
     }
 
-    .sidebar-footer {
-        padding: 0;
-        border-top: none;
+    /* Restore Red Log Out Button */
+    .sidebar-footer .btn-text {
+        width: 100%;
+        color: var(--danger) !important;
     }
     
-    .btn-text {
-        flex-direction: column;
-        gap: 4px;
-        padding: 10px 16px;
-        text-align: center;
-        font-size: 10px;
-        width: auto;
-        color: var(--danger);
+    .sidebar-footer .btn-text:hover {
+        background: rgba(239, 68, 68, 0.05);
     }
-    
-    .btn-text:hover {
-        background: transparent;
-    }
-} /* THE FIX: THIS BRACE CLOSES THE CORRUPTED MOBILE MEDIA QUERY */
+}
 
 
 /* ============================================================

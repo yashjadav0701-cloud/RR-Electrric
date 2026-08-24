@@ -20,9 +20,15 @@
     <meta name="twitter:image" content="https://rrelectrric.vercel.app/social-preview.png">
     
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#1e293b">
-    <link rel="stylesheet" href="/styles.css?v=4.1">
-    <link rel="icon" type="image/svg+xml" href="/assets/logo-short.svg?v=4.1">
+    <meta name="theme-color" content="#0f172a">
+    
+    <!-- Premium Technical Typography: Plus Jakarta Sans & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/styles.css?v=4.2">
+    <link rel="icon" type="image/svg+xml" href="/assets/logo-short.svg?v=4.2">
     
     <!-- Preconnect to Supabase for faster API handshakes -->
     <link rel="preconnect" href="https://ycckkswajajrqobrohcx.supabase.co" crossorigin>
@@ -33,13 +39,13 @@
 <body>
     <!-- Global Preloader -->
     <div id="global-preloader" class="global-preloader">
-        <img src="/assets/logo-full.svg?v=4.1" alt="RR" class="preloader-logo">
+        <img src="/assets/logo-full.svg?v=4.2" alt="RR" class="preloader-logo">
     </div>
 
     <header class="site-header">
         <div class="container header-inner">
             <a href="javascript:void(0)" onclick="Store.navigate('home')" class="brand-link" aria-label="RR ELECTRRIC Home" style="display: flex; align-items: center;">
-                <img src="/assets/logo-full.svg?v=4.1" alt="RR ELECTRRIC" style="height: 44px; width: auto; max-width: 180px; object-fit: contain;">
+                <img src="/assets/logo-full.svg?v=4.2" alt="RR ELECTRRIC" style="height: 44px; width: auto; max-width: 180px; object-fit: contain;">
             </a>
             
             <!-- Desktop Header Navigation Links -->
@@ -101,25 +107,13 @@
                     </p>
 
                     <div class="hero-delivery">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path d="M3 6h11v11H3z"/>
                             <path d="M14 9h4l3 3v5h-7z"/>
                             <circle cx="7" cy="19" r="2"/>
                             <circle cx="18" cy="19" r="2"/>
                         </svg>
                         <span>Fast Nadiad Delivery · 10 mins – 2 days</span>
-                    </div>
-
-                    <div class="hero-actions">
-                        <button
-                            class="hero-primary-action"
-                            onclick="document.getElementById('home-shop-anchor').scrollIntoView({behavior:'smooth'})">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M6 8h12l1 13H5L6 8Z"/>
-                                <path d="M9 8a3 3 0 0 1 6 0"/>
-                            </svg>
-                            Shop Products
-                        </button>
                     </div>
 
                     <!-- Authorized Partner Ribbon -->
@@ -142,7 +136,7 @@
 
                         <div class="hero-store-heading">
                             <span class="hero-store-icon">
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0Z"/>
                                     <circle cx="12" cy="10" r="3"/>
                                 </svg>
@@ -157,7 +151,7 @@
                         <div class="hero-contact-actions">
 
                             <a href="javascript:void(0)" id="hero-maps-link" target="_blank" class="hero-contact-btn" aria-label="Store Location">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                                     <circle cx="12" cy="10" r="3"></circle>
                                 </svg>
@@ -165,14 +159,14 @@
                             </a>
 
                             <a href="javascript:void(0)" id="hero-call-link" class="hero-contact-btn" aria-label="Call Us">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                                 </svg>
                                 Call
                             </a>
 
                             <a href="javascript:void(0)" id="hero-wa-link" target="_blank" class="hero-contact-btn hero-whatsapp-btn" aria-label="WhatsApp Chat">
-                                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
                                     <path d="M11.99 0a11.96 11.96 0 00-10.3 18.06L0 24l6.09-1.6a11.94 11.94 0 105.9-22.4zM12 21.93a9.92 9.92 0 01-5.07-1.38l-.36-.21-3.77.99 1.01-3.68-.24-.37A9.87 9.87 0 1112 21.93zm5.42-7.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.26-.46-2.39-1.4-.88-.74-1.48-1.64-1.65-1.94-.17-.3 0-.46.13-.6.13-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.2-.24-.58-.48-.5-.67-.51-.17 0-.37 0-.57 0-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.06 2.88 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35z"/>
                                 </svg>
                                 WhatsApp
@@ -187,7 +181,7 @@
             <!-- PWA Install Banner -->
             <div id="pwa-install-container" class="container hidden" style="padding-top: 24px; padding-bottom: 8px;">
                 <div class="pwa-install-card">
-                    <img src="/assets/icon.png?v=4.1" class="pwa-install-icon" alt="RR Electrric App Icon">
+                    <img src="/assets/icon.png?v=4.2" class="pwa-install-icon" alt="RR Electrric App Icon">
                     <div class="pwa-install-text">
                         <h4>Install RR ELECTRRIC</h4>
                         <p>Get quick access from your mobile home screen.</p>
@@ -363,7 +357,7 @@
 
     <footer class="site-footer">
         <div class="container" style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
-            <img src="/assets/logo-full.svg?v=4.1" alt="RR ELECTRRIC" class="footer-logo" style="height: 32px; width: auto; opacity: 0.8;">
+            <img src="/assets/logo-full.svg?v=4.2" alt="RR ELECTRRIC" class="footer-logo" style="height: 32px; width: auto; opacity: 0.8;">
             <p>Fast local delivery for branded electrical products across Nadiad.</p>
             <div id="footer-address-text" style="font-size: 13px; color: var(--text-muted); text-align: center; max-width: 400px; line-height: 1.5; margin-bottom: 4px;"></div>
             <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
@@ -398,6 +392,6 @@
         </a>
     </nav>
 
-    <script src="/app.js?v=4.1"></script>
+    <script src="/app.js?v=4.2"></script>
 </body>
 </html>
