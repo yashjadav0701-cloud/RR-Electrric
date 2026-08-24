@@ -401,7 +401,7 @@
             try {
                 // Fetch active products, categories, configs, VIP simultaneously
                 const [prodRes, catRes, confRes, vipRes] = await Promise.all([
-                    supabase.from('products').select('*, categories(name)').eq('is_active', true).order('created_at', { ascending: false }),
+                    supabase.from('products').select('*, categories(name)').order('created_at', { ascending: false }),
                     supabase.from('categories').select('*').order('name'),
                     supabase.from('store_configurations').select('*'),
                     supabase.from('vip_tiers').select('*').eq('is_active', true).order('min_spend', { ascending: false })
@@ -570,19 +570,25 @@
         // --- RENDERERS ---
 
         generateProductCardHTML: function(p) {
+            const isAvailable = p.is_active !== false;
             const img = p.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
             
             let badgeHtml = '';
             let compareString = '';
+            
             if (p.mrp_price && p.mrp_price > p.selling_price) {
-                const off = Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100);
-                // Badge moved to top-left of image
-                badgeHtml = `<div class="product-discount-badge">${off}% OFF</div>`;
                 compareString = `<span style="color: var(--slate-400); font-size: 12px; text-decoration: line-through; margin-left: 6px;">₹${p.mrp_price}</span>`;
             }
 
+            if (!isAvailable) {
+                badgeHtml = `<div class="product-status-tag status-unavailable">OUT OF STOCK</div>`;
+            } else if (p.mrp_price && p.mrp_price > p.selling_price) {
+                const off = Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100);
+                badgeHtml = `<div class="product-discount-badge">${off}% OFF</div>`;
+            }
+
             return `
-                <a href="javascript:void(0)" onclick="Store.navigate('product', '${p.id}')" class="store-product-card">
+                <a href="javascript:void(0)" onclick="Store.navigate('product', '${p.id}')" class="store-product-card ${!isAvailable ? 'is-unavailable' : ''}">
                     <div class="img-wrapper">
                         ${badgeHtml}
                         <img src="${img}" alt="${p.name}" loading="lazy">
@@ -594,9 +600,15 @@
                         </div>
                         <h3 class="store-product-card-title">${p.name}</h3>
                         <div class="store-product-card-action">
+                            ${isAvailable ? `
                             <button type="button" class="btn-add-icon-only" onclick="event.preventDefault(); event.stopPropagation(); Store.addToCart('${p.id}')" aria-label="Add to Bag">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             </button>
+                            ` : `
+                            <button type="button" class="btn-add-icon-only disabled-add" onclick="event.preventDefault(); event.stopPropagation();" aria-label="Unavailable" disabled>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                            `}
                         </div>
                     </div>
                 </a>
@@ -802,7 +814,7 @@
             }
 
             const relatedProducts = this.state.products
-                .filter(x => x.id !== p.id && x.is_active !== false)
+                .filter(x => x.id !== p.id)
                 .map(x => {
                     let score = 0;
                     if (x.category_id === p.category_id) score += 50;
@@ -1001,10 +1013,20 @@
                         
                         <div id="pdp-cross-sell-container"></div>
 
+                        ${p.is_active !== false ? `
                         <button class="btn-add-cart-large" onclick="Store.handlePDPAddToCart('${p.id}')">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
                             Add to Bag
                         </button>
+                        ` : `
+                        <div class="pdp-availability-notice">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            <span>Currently Unavailable</span>
+                        </div>
+                        <button class="btn-add-cart-large" disabled style="background: var(--slate-100); color: var(--slate-400); border-color: var(--border); box-shadow: none; cursor: not-allowed; transform: none;">
+                            Out of Stock
+                        </button>
+                        `}
                     </div>
                 </div>
                 ${relatedHtml}
@@ -1312,7 +1334,7 @@
 
         addToCart: function(productId, packData = null, selectedOptions = null) {
             const p = this.state.products.find(x => x.id === productId);
-            if (!p) return;
+            if (!p || p.is_active === false) return;
             
             const isPack = !!(packData && packData.isPack && packData.qty > 1);
             const packQty = isPack ? packData.qty : 1;

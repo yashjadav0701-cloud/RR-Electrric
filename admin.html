@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin — RR ELECTRRIC</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" href="/styles.css?v=4.3">
-    <link rel="stylesheet" href="/admin.css?v=4.3">
-    <link rel="icon" type="image/svg+xml" href="/assets/logo-short.svg?v=4.3">
+    <link rel="stylesheet" href="/styles.css?v=4.4">
+    <link rel="stylesheet" href="/admin.css?v=4.4">
+    <link rel="icon" type="image/svg+xml" href="/assets/logo-short.svg?v=4.4">
     
     <!-- Preconnect to Supabase for faster API handshakes -->
     <link rel="preconnect" href="https://ycckkswajajrqobrohcx.supabase.co" crossorigin>
@@ -17,12 +17,12 @@
 <body>
     <!-- Global Preloader -->
     <div id="global-preloader" class="global-preloader">
-        <img src="/assets/logo-full.svg?v=4.3" alt="RR" class="preloader-logo">
+        <img src="/assets/logo-full.svg?v=4.4" alt="RR" class="preloader-logo">
     </div>
 
     <div id="admin-auth" class="admin-auth-container">
         <div class="auth-card">
-            <img src="/assets/logo-full.svg?v=4.3" alt="RR ELECTRRIC" width="200" style="margin-bottom: 24px;">
+            <img src="/assets/logo-full.svg?v=4.4" alt="RR ELECTRRIC" width="200" style="margin-bottom: 24px;">
             <h2>Admin Gateway</h2>
             <p>Authentication required.</p>
             <div id="login-error" class="hidden" style="color: var(--danger); margin-bottom: 16px; font-size: 14px;"></div>
@@ -37,8 +37,8 @@
     <div id="admin-app" class="admin-layout hidden">
         <aside class="admin-sidebar">
             <div class="sidebar-brand">
-                <img src="/assets/logo-short.svg?v=4.3" alt="RR" width="32" class="mobile-only">
-                <img src="/assets/logo-full.svg?v=4.3" alt="RR ELECTRRIC" width="140" class="desktop-only">
+                <img src="/assets/logo-short.svg?v=4.4" alt="RR" width="32" class="mobile-only">
+                <img src="/assets/logo-full.svg?v=4.4" alt="RR ELECTRRIC" width="140" class="desktop-only">
             </div>
             <nav class="admin-nav">
                 <a href="#dashboard" class="active">
@@ -74,17 +74,37 @@
                 <!-- Dashboard View -->
                 <div id="view-dashboard" class="admin-view hidden">
                     <div class="dashboard-metrics-grid">
-                        <div class="metric-card">
-                            <div class="metric-label">Pending Orders</div>
-                            <div id="dash-pending-orders" class="metric-value" style="color: var(--danger);">--</div>
+                        <!-- Card 1: Pending Orders -->
+                        <div class="metric-card kpi-clickable">
+                            <div class="metric-header">
+                                <div class="metric-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                </div>
+                                <div class="metric-label">Pending Orders</div>
+                            </div>
+                            <div class="metric-value" id="dash-pending-orders">0</div>
                         </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Total Revenue</div>
-                            <div id="dash-total-revenue" class="metric-value" style="color: var(--success);">₹--</div>
+
+                        <!-- Card 2: Total Revenue -->
+                        <div class="metric-card kpi-clickable">
+                            <div class="metric-header">
+                                <div class="metric-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                                </div>
+                                <div class="metric-label">Total Revenue</div>
+                            </div>
+                            <div class="metric-value" id="dash-total-revenue">₹0</div>
                         </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Active Products</div>
-                            <div id="dash-active-products" class="metric-value" style="color: var(--primary);">--</div>
+
+                        <!-- Card 3: Active Products -->
+                        <div class="metric-card kpi-clickable">
+                            <div class="metric-header">
+                                <div class="metric-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                                </div>
+                                <div class="metric-label">Active Products</div>
+                            </div>
+                            <div class="metric-value" id="dash-active-products">0</div>
                         </div>
                     </div>
 
@@ -449,6 +469,6 @@
         </div>
     </div>
 
-    <script src="/admin.js?v=4.3"></script>
+    <script src="/admin.js?v=4.4"></script>
 </body>
 </html>

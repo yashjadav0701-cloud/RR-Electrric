@@ -283,8 +283,6 @@
             navLinks.forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
-                    navLinks.forEach(l => l.classList.remove('active'));
-                    e.currentTarget.classList.add('active');
                     const view = e.currentTarget.getAttribute('href').replace('#', '');
                     this.loadView(view);
                 });
@@ -297,10 +295,20 @@
         
         loadView: function(viewId) {
             document.getElementById('view-title').textContent = viewId.charAt(0).toUpperCase() + viewId.slice(1);
-            document.querySelectorAll('.admin-view').forEach(v => v.classList.add('hidden'));
             
+            // Hide all views and show target
+            document.querySelectorAll('.admin-view').forEach(v => v.classList.add('hidden'));
             const viewEl = document.getElementById(`view-${viewId}`);
             if(viewEl) viewEl.classList.remove('hidden');
+
+            // Globally sync the navigation highlight state
+            document.querySelectorAll('.admin-nav a').forEach(link => {
+                if (link.getAttribute('href') === `#${viewId}`) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
 
             if(viewId === 'dashboard') {
                 this.initDashboardView();
@@ -314,24 +322,73 @@
         },
 
         initDashboardView: async function() {
-            // Fetch high-level metrics simultaneously
+            // Fetch high-level metrics simultaneously (Modified to fetch full product status for deep insights)
             const [ordersRes, productsRes] = await Promise.all([
-                supabase.from('orders').select('final_total, status, order_reference, created_at').order('created_at', { ascending: false }),
-                supabase.from('products').select('id', { count: 'exact' }).eq('is_active', true)
+                supabase.from('orders').select('id, final_total, status, order_reference, created_at').order('created_at', { ascending: false }),
+                supabase.from('products').select('id, is_active')
             ]);
 
             if (ordersRes.error) return console.error("Failed to load dashboard orders", ordersRes.error);
 
             const orders = ordersRes.data || [];
+            const allProducts = productsRes.data || [];
             
             // Crunch the numbers
-            const pendingCount = orders.filter(o => o.status === 'pending').length;
-            const totalRevenue = orders.filter(o => o.status === 'accepted').reduce((sum, o) => sum + (o.final_total || 0), 0);
+            const pendingOrders = orders.filter(o => o.status === 'pending');
+            const acceptedOrders = orders.filter(o => o.status === 'accepted');
             
-            // Push to UI
-            document.getElementById('dash-pending-orders').textContent = pendingCount;
-            document.getElementById('dash-total-revenue').textContent = `₹${totalRevenue.toLocaleString('en-IN')}`;
-            document.getElementById('dash-active-products').textContent = productsRes.count || 0;
+            const pendingCount = pendingOrders.length;
+            const totalRevenue = acceptedOrders.reduce((sum, o) => sum + (o.final_total || 0), 0);
+            const activeProductsCount = allProducts.filter(p => p.is_active).length;
+            
+            // Exact Currency Formatter (Strictly 2 Decimal Points for Modal)
+            const formatExactMoney = (num) => {
+                return Intl.NumberFormat('en-IN', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(num || 0);
+            };
+
+            // Compact Formatter (K, M for Dashboard Grid)
+            const formatCompact = (num) => {
+                if (!num || num === 0) return '0';
+                return Intl.NumberFormat('en-US', {
+                    notation: 'compact',
+                    maximumFractionDigits: 1
+                }).format(num);
+            };
+            
+            // Push to UI and Make Cards Clickable
+            const elPending = document.getElementById('dash-pending-orders');
+            const elRevenue = document.getElementById('dash-total-revenue');
+            const elProducts = document.getElementById('dash-active-products');
+
+            if (elPending) {
+                elPending.textContent = formatCompact(pendingCount);
+                const card = elPending.closest('.metric-card');
+                if (card) {
+                    card.classList.add('kpi-clickable');
+                    card.onclick = () => AdminApp.openKpiModal('orders', { pendingOrders });
+                }
+            }
+
+            if (elRevenue) {
+                elRevenue.textContent = `₹${formatCompact(totalRevenue)}`;
+                const card = elRevenue.closest('.metric-card');
+                if (card) {
+                    card.classList.add('kpi-clickable');
+                    card.onclick = () => AdminApp.openKpiModal('revenue', { acceptedOrders, totalRevenue, formatExactMoney });
+                }
+            }
+
+            if (elProducts) {
+                elProducts.textContent = formatCompact(activeProductsCount);
+                const card = elProducts.closest('.metric-card');
+                if (card) {
+                    card.classList.add('kpi-clickable');
+                    card.onclick = () => AdminApp.openKpiModal('products', { allProducts });
+                }
+            }
 
             // Render Recent Orders List
             const recent = orders.slice(0, 5); // Grab only the latest 5
@@ -368,6 +425,118 @@
                     </tr>
                 `;
             }).join('');
+        },
+
+        openKpiModal: function(type, data) {
+            let overlay = document.getElementById('premium-kpi-modal');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'premium-kpi-modal';
+                overlay.className = 'kpi-modal-overlay';
+                document.body.appendChild(overlay);
+            }
+
+            let contentHtml = '';
+            
+            if (type === 'orders') {
+                const pending = data.pendingOrders;
+                contentHtml = `
+                    <div class="kpi-modal-header" style="border-bottom: 2px solid var(--danger);">
+                        <div class="kpi-icon-wrapper" style="color: var(--danger); background: #fee2e2;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </div>
+                        <h2>Pending Orders</h2>
+                        <div class="kpi-hero-stat" style="color: var(--danger);">${pending.length}</div>
+                    </div>
+                    <div class="kpi-modal-body">
+                        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 12px; font-weight: 600; text-transform: uppercase;">Recent Pending Requests</p>
+                        <div class="kpi-list-container">
+                            ${pending.length === 0 ? '<div style="text-align:center; padding: 24px; color: var(--text-muted);">No pending orders to review!</div>' : ''}
+                            ${pending.slice(0, 4).map(o => `
+                                <div class="kpi-list-item">
+                                    <div>
+                                        <div style="font-weight: 700; color: var(--text-main); margin-bottom: 2px;">${o.order_reference}</div>
+                                        <div style="font-size: 11px; color: var(--text-muted);">${new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric'})}</div>
+                                    </div>
+                                    <div style="font-weight: 800; font-size: 15px; color: var(--text-main);">₹${o.final_total}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="kpi-modal-footer">
+                        <button class="btn-primary" style="width: 100%; background: var(--danger); border-color: var(--danger);" onclick="document.getElementById('premium-kpi-modal').classList.remove('active'); AdminApp.loadView('orders'); AdminApp.switchOrderTab('pending');">Manage All Pending Orders</button>
+                    </div>
+                `;
+            } else if (type === 'revenue') {
+                const AOV = data.acceptedOrders.length > 0 ? (data.totalRevenue / data.acceptedOrders.length) : 0;
+                contentHtml = `
+                    <div class="kpi-modal-header" style="border-bottom: 2px solid var(--success);">
+                        <div class="kpi-icon-wrapper" style="color: var(--success); background: #dcfce7;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <h2>Total Revenue Generated</h2>
+                        <div class="kpi-hero-stat" style="color: var(--success);">₹${data.formatExactMoney(data.totalRevenue)}</div>
+                    </div>
+                    <div class="kpi-modal-body">
+                        <div class="kpi-stats-grid">
+                            <div class="kpi-stat-box">
+                                <div class="kpi-stat-label">Total Completed Orders</div>
+                                <div class="kpi-stat-value">${data.acceptedOrders.length}</div>
+                            </div>
+                            <div class="kpi-stat-box">
+                                <div class="kpi-stat-label">Average Order Value</div>
+                                <div class="kpi-stat-value">₹${data.formatExactMoney(AOV)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-modal-footer">
+                        <button class="btn-secondary" style="width: 100%;" onclick="document.getElementById('premium-kpi-modal').classList.remove('active')">Close Insights</button>
+                    </div>
+                `;
+            } else if (type === 'products') {
+                const active = data.allProducts.filter(p => p.is_active).length;
+                const inactive = data.allProducts.filter(p => !p.is_active).length;
+                const total = data.allProducts.length;
+                
+                contentHtml = `
+                    <div class="kpi-modal-header" style="border-bottom: 2px solid var(--primary);">
+                        <div class="kpi-icon-wrapper" style="color: var(--primary); background: #eff6ff;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                        </div>
+                        <h2>Live Catalog Health</h2>
+                        <div class="kpi-hero-stat" style="color: var(--primary);">${active} <span style="font-size: 14px; font-weight: 600; color: var(--text-muted); vertical-align: middle;">Active Items</span></div>
+                    </div>
+                    <div class="kpi-modal-body">
+                        <div class="kpi-stats-grid">
+                            <div class="kpi-stat-box">
+                                <div class="kpi-stat-label">Total Database Products</div>
+                                <div class="kpi-stat-value">${total}</div>
+                            </div>
+                            <div class="kpi-stat-box" style="border-color: #fca5a5; background: #fef2f2;">
+                                <div class="kpi-stat-label" style="color: var(--danger);">Offline / Out of Stock</div>
+                                <div class="kpi-stat-value" style="color: var(--danger);">${inactive}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-modal-footer">
+                        <button class="btn-primary" style="width: 100%;" onclick="document.getElementById('premium-kpi-modal').classList.remove('active'); AdminApp.loadView('products');">Manage Inventory Details</button>
+                    </div>
+                `;
+            }
+
+            overlay.innerHTML = `
+                <div class="kpi-modal-backdrop" onclick="document.getElementById('premium-kpi-modal').classList.remove('active')"></div>
+                <div class="kpi-modal-content">
+                    <button class="kpi-close-btn" onclick="document.getElementById('premium-kpi-modal').classList.remove('active')" aria-label="Close">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                    ${contentHtml}
+                </div>
+            `;
+            
+            // Force browser reflow to trigger the CSS spring animation perfectly
+            void overlay.offsetWidth;
+            overlay.classList.add('active');
         },
 
         // --- PHASE 14: ORDERS ---
