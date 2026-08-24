@@ -1,10 +1,12 @@
 :root {
-    /* Core Brand Colors (Vibrant Surge Blue & Electric Cyan) */
+    /* Core Technical Identity: Deep Electric Cobalt & Circuit Cyan */
     --primary: #0284c7;
     --primary-hover: #0369a1;
     --primary-active: #075985;
     --accent-cyan: #06b6d4;
-    --accent-glow: rgba(6, 182, 212, 0.18);
+    --accent-cyan-light: #22d3ee;
+    --accent-glow: rgba(6, 182, 212, 0.16);
+    --electric-pulse: rgba(2, 132, 199, 0.28);
     
     /* Slate System (Technical Neutrals) */
     --slate-50: #f8fafc;
@@ -19,48 +21,53 @@
     --slate-900: #0f172a;
     --slate-950: #090d16;
 
-    /* Backgrounds & Surfaces */
+    /* Backgrounds & High-Precision Glass Surfaces */
     --bg-main: #f8fafc;
     --bg-surface: #ffffff;
     --bg-tech: #f1f5f9;
-    --bg-glass: rgba(255, 255, 255, 0.85);
+    --bg-glass: rgba(255, 255, 255, 0.88);
+    --bg-glass-dark: rgba(15, 23, 42, 0.8);
     
-    /* Typography Colors */
+    /* Typography Palette */
     --text-main: #0f172a;
     --text-muted: #64748b;
+    --text-subtle: #94a3b8;
     
-    /* Borders & Inputs */
+    /* Borders & Precision Separation */
     --border: #e2e8f0;
-    --border-subtle: rgba(226, 232, 240, 0.8);
+    --border-subtle: rgba(226, 232, 240, 0.85);
+    --border-electric: rgba(6, 182, 212, 0.35);
     --border-focus: #0284c7;
     
-    /* Semantic Actions */
-    --danger: #dc2626;
-    --danger-hover: #b91c1c;
-    --success: #16a34a;
-    --warning: #d97706;
+    /* Semantic Signals */
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+    --success: #10b981;
+    --warning: #f59e0b;
     
-    /* Structural Scale */
-    --radius-sm: 6px;
-    --radius-md: 10px;
+    /* Structural Geometry */
+    --radius-sm: 8px;
+    --radius-md: 12px;
     --radius-lg: 16px;
-    --radius-xl: 20px;
+    --radius-xl: 22px;
     --radius: var(--radius-md);
     
-    /* Multi-layered Soft Shadows */
+    /* Precision Layered Shadows */
     --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
-    --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.06);
-    --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
-    --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.1), 0 4px 8px -4px rgba(15, 23, 42, 0.06);
-    --shadow-xl: 0 20px 30px -6px rgba(15, 23, 42, 0.14);
+    --shadow-sm: 0 2px 4px -1px rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+    --shadow-md: 0 6px 16px -3px rgba(15, 23, 42, 0.07), 0 2px 6px -2px rgba(15, 23, 42, 0.03);
+    --shadow-lg: 0 16px 28px -6px rgba(15, 23, 42, 0.09), 0 4px 10px -4px rgba(15, 23, 42, 0.04);
+    --shadow-xl: 0 24px 38px -8px rgba(15, 23, 42, 0.13);
+    --shadow-electric: 0 0 0 1px rgba(6, 182, 212, 0.3), 0 8px 24px -4px rgba(6, 182, 212, 0.22);
     
-    /* Accessibility Focus */
-    --focus-ring: 0 0 0 2px #ffffff, 0 0 0 4px rgba(2, 132, 199, 0.35);
+    /* Accessibility */
+    --focus-ring: 0 0 0 2px #ffffff, 0 0 0 4px rgba(2, 132, 199, 0.45);
     
-    /* Motion System */
+    /* Motion Engine */
+    --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.15);
     --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
-    --duration-fast: 150ms;
-    --duration-normal: 250ms;
+    --duration-fast: 140ms;
+    --duration-normal: 240ms;
 }
 
 * {
@@ -97,7 +104,7 @@ h1, h2, h3, h4, h5, h6, .page-title, .hero-title, .pdp-title {
 }
 
 /* ============================================================
-   THE ELECTRICAL CONTROL BUTTON SYSTEM
+   THE ELECTRICAL CONTROL BUTTON SYSTEM (TACTILE & INTENTIONAL)
    ============================================================ */
 button, .btn-primary, .btn-secondary, .btn-danger, .btn-checkout, .btn-add-cart-large {
     display: inline-flex;
@@ -109,9 +116,16 @@ button, .btn-primary, .btn-secondary, .btn-danger, .btn-checkout, .btn-add-cart-
     font-size: 14px;
     border-radius: var(--radius);
     cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-standard);
     text-decoration: none;
     line-height: 1;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: transform var(--duration-fast) var(--ease-spring), 
+                background-color var(--duration-normal) var(--ease-standard), 
+                border-color var(--duration-normal) var(--ease-standard), 
+                box-shadow var(--duration-normal) var(--ease-standard), 
+                color var(--duration-fast) var(--ease-standard);
 }
 
 button svg {
@@ -119,32 +133,38 @@ button svg {
 }
 
 button:disabled, .btn-primary:disabled {
-    opacity: 0.5;
+    opacity: 0.45;
     cursor: not-allowed;
     pointer-events: none;
+    box-shadow: none !important;
 }
 
 .btn-primary, .btn-checkout, .btn-add-cart-large {
-    background: var(--primary);
+    background: linear-gradient(135deg, #0284c7, #0369a1);
     color: #ffffff;
-    border: 1px solid var(--primary);
-    padding: 10px 20px;
-    box-shadow: var(--shadow-sm);
-    letter-spacing: 0.3px;
+    border: 1px solid rgba(2, 132, 199, 0.4);
+    padding: 11px 22px;
+    box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    letter-spacing: 0.015em;
+    position: relative;
+    overflow: hidden;
 }
 
-.btn-primary:hover, .btn-checkout:hover, .btn-add-cart-large:hover {
-    background: var(--primary-hover);
-    border-color: var(--primary-hover);
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
+/* Mouse Hover (Desktops Only) */
+@media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover, .btn-checkout:hover, .btn-add-cart-large:hover {
+        background: linear-gradient(135deg, #0369a1, #0284c7);
+        border-color: var(--primary-hover);
+        box-shadow: var(--shadow-md), 0 0 16px rgba(2, 132, 199, 0.3);
+        transform: translateY(-1.5px);
+    }
 }
 
+/* Tactile Mobile & Desktop Active Press */
 .btn-primary:active, .btn-checkout:active, .btn-add-cart-large:active {
-    background: var(--primary-active);
-    border-color: var(--primary-active);
-    transform: translateY(0);
-    box-shadow: none;
+    transform: scale(0.97) translateY(0.5px);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition-duration: 60ms;
 }
 
 .btn-secondary {
@@ -588,10 +608,11 @@ input::placeholder, textarea::placeholder {
     opacity: 1; 
 }
 
-input:focus, select:focus, textarea:focus {
+input:focus, select:focus, textarea:focus, 
+input:focus-visible, select:focus-visible, textarea:focus-visible {
     outline: none;
-    border-color: var(--primary);
-    box-shadow: var(--focus-ring);
+    border-color: rgba(6, 182, 212, 0.6);
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
     background-color: var(--bg-surface); 
 }
 
@@ -730,10 +751,39 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     transition: all var(--duration-normal) var(--ease-standard);
 }
 
-.store-product-card:hover {
-    border-color: rgba(2, 132, 199, 0.25);
-    box-shadow: var(--shadow-xl);
-    transform: translateY(-4px);
+/* Subtle Electric Scroll Fade for Mobile */
+@supports (animation-timeline: view()) {
+    @media (max-width: 767px) {
+        .store-product-card {
+            animation: mobileElectricReveal linear both;
+            animation-timeline: view();
+            animation-range: entry 5% cover 15%;
+        }
+    }
+}
+
+@keyframes mobileElectricReveal {
+    0% {
+        opacity: 0.3;
+        transform: translateY(15px) scale(0.96);
+        box-shadow: 0 0 16px rgba(6, 182, 212, 0.4);
+        border-color: rgba(6, 182, 212, 0.6);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        box-shadow: var(--shadow-sm);
+        border-color: var(--border-subtle);
+    }
+}
+
+/* Isolated Desktop Hover - Prevents sticky zooming on mobile taps */
+@media (hover: hover) and (pointer: fine) {
+    .store-product-card:hover {
+        border-color: rgba(2, 132, 199, 0.25);
+        box-shadow: var(--shadow-xl);
+        transform: translateY(-4px);
+    }
 }
 
 .store-product-card .img-wrapper {
@@ -757,8 +807,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     mix-blend-mode: multiply;
 }
 
-.store-product-card:hover img {
-    transform: scale(1.08);
+@media (hover: hover) and (pointer: fine) {
+    .store-product-card:hover img {
+        transform: scale(1.08);
+    }
 }
 
 .store-product-card-details {
@@ -797,8 +849,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     transition: color var(--duration-fast);
 }
 
-.store-product-card:hover .store-product-card-title {
-    color: var(--primary);
+@media (hover: hover) and (pointer: fine) {
+    .store-product-card:hover .store-product-card-title {
+        color: var(--primary);
+    }
 }
 
 .store-product-card-action {
@@ -955,7 +1009,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .cart-items-scroll { max-height: 55vh; overflow-y: auto; overflow-x: hidden; padding-right: 8px; scrollbar-width: thin; }
 @media (min-width: 768px) { .cart-items-scroll { max-height: 65vh; padding-right: 12px; } }
 
-/* Cart Item Grid Blueprint */
+/* Premium Cart Item Grid */
 .cart-item { 
     display: flex; 
     gap: 16px; 
@@ -965,21 +1019,26 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     border-radius: var(--radius-lg);
     margin-bottom: 12px;
     box-shadow: var(--shadow-sm);
-    transition: box-shadow var(--duration-fast), border-color var(--duration-fast);
-}
-.cart-item:hover {
-    border-color: rgba(2, 132, 199, 0.2);
-    box-shadow: var(--shadow-md);
+    transition: box-shadow var(--duration-normal) var(--ease-standard), 
+                border-color var(--duration-normal) var(--ease-standard),
+                transform var(--duration-fast) var(--ease-spring);
 }
 
-/* Taller image wrapper spanning both rows */
+@media (hover: hover) and (pointer: fine) {
+    .cart-item:hover {
+        border-color: rgba(6, 182, 212, 0.3);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
+    }
+}
+
 .cart-item-img-wrapper { 
-    width: 90px; 
-    min-height: 90px; 
+    width: 96px; /* Slightly wider for presence */
+    min-height: 96px; 
     background: #ffffff; 
     border: 1px solid var(--slate-100); 
     border-radius: var(--radius-md); 
-    padding: 6px; 
+    padding: 8px; 
     flex-shrink: 0; 
     display: flex; 
     align-items: center; 
@@ -1034,23 +1093,28 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .cart-qty-btn { 
     background: transparent; 
     border: none; 
-    width: 32px; /* Smaller width */
+    width: 34px; 
     height: 100%; 
     color: var(--slate-600); 
     display: flex; 
     align-items: center; 
     justify-content: center; 
     cursor: pointer; 
-    transition: all 0.2s; 
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, color 0.15s, transform 0.1s; 
 }
-.cart-qty-btn svg { width: 14px; height: 14px; }
-.cart-qty-btn:hover { background: #e2e8f0; color: var(--slate-900); }
+.cart-qty-btn svg { width: 15px; height: 15px; }
+
+@media (hover: hover) and (pointer: fine) {
+    .cart-qty-btn:hover { background: #e2e8f0; color: var(--slate-900); }
+}
+.cart-qty-btn:active { background: #cbd5e1; transform: scale(0.92); }
 
 .cart-qty-val { 
-    width: 32px; 
+    width: 36px; 
     text-align: center; 
     font-weight: 700; 
-    font-size: 13px; 
+    font-size: 13.5px; 
     color: var(--slate-900); 
     line-height: 32px; 
     background: #ffffff; 
@@ -1058,22 +1122,32 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     border-right: 1px solid var(--slate-200); 
 }
 
-/* Right-aligned Icon-only Delete Button */
+/* Tactile Remove Button */
 .cart-remove-btn { 
     display: inline-flex; 
     align-items: center; 
     justify-content: center;
-    background: rgba(239, 68, 68, 0.08); /* Soft red background */
-    border: none; 
-    color: #ef4444; /* Bright red icon */
+    background: #fef2f2;
+    border: 1px solid #fee2e2; 
+    color: var(--danger); 
     width: 36px; 
     height: 36px; 
     border-radius: var(--radius-md); 
     cursor: pointer; 
-    transition: all 0.2s; 
+    -webkit-tap-highlight-color: transparent;
+    transition: all var(--duration-fast) var(--ease-standard); 
 }
-.cart-remove-btn svg { width: 16px; height: 16px; stroke-width: 2; }
-.cart-remove-btn:hover { background: rgba(239, 68, 68, 0.15); transform: translateY(-1px); }
+.cart-remove-btn svg { width: 16px; height: 16px; stroke-width: 2.2; }
+
+@media (hover: hover) and (pointer: fine) {
+    .cart-remove-btn:hover { 
+        background: #fee2e2; 
+        border-color: #fca5a5;
+        transform: translateY(-1px); 
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+    }
+}
+.cart-remove-btn:active { transform: scale(0.9) translateY(0); box-shadow: inset 0 2px 4px rgba(220, 38, 38, 0.1); transition-duration: 40ms; }
 
 .cart-summary { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); padding: 28px; box-shadow: var(--shadow-lg); }
 .summary-row { display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 14px; color: var(--slate-600); font-weight: 500; }
@@ -1152,7 +1226,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     display: block;
     position: relative;
     background: var(--bg-surface);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     overflow: hidden;
     min-width: 80px;
@@ -1160,13 +1234,23 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     height: 80px;
     flex-shrink: 0;
     text-decoration: none;
-    transition: all var(--duration-normal) var(--ease-standard);
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color var(--duration-fast) var(--ease-standard), 
+                box-shadow var(--duration-normal) var(--ease-standard), 
+                transform var(--duration-normal) var(--ease-spring);
 }
 
-.category-thumb-card:hover {
-    border-color: var(--slate-300);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+@media (hover: hover) and (pointer: fine) {
+    .category-thumb-card:hover {
+        border-color: rgba(6, 182, 212, 0.4);
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-md), 0 4px 12px rgba(6, 182, 212, 0.12);
+    }
+}
+
+.category-thumb-card:active {
+    transform: scale(0.96) translateY(0);
+    transition-duration: 60ms;
 }
 .category-thumb-card img {
     width: 100%;
@@ -1453,6 +1537,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     text-decoration: none;
     font-size: 12px;
     font-weight: 700;
+    -webkit-tap-highlight-color: transparent;
     transition: all var(--duration-fast) var(--ease-standard);
     overflow: hidden;
 }
@@ -1463,13 +1548,16 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     flex-shrink: 0;
 }
 
-.hero-contact-btn:hover {
-    transform: translateY(-1px);
-    border-color: rgba(56, 189, 248, 0.6);
-    background: rgba(56, 189, 248, 0.12);
-    color: #ffffff;
-    box-shadow: 0 4px 14px rgba(6, 182, 212, 0.2);
+@media (hover: hover) and (pointer: fine) {
+    .hero-contact-btn:hover {
+        transform: translateY(-1px);
+        border-color: rgba(56, 189, 248, 0.6);
+        background: rgba(56, 189, 248, 0.12);
+        color: #ffffff;
+        box-shadow: 0 4px 14px rgba(6, 182, 212, 0.2);
+    }
 }
+.hero-contact-btn:active { transform: scale(0.94); transition-duration: 40ms; background: rgba(56, 189, 248, 0.2); }
 
 .hero-whatsapp-btn {
     color: #86efac;
@@ -1477,11 +1565,14 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     background: rgba(34, 197, 94, 0.08);
 }
 
-.hero-whatsapp-btn:hover {
-    border-color: rgba(34, 197, 94, 0.7);
-    background: rgba(34, 197, 94, 0.18);
-    color: #bbf7d0;
+@media (hover: hover) and (pointer: fine) {
+    .hero-whatsapp-btn:hover {
+        border-color: rgba(34, 197, 94, 0.7);
+        background: rgba(34, 197, 94, 0.18);
+        color: #bbf7d0;
+    }
 }
+.hero-whatsapp-btn:active { background: rgba(34, 197, 94, 0.25); }
 
 /* Removed Flashy Animations for Premium Subtlety */
 @keyframes statusPulse {
@@ -2018,18 +2109,25 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
    ============================================================ */
 .custom-dialog-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(9, 13, 22, 0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    background: rgba(15, 23, 42, 0.55); 
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     display: flex; align-items: center; justify-content: center;
-    z-index: 10000; opacity: 0; visibility: hidden; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 10000; opacity: 0; visibility: hidden; 
+    transition: opacity 0.25s var(--ease-standard), visibility 0.25s var(--ease-standard);
 }
 .custom-dialog-overlay.active { opacity: 1; visibility: visible; }
 .custom-dialog-box {
-    background: var(--bg-surface); padding: 32px; border-radius: var(--radius-xl);
-    width: 90%; max-width: 420px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transform: translateY(30px) scale(0.95); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    background: var(--bg-surface); 
+    padding: 32px 24px; 
+    border-radius: var(--radius-xl);
+    width: 90%; max-width: 400px; 
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+    border: 1px solid var(--border);
+    transform: translateY(15px) scale(0.98); 
+    transition: transform 0.4s var(--ease-spring);
     text-align: center;
 }
+.custom-dialog-overlay.active .custom-dialog-box { transform: translateY(0) scale(1); }
 .custom-dialog-overlay.active .custom-dialog-box { transform: translateY(0) scale(1); }
 .custom-dialog-title { font-size: 20px; font-weight: 800; margin-bottom: 12px; color: var(--slate-900); letter-spacing: -0.02em; }
 .custom-dialog-msg { font-size: 15px; color: var(--slate-600); margin-bottom: 32px; line-height: 1.6; }
@@ -2715,7 +2813,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     padding: 2px 5px; /* Thinner padding */
 }
 
-/* Premium Small SVG-Only Add Button */
+/* Premium Small SVG-Only Add Button (Mobile & Desktop Optimized) */
 .btn-add-icon-only {
     display: inline-flex;
     align-items: center;
@@ -2727,10 +2825,13 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     border: 1px solid transparent;
     color: var(--primary);
     cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-standard);
+    /* Smooth, slow return transition so the electric glow elegantly fades back */
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     -webkit-tap-highlight-color: transparent;
     padding: 0;
     margin-left: auto;
+    touch-action: manipulation;
+    outline: none; /* Strip browser default focus rings */
 }
 
 .btn-add-icon-only svg {
@@ -2738,23 +2839,42 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     height: 18px;
     stroke: currentColor;
     stroke-width: 2.5;
-    transition: transform var(--duration-fast) var(--ease-standard);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Hover State - Vivid Blue Fill */
-.btn-add-icon-only:hover {
+/* Desktop ONLY Hover State */
+@media (hover: hover) and (pointer: fine) {
+    .btn-add-icon-only:hover {
+        background: var(--primary);
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+    }
+    .btn-add-icon-only:hover svg {
+        transform: scale(1.1) rotate(90deg); 
+    }
+}
+
+/* Universal Active/Tap State - Premium Electric Glow */
+.btn-add-icon-only:active {
+    /* Instant trigger on press */
+    transition: all 0.05s ease;
+    transform: scale(0.82); /* Satisfying deep physical press */
     background: var(--primary);
     color: #ffffff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+    /* Immediate Electric Cyan Glow */
+    box-shadow: 0 0 0 2px var(--bg-surface), 0 0 16px 2px var(--accent-cyan);
 }
 
-.btn-add-icon-only:hover svg {
-    transform: scale(1.1) rotate(90deg); 
+.btn-add-icon-only:active svg {
+    transition: all 0.05s ease;
+    transform: scale(0.9) rotate(90deg); 
 }
 
-.btn-add-icon-only:active {
-    transform: scale(0.92) translateY(0);
-    box-shadow: none;
+/* Absolutely strip focus sticking on mobile */
+.btn-add-icon-only:focus,
+.btn-add-icon-only:focus-visible {
+    outline: none !important;
+    box-shadow: none; 
 }
 
