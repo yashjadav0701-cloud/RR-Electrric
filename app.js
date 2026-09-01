@@ -591,7 +591,7 @@
                 <a href="javascript:void(0)" onclick="Store.navigate('product', '${p.id}')" class="store-product-card ${!isAvailable ? 'is-unavailable' : ''}">
                     <div class="img-wrapper">
                         ${badgeHtml}
-                        <img src="${img}" alt="${p.name}" loading="lazy">
+                        <img src="${img}" alt="${p.name}" loading="lazy" decoding="async">
                     </div>
                     <div class="store-product-card-details">
                         <div class="store-product-card-price-row">
@@ -720,7 +720,7 @@
             const img = p.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
             return `
                 <a href="javascript:void(0)" onclick="Store.navigate('product', '${p.id}')" class="category-thumb-card" title="${p.name}">
-                    <img src="${img}" alt="${p.name}" loading="lazy">
+                    <img src="${img}" alt="${p.name}" loading="lazy" decoding="async">
                 </a>
             `;
         },
@@ -1174,10 +1174,10 @@
                     }, 300);
                 };
 
-                // Mobile Touch Events
+                // Mobile Touch Events optimized with passive: true for 144Hz scroll tracking
                 track.addEventListener('touchstart', (e) => touchStart(e.touches[0].clientX), { passive: true });
                 track.addEventListener('touchmove', (e) => touchMove(e.touches[0].clientX), { passive: true });
-                track.addEventListener('touchend', (e) => touchEnd(e.changedTouches[0].clientX));
+                track.addEventListener('touchend', (e) => touchEnd(e.changedTouches[0].clientX), { passive: true });
                 
                 // Desktop Mouse Events
                 track.addEventListener('mousedown', (e) => touchStart(e.clientX));
