@@ -1587,15 +1587,6 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     opacity: 0.9;
 }
 
-.hero-bg-grid {
-    position: absolute;
-    inset: -32px;
-    background-image: 
-        linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
-    background-size: 36px 36px;
-}
-
 .hero-graphics::after {
     content: "";
     position: absolute;
@@ -3814,4 +3805,34 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 /* Isolates repaints strictly to individual cart elements */
 .cart-item {
     contain: layout style paint;
+}
+
+/* ============================================================
+   HOME PAGE HERO PERFORMANCE OPTIMIZATION PATCH
+   ============================================================ */
+.hero-section,
+.top-categories-wrapper,
+.hero-store-card {
+    contain: layout style paint;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+@media (max-width: 767px) {
+    /* Completely remove heavy repeating background grid and radial glow on mobile to eliminate paint lag */
+    .hero-bg-grid,
+    .hero-bg-glow {
+        display: none !important;
+    }
+    
+    /* Simplify hero section background on mobile to a clean solid/semi-transparent surface */
+    .hero-section {
+        background: rgba(248, 250, 252, 0.95);
+        box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.06);
+    }
+    
+    .top-categories-wrapper {
+        background: rgba(248, 250, 252, 0.95);
+    }
 }
