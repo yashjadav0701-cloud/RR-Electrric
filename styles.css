@@ -85,7 +85,14 @@ html {
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: var(--bg-main);
+    /* 3D Colorful Mesh Background */
+    background-color: #f1f5f9;
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(255, 255, 255, 0.8) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(186, 230, 253, 0.4) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(224, 242, 254, 0.6) 0px, transparent 50%),
+        radial-gradient(at 0% 100%, rgba(248, 250, 252, 0.8) 0px, transparent 50%);
+    background-attachment: fixed;
     color: var(--text-main);
     line-height: 1.5;
     -webkit-tap-highlight-color: transparent;
@@ -142,29 +149,37 @@ button:disabled, .btn-primary:disabled {
 .btn-primary, .btn-checkout, .btn-add-cart-large {
     background: linear-gradient(135deg, #0284c7, #0369a1);
     color: #ffffff;
-    border: 1px solid rgba(2, 132, 199, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     padding: 11px 22px;
-    box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    /* 3D Push effect: Inner highlight + solid bottom edge + drop shadow */
+    box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.4),
+                0 4px 0 #075985,
+                0 8px 16px rgba(2, 132, 199, 0.3);
     letter-spacing: 0.015em;
     position: relative;
     overflow: hidden;
+    border-radius: var(--radius-md);
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Mouse Hover (Desktops Only) */
 @media (hover: hover) and (pointer: fine) {
     .btn-primary:hover, .btn-checkout:hover, .btn-add-cart-large:hover {
         background: linear-gradient(135deg, #0369a1, #0284c7);
-        border-color: var(--primary-hover);
-        box-shadow: var(--shadow-md), 0 0 16px rgba(2, 132, 199, 0.3);
-        transform: translateY(-1.5px);
+        transform: translateY(-2px);
+        box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.5),
+                    0 6px 0 #075985,
+                    0 12px 20px rgba(2, 132, 199, 0.4);
     }
 }
 
 /* Tactile Mobile & Desktop Active Press */
 .btn-primary:active, .btn-checkout:active, .btn-add-cart-large:active {
-    transform: scale(0.97) translateY(0.5px);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition-duration: 60ms;
+    transform: translateY(4px) !important;
+    box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.2),
+                0 0 0 #075985,
+                0 2px 4px rgba(2, 132, 199, 0.2) !important;
+    transition-duration: 50ms;
 }
 
 .btn-secondary {
@@ -291,18 +306,30 @@ button:disabled, .btn-primary:disabled {
 }
 
 /* ============================================================
-   HEADER & SEARCH (Glassmorphic Navigation)
+   HEADER & SEARCH (3D Elevated Navigation)
    ============================================================ */
 .site-header {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-bottom: 1px solid var(--border-subtle);
+    /* 3D Surface Lighting: Brighter at top, slightly shaded at bottom */
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.92) 100%);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    
+    /* Strong Physical Bottom Lip */
+    border-bottom: 1px solid #cbd5e1; 
+    
+    /* Multi-layered 3D Physics */
+    box-shadow: 
+        inset 0 -3px 4px rgba(15, 23, 42, 0.05), /* Inner bottom bevel shading to simulate thickness */
+        inset 0 1px 0 #ffffff,                   /* Top edge highlight */
+        0 2px 5px -1px rgba(15, 23, 42, 0.08),   /* Sharp contact shadow immediately below the lip */
+        0 16px 32px -12px rgba(15, 23, 42, 0.18); /* Deep ambient drop shadow */
+        
     position: sticky;
     top: 0;
-    z-index: 100;
-    transition: background-color var(--duration-normal) var(--ease-standard), border-color var(--duration-normal) var(--ease-standard);
+    z-index: 1000; 
+    transition: all var(--duration-normal) var(--ease-standard);
 }
+
 
 .header-inner {
     display: flex;
@@ -479,17 +506,25 @@ button:disabled, .btn-primary:disabled {
     }
 }
 
+/* ============================================================
+   ELEGANT 3D FLOATING BUTTONS (MOBILE NAVIGATION)
+   ============================================================ */
 .mobile-bottom-nav {
     display: flex;
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--bg-surface);
-    border-top: 1px solid var(--border);
-    z-index: 100;
-    padding-bottom: env(safe-area-inset-bottom);
-    box-shadow: 0 -1px 4px rgba(0,0,0,0.05);
+    bottom: 6px; /* Reduced space from the bottom edge */
+    left: 8px;   /* Reduced space from the left edge */
+    right: 8px;  /* Reduced space from the right edge */
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    z-index: 1000;
+    padding: 0;
+    gap: 8px; /* Slightly reduced gap between the buttons for a tighter fit */
+    overflow: visible; 
+    box-shadow: none;
+    pointer-events: none; /* Lets clicks pass through the empty gaps */
 }
 
 @media (min-width: 768px) {
@@ -503,74 +538,90 @@ button:disabled, .btn-primary:disabled {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 9px 0 8px;
+    padding: 10px 4px;
     color: var(--slate-500);
-    transition: color var(--duration-fast) var(--ease-standard);
+    background: rgba(255, 255, 255, 0.98); /* Firmer white, just a tiny bit transparent */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    border-radius: 18px;
     text-decoration: none;
-    font-size: 10px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 700;
     -webkit-tap-highlight-color: transparent;
+    box-shadow: 
+        0 10px 20px -6px rgba(15, 23, 42, 0.12),
+        0 4px 8px -2px rgba(15, 23, 42, 0.05);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: auto; /* Re-enables clicks on the buttons themselves */
 }
 
 .bottom-nav-item::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 50%;
-    margin-left: -16px;
-    width: 32px;
-    height: 3px;
-    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-    background: var(--primary);
-    opacity: 0;
-    transform: scaleX(0.3);
-    transform-origin: center;
-    transition: opacity var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
-    pointer-events: none;
+    display: none; 
 }
 
 .bottom-nav-item:hover {
     color: var(--primary);
+    transform: translateY(-2px);
 }
 
+/* Solid Light Blue Active State (Fixes Transparency Bleed) */
 .bottom-nav-item.active {
-    color: var(--primary);
+    /* 95% opaque frosted light-blue base completely blocks dark backgrounds */
+    background: rgba(235, 248, 255, 0.95); 
+    color: var(--primary); /* Vibrant blue for high contrast text/icon */
+    border: 1px solid rgba(2, 132, 199, 0.35); 
+    box-shadow: 
+        0 8px 16px -4px rgba(2, 132, 199, 0.2),
+        inset 0 2px 3px rgba(255, 255, 255, 0.9); /* Inner white glow for 3D effect */
+    transform: translateY(-2px); 
 }
 
-.bottom-nav-item.active::before {
-    opacity: 1;
-    transform: scaleX(1);
-}
-
+/* Standardized Icon Sizing ensures Bag icon matches Home & Categories perfectly */
 .bottom-nav-item svg {
-    width: 23px;
-    height: 23px;
-    margin-bottom: 4px;
+    width: 22px !important;
+    height: 22px !important;
     stroke: currentColor;
-    transition: filter var(--duration-fast) var(--ease-standard);
+    stroke-width: 2.2;
+    margin-bottom: 4px;
+    transition: all 0.3s ease;
 }
 
 .bottom-nav-item.active svg {
     stroke: var(--primary);
-    stroke-width: 2.3;
-    filter: drop-shadow(0 2px 4px rgba(2, 132, 199, 0.2));
+    stroke-width: 2.6;
+    transform: scale(1.08); /* Slight pop on active */
 }
 
+.bottom-nav-item span {
+    line-height: 1;
+    letter-spacing: 0.2px;
+}
+
+/* Flawless Mathematical Badge Positioning */
 .bottom-nav-cart-badge {
     position: absolute;
-    top: 4px;
-    right: calc(50% - 16px);
-    background: var(--primary);
+    top: 6px; /* Keeps it safely inside the button boundary */
+    left: 50%; /* Anchors to the exact center of the button */
+    margin-left: 4px; /* Pushes it exactly to the right ear of the SVG */
+    background: #ef4444; 
     color: white;
-    font-size: 9px;
-    border-radius: 50%;
-    min-width: 16px;
-    height: 16px;
+    font-size: 9.5px;
+    border-radius: 50px;
+    padding: 0 5px;
+    min-width: 17px;
+    height: 17px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    transition: transform 0.2s;
+    font-weight: 800;
+    z-index: 10;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+    border: 1.5px solid #ffffff; /* Cuts cleanly into the background */
+}
+
+.bottom-nav-item.active .bottom-nav-cart-badge {
+    border-color: #f0f9ff; /* Matches the light blue active background tint perfectly */
 }
 
 /* ============================================================
@@ -736,19 +787,29 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     .products-grid { grid-template-columns: repeat(4, 1fr); gap: 24px; }
 }
 
+/* 3D Floating Product Cards */
 .store-product-card {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md); /* Reduced corner curving */
-    overflow: hidden;
+    background: transparent;
+    border: none;
+    border-radius: 0; 
+    overflow: visible;
     display: flex;
     flex-direction: column;
-    text-decoration: none;
+    text-decoration: none !important; /* Forces underline removal */
     color: inherit;
     position: relative;
     isolation: isolate;
-    box-shadow: var(--shadow-sm);
-    transition: all var(--duration-normal) var(--ease-standard);
+    box-shadow: none;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Animate the image wrapper instead of the invisible card on hover */
+@media (hover: hover) and (pointer: fine) {
+    .store-product-card:hover .img-wrapper {
+        border-color: var(--primary);
+        box-shadow: 0 12px 24px -6px rgba(2, 132, 199, 0.25);
+        transform: translateY(-6px) translateZ(0);
+    }
 }
 
 /* Subtle Electric Scroll Fade for Mobile */
@@ -763,39 +824,23 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 @keyframes mobileElectricReveal {
-    0% {
-        opacity: 0.3;
-        transform: translateY(15px) scale(0.96);
-        box-shadow: 0 0 16px rgba(6, 182, 212, 0.4);
-        border-color: rgba(6, 182, 212, 0.6);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-        box-shadow: var(--shadow-sm);
-        border-color: var(--border-subtle);
-    }
-}
-
-/* Isolated Desktop Hover - Prevents sticky zooming on mobile taps */
-@media (hover: hover) and (pointer: fine) {
-    .store-product-card:hover {
-        border-color: rgba(2, 132, 199, 0.25);
-        box-shadow: var(--shadow-xl);
-        transform: translateY(-4px);
-    }
+    0% { opacity: 0.3; transform: translateY(15px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .store-product-card .img-wrapper {
     position: relative;
     overflow: hidden;
     background: #ffffff;
-    border-bottom: 1px solid var(--slate-50);
+    border: 1px solid rgba(226, 232, 240, 0.9); /* Clean border */
+    border-radius: var(--radius-sm); /* Sharper 8px corners */
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05); /* Soft drop shadow */
     aspect-ratio: 1;
-    padding: 8px; /* TIGHT PADDING: Makes the image much bigger */
+    padding: 8px; 
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .store-product-card img {
@@ -814,12 +859,12 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 .store-product-card-details {
-    padding: 8px; /* MINIMUM PADDING */
+    padding: 12px 4px 4px 4px; /* Removed side padding to align text with image edges */
     display: flex;
     flex-direction: column;
-    gap: 4px; /* TIGHT GAP */
+    gap: 6px; 
     flex: 1;
-    background: var(--bg-surface);
+    background: transparent; 
 }
 
 .store-product-card-price-row {
@@ -830,14 +875,15 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 .store-product-card .selling-price {
-    font-size: 16px; /* SMALLER FONT */
+    font-size: 16px; 
     font-weight: 800;
     color: var(--slate-900);
     letter-spacing: -0.01em;
+    text-decoration: none !important; /* Force underline removal */
 }
 
 .store-product-card-title {
-    font-size: 12px; /* SMALLER FONT */
+    font-size: 12px; 
     font-weight: 600;
     color: var(--slate-700);
     line-height: 1.4;
@@ -847,6 +893,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     overflow: hidden;
     flex: 1;
     transition: color var(--duration-fast);
+    text-decoration: none !important; /* Force underline removal */
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -857,9 +904,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 .store-product-card-action {
     margin-top: auto;
-    padding-top: 6px; /* TIGHT PADDING */
+    padding-top: 8px; 
     display: flex;
-    justify-content: flex-end;
+    justify-content: center; /* Centers the button horizontally in the card */
+    width: 100%;
 }
 
 /* ============================================================
@@ -1182,41 +1230,92 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .checkout-item-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 12px; font-weight: 500; color: var(--slate-800); }
 
 /* ============================================================
-   STOREFRONT ELEMENTS
+   CATEGORIES PAGE 3D COMPACT REDESIGN
    ============================================================ */
-.category-discovery-section {
-    margin-bottom: 24px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 20px;
+.categories-page-header {
+    padding: 10px 0 6px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
+
+.categories-subtitle {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.category-discovery-section {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 18px;
+    padding: 12px 14px; /* Tighter padding */
+    margin-bottom: 10px; /* Reduced vertical space between sections */
+    box-shadow: 
+        0 10px 25px -8px rgba(15, 23, 42, 0.08),
+        inset 0 1px 2px rgba(255, 255, 255, 1);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+}
+
 .category-discovery-section:last-child {
-    border-bottom: none;
     margin-bottom: 0;
 }
+
+@media (hover: hover) and (pointer: fine) {
+    .category-discovery-section:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 28px -6px rgba(2, 132, 199, 0.12), inset 0 1px 2px rgba(255, 255, 255, 1);
+        border-color: rgba(2, 132, 199, 0.3);
+    }
+}
+
 .category-discovery-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 8px; /* Reduced space below header */
 }
+
 .category-discovery-header h2 {
-    font-size: 16px;
+    font-size: 14px; /* Smaller category title font */
     margin: 0;
-    color: var(--text-main);
-    font-weight: 700;
+    color: var(--slate-900);
+    font-weight: 800;
+    letter-spacing: -0.02em;
 }
+
+/* Compact 3D Tactile "See More" Button */
 .category-discovery-header a {
-    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, rgba(2, 132, 199, 0.08), rgba(6, 182, 212, 0.08));
     color: var(--primary);
+    border: 1px solid rgba(2, 132, 199, 0.2);
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 10.5px;
+    font-weight: 700;
     text-decoration: none;
-    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .category-discovery-header a:hover {
+        background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+        color: #ffffff;
+        border-color: transparent;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
+    }
 }
 
 .category-discovery-row {
     display: flex;
-    gap: 10px;
+    gap: 6px; /* Minimum horizontal space between thumbnail cards */
     overflow-x: auto;
-    padding-bottom: 4px;
+    padding-bottom: 2px;
     scrollbar-width: none; 
     -webkit-overflow-scrolling: touch;
 }
@@ -1225,58 +1324,261 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .category-thumb-card {
     display: block;
     position: relative;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 16px; /* Scaled down squircle corners */
     overflow: hidden;
-    min-width: 80px;
-    max-width: 80px;
-    height: 80px;
+    min-width: 70px; /* Smaller card width */
+    max-width: 70px;
+    height: 70px; /* Smaller card height */
     flex-shrink: 0;
     text-decoration: none;
+    box-shadow: 
+        0 6px 14px -4px rgba(15, 23, 42, 0.12),
+        inset 0 1.5px 2px rgba(255, 255, 255, 0.9);
     -webkit-tap-highlight-color: transparent;
-    transition: border-color var(--duration-fast) var(--ease-standard), 
-                box-shadow var(--duration-normal) var(--ease-standard), 
-                transform var(--duration-normal) var(--ease-spring);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: translateZ(0);
+}
+
+.category-thumb-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, 0.05) 100%);
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 3;
 }
 
 @media (hover: hover) and (pointer: fine) {
     .category-thumb-card:hover {
-        border-color: rgba(6, 182, 212, 0.4);
-        transform: translateY(-3px);
-        box-shadow: var(--shadow-md), 0 4px 12px rgba(6, 182, 212, 0.12);
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 10px 18px -4px rgba(2, 132, 199, 0.2);
     }
 }
 
-.category-thumb-card:active {
-    transform: scale(0.96) translateY(0);
-    transition-duration: 60ms;
-}
 .category-thumb-card img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    padding: 4px;
-    background: white;
+    object-fit: cover; 
+    padding: 0;
+    background: #ffffff;
+    mix-blend-mode: multiply;
+    z-index: 2;
 }
 
 @media (min-width: 768px) {
-    .category-discovery-section { margin-bottom: 28px; padding-bottom: 24px; }
-    .category-discovery-header h2 { font-size: 18px; }
-    .category-thumb-card { min-width: 110px; max-width: 110px; height: 110px; }
+    .category-discovery-section { margin-bottom: 14px; padding: 16px; }
+    .category-discovery-header h2 { font-size: 15px; }
+    .category-thumb-card { min-width: 90px; max-width: 90px; height: 90px; border-radius: 20px; }
 }
 
 /* ============================================================
-   RR ELECTRRIC — HIGH-PERFORMANCE ELECTRICAL HERO
+   PREMIUM 3D CATEGORY SCROLLER (SQUIRCLE UPDATE)
    ============================================================ */
+.hero-3d-categories {
+    width: 100%;
+    max-width: 100vw;
+    margin: 0 auto 0px auto; /* Completely removed the bottom margin */
+    overflow: hidden; 
+}
+
+.hero-3d-cat-track {
+    display: flex;
+    gap: 8px; 
+    padding: 4px 32px 4px 16px; /* Squeezed bottom padding from 8px to 4px */
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 16px; 
+    scrollbar-width: none; 
+    -webkit-overflow-scrolling: touch;
+}
+
+.hero-3d-cat-track::-webkit-scrollbar {
+    display: none; 
+}
+
+.hero-3d-cat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px; 
+    cursor: pointer;
+    flex-shrink: 0;
+    width: 78px; /* Shrunk width increases density and mathematically ensures peek on mobile widths */
+    scroll-snap-align: start;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.hero-3d-cat-box {
+    width: 78px; /* Matched to item width */
+    height: 78px;
+    border-radius: 20px; /* Adjusted squircle ratio for the new 78px size */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    background: #ffffff;
+    position: relative;
+    overflow: hidden; 
+    
+    /* Premium 3D Bevel & Ambient Depth */
+    border: 1px solid rgba(0, 0, 0, 0.06); 
+    box-shadow: 
+        0 10px 20px -6px rgba(15, 23, 42, 0.15), 
+        0 4px 8px -2px rgba(15, 23, 42, 0.08),  
+        inset 0 2px 3px rgba(255, 255, 255, 0.9), 
+        inset 0 -2px 4px rgba(0, 0, 0, 0.05); 
+        
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: translateZ(0); 
+}
+
+/* Modern Diagonal 3D Lighting Overlay */
+.hero-3d-cat-box::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    /* Soft light hitting top-left, slight shadow on bottom-right */
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, 0.04) 100%);
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.hero-3d-cat-box img {
+    width: 100%;
+    height: 100%;
+    padding: 0; 
+    box-sizing: border-box;
+    object-fit: cover; 
+    z-index: 2;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.hero-3d-cat-label {
+    width: 100%;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--slate-800); 
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    text-align: center;
+    transition: color 0.3s ease;
+    
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    line-height: 1.3;
+    min-height: 28px; 
+    margin-top: 2px; /* Slight push down to balance the new shadow */
+}
+
+/* Hover Physics */
+@media (hover: hover) and (pointer: fine) {
+    .hero-3d-cat-item:hover .hero-3d-cat-box {
+        transform: translateY(-6px) scale(1.02); /* Higher 3D lift */
+        border-color: rgba(2, 132, 199, 0.3); /* Subtle blue tint on casing */
+        box-shadow: 
+            0 20px 30px -10px rgba(2, 132, 199, 0.25), /* Blue floating shadow */
+            0 8px 12px -4px rgba(15, 23, 42, 0.1),
+            inset 0 2px 3px rgba(255, 255, 255, 1),
+            inset 0 -2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .hero-3d-cat-item:hover .hero-3d-cat-box img {
+        transform: scale(1.08); /* Internal 3D zoom */
+    }
+    
+    .hero-3d-cat-item:hover .hero-3d-cat-label {
+        color: var(--primary);
+    }
+}
+
+/* Tactile Active Press Physics */
+.hero-3d-cat-item:active .hero-3d-cat-circle {
+    transform: translateY(2px) scale(0.95);
+    box-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.5),
+        inset 4px 4px 8px rgba(0, 0, 0, 0.7),
+        inset -2px -2px 6px rgba(255, 255, 255, 0.05);
+}
+
+/* ============================================================
+   PREMIUM LIGHT GLASS HERO & CATEGORIES (2-PART SECTION)
+   ============================================================ */
+/* PART 1: Top Categories Scroller */
+.top-categories-wrapper {
+    background: rgba(255, 255, 255, 0.55); 
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255, 255, 255, 0.9);
+    border-bottom: none; /* Removed so it connects flawlessly to the hero */
+    box-shadow: none; 
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin: 0 auto 0 auto; /* Zero gap between categories and hero */
+    position: relative;
+    z-index: 10;
+    width: 100%;
+}
+
+/* PART 2: Main Hero Section */
 .hero-section {
     position: relative;
-    min-height: 420px;
     overflow: hidden;
-    color: #ffffff;
+    color: var(--slate-900);
     text-align: center;
-    background-color: var(--slate-950);
-    border-bottom: 1px solid rgba(6, 182, 212, 0.25);
+    /* Slightly darker, tinted transparent glass */
+    background: rgba(203, 213, 225, 0.45); 
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255, 255, 255, 0.5); /* Soft inner dividing line */
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 0; /* Edge to edge on mobile */
+    box-shadow: 0 8px 25px -8px rgba(15, 23, 42, 0.08); 
+    margin: 0 auto 16px auto; /* Space before products */
+    width: 100%;
+}
+
+/* 💻 DESKTOP & TABLET LOCK: Constrains widths for premium boxed look on large screens */
+@media (min-width: 768px) {
+    .top-categories-wrapper {
+        max-width: calc(100% - 32px);
+        border-radius: 16px 16px 0 0; /* Round top only to merge with hero */
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-bottom: none;
+        margin-top: 12px;
+    }
+    .hero-section {
+        max-width: calc(100% - 32px);
+        border-radius: 0 0 16px 16px; /* Round bottom only to merge with categories */
+        border: 1px solid rgba(255, 255, 255, 0.6); 
+        border-top: none;
+    }
+}
+@media (min-width: 992px) {
+    .top-categories-wrapper, .hero-section {
+        max-width: 920px; /* Perfectly aligns both sections */
+    }
+}
+@media (min-width: 1200px) {
+    .top-categories-wrapper {
+        max-width: calc(1200px - 32px); /* Let categories expand on massive screens */
+        border-radius: 16px; /* Round all edges if it expands */
+        border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+        margin-bottom: 12px;
+    }
+    .hero-section {
+        border-radius: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.6); 
+    }
 }
 
 .hero-graphics {
@@ -1291,8 +1593,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     position: absolute;
     inset: 0;
     background: 
-        radial-gradient(circle at 20% 15%, rgba(6, 182, 212, 0.18), transparent 45%),
-        radial-gradient(circle at 80% 85%, rgba(2, 132, 199, 0.22), transparent 50%);
+        radial-gradient(circle at 20% 15%, rgba(6, 182, 212, 0.08), transparent 45%),
+        radial-gradient(circle at 80% 85%, rgba(2, 132, 199, 0.12), transparent 50%);
     opacity: 0.9;
 }
 
@@ -1300,8 +1602,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     position: absolute;
     inset: -32px;
     background-image: 
-        linear-gradient(rgba(6, 182, 212, 0.07) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(6, 182, 212, 0.07) 1px, transparent 1px);
+        linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
     background-size: 36px 36px;
 }
 
@@ -1309,7 +1611,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse at 50% 35%, rgba(9, 13, 22, 0.4) 0%, rgba(9, 13, 22, 0.96) 100%);
+    /* Adjusted overlay gradient to compliment the darker transparent theme */
+    background: radial-gradient(ellipse at 50% 35%, rgba(255, 255, 255, 0.1) 0%, rgba(226, 232, 240, 0.6) 100%);
     z-index: 2;
 }
 
@@ -1319,23 +1622,48 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 36px;
-    padding-bottom: 24px;
+    gap: 12px;
+    padding: 16px 12px;
     width: 100%;
+    box-sizing: border-box;
+}
+
+.hero-left-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 580px;
+}
+
+@media (min-width: 992px) {
+    .hero-content {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 24px;
+        padding: 16px 24px;
+    }
+    .hero-left-panel {
+        flex: 1;
+        align-items: center;
+        gap: 8px;
+    }
 }
 
 .hero-eyebrow {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: rgba(6, 182, 212, 0.1);
-    border: 1px solid rgba(6, 182, 212, 0.3);
+    background: rgba(2, 132, 199, 0.08);
+    border: 1px solid rgba(2, 132, 199, 0.15);
     padding: 6px 14px;
     border-radius: 9999px;
     font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.1em;
-    color: #67e8f9;
+    color: var(--primary-active);
     margin-bottom: 16px;
     backdrop-filter: blur(8px);
 }
@@ -1344,8 +1672,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #22d3ee;
-    box-shadow: 0 0 10px #22d3ee;
+    background: var(--primary);
+    box-shadow: 0 0 10px var(--primary);
     animation: statusPulse 2s ease-in-out infinite;
 }
 
@@ -1356,14 +1684,14 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     line-height: 1.15;
     font-weight: 900;
     letter-spacing: -0.03em;
-    color: #ffffff;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    color: var(--slate-900);
+    text-shadow: none; /* Removed heavy drop shadow for clean light mode */
 }
 
 .hero-title span {
     display: inline-block;
     margin-top: 4px;
-    background: linear-gradient(135deg, #7dd3fc, #38bdf8);
+    background: linear-gradient(135deg, var(--accent-cyan), var(--primary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -1372,32 +1700,33 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     width: 100%;
     max-width: 580px;
     margin: 12px auto 16px;
-    color: #94a3b8;
+    color: var(--slate-600);
     font-size: clamp(13px, 2vw, 15px);
     line-height: 1.5;
-    font-weight: 400;
+    font-weight: 500;
 }
 
 .hero-delivery {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    color: #cbd5e1;
+    color: var(--primary-active);
     font-size: 12px;
-    font-weight: 600;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-weight: 700;
+    background: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.9);
     padding: 6px 14px;
-    border-radius: 8px;
-    margin-bottom: 20px;
+    border-radius: 12px;
+    margin: 0;
+    box-shadow: 0 4px 10px -2px rgba(15, 23, 42, 0.05), inset 0 1px 2px rgba(255, 255, 255, 1);
 }
 
 .hero-delivery svg {
     width: 16px;
     height: 16px;
     fill: none;
-    stroke: #38bdf8;
-    stroke-width: 2;
+    stroke: var(--primary);
+    stroke-width: 2.2;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
@@ -1405,12 +1734,11 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 /* Authorized Partner Ribbon */
 .hero-brand-ribbon {
     width: 100%;
-    max-width: 580px;
-    margin: 0 auto 24px auto;
+    margin: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
+    gap: 14px; 
     position: relative;
     z-index: 10;
 }
@@ -1420,111 +1748,217 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     align-items: center;
     gap: 14px;
     width: 100%;
-    opacity: 0.85;
 }
 
+/* Faint, static track for the energy to travel along */
 .ribbon-line {
     flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.35), transparent);
+    height: 2px;
+    background: rgba(2, 132, 199, 0.15); 
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
 }
 
+/* The physical electric laser beam */
+.ribbon-line::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(6, 182, 212, 0.8) 60%, #ffffff 100%);
+    border-radius: 2px;
+    transform: translateX(-100%);
+}
+
+/* SYNCHRONIZATION PHASE 1: Left line shoots to the text */
+.ribbon-line:first-child::before {
+    animation: shootLeft 4s linear infinite;
+}
+
+/* SYNCHRONIZATION PHASE 3: Right line shoots away from the text */
+.ribbon-line:last-child::before {
+    animation: shootRight 4s linear infinite;
+}
+
+/* The Base Text: 100% static, solid, and perfectly sharp */
 .ribbon-text {
+    position: relative;
     font-size: 11px;
     font-weight: 800;
-    color: #38bdf8;
+    color: var(--primary); 
     letter-spacing: 0.12em;
     text-transform: uppercase;
+    display: inline-block;
 }
 
+/* SYNCHRONIZATION PHASE 2: Sweeping glowing overlay */
+/* This duplicates the text exactly on top, but uses a sliding mask to reveal it */
+.ribbon-text::after {
+    content: "AUTHORIZED PARTNER FOR";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: #ffffff; /* Brilliant white core */
+    text-shadow: 0 0 8px var(--accent-cyan), 0 0 15px var(--primary); /* Electric glow */
+    pointer-events: none;
+    
+    /* The mask hides the glow, except for a sliding gap that sweeps left to right */
+    -webkit-mask-image: linear-gradient(90deg, transparent 40%, black 50%, transparent 60%);
+    mask-image: linear-gradient(90deg, transparent 40%, black 50%, transparent 60%);
+    -webkit-mask-size: 300% 100%;
+    mask-size: 300% 100%;
+    
+    /* Starts hidden on the extreme left */
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+    
+    animation: sweepText 4s linear infinite;
+}
+
+/* === THE PERFECT TIMELINE (4 Seconds) === */
+
+/* 0% to 15%: Beam travels along the left line */
+@keyframes shootLeft {
+    0% { transform: translateX(-100%); }
+    15% { transform: translateX(100%); } /* Crahses into text */
+    16%, 100% { transform: translateX(100%); } /* Hides */
+}
+
+/* 15% to 30%: The light sweeps perfectly across the text letters */
+@keyframes sweepText {
+    0%, 14% { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+    15% { -webkit-mask-position: 100% 0; mask-position: 100% 0; } /* Enters left side of text */
+    30% { -webkit-mask-position: 0% 0; mask-position: 0% 0; } /* Exits right side of text */
+    31%, 100% { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+}
+
+/* 30% to 45%: Beam blasts out and travels along the right line */
+@keyframes shootRight {
+    0%, 29% { transform: translateX(-100%); } /* Waiting for text animation */
+    30% { transform: translateX(-100%); } /* Emerges from text */
+    45% { transform: translateX(100%); } /* Shoots off to the right */
+    46%, 100% { transform: translateX(100%); }
+}
+
+/* Timeline Phase 3 (30% to 45%) */
+@keyframes shootRight {
+    0%, 29% { transform: translateX(-150%); opacity: 0; }
+    30% { transform: translateX(-150%); opacity: 1; } /* Beam emerges from right edge of text */
+    45% { transform: translateX(200%); opacity: 1; } /* Beam exits right */
+    46%, 100% { transform: translateX(200%); opacity: 0; }
+}
+
+/* PROPER WIDTH & HEIGHT 3D COMPANY PILLS */
 .ribbon-track {
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Spreads perfectly from edge to edge */
-    gap: clamp(4px, 1.5vw, 12px); /* Spacing dynamically shrinks on smaller phones */
+    justify-content: space-between; 
+    gap: 6px; /* Tighter gap to ensure all 5 fit beautifully */
     width: 100%;
-    flex-wrap: nowrap; /* Strictly forces a single line */
-    overflow: hidden; /* Prevent scrolling, force them to shrink to fit */
-    padding-bottom: 4px; /* Give room for the shadow */
+    flex-wrap: nowrap; /* STRICTLY forces them onto a single line */
+    padding-bottom: 8px; /* Space for the 3D shadow */
 }
 
 .ribbon-logo {
-    flex: 1 1 0; /* Force all logos to share exact equal width and shrink together */
-    min-width: 0; /* Critical: Allows the flex items to shrink below their intrinsic size */
-    width: 100%;
-    max-width: 90px;
-    height: clamp(24px, 10vw, 36px); /* Height dynamically scales down to maintain pill proportions */
+    flex: 1 1 0; /* Forces all pills to share width equally */
+    min-width: 0; /* CRITICAL: Allows them to squeeze horizontally on small screens */
+    height: 52px; /* Much taller height for that premium 3D pill look */
     object-fit: contain;
-    background: #ffffff;
-    padding: clamp(4px, 1vw, 6px) clamp(4px, 1.5vw, 12px); /* Padding scales down intelligently */
-    border-radius: var(--radius-sm);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    transition: all var(--duration-fast) var(--ease-standard);
+    background: rgba(255, 255, 255, 0.9); /* Slight frosting */
+    padding: 6px 4px; /* Reduced side padding so logos don't get cut off */
+    border-radius: 12px;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    /* Vibrant, deep 3D pill drop shadow */
+    box-shadow: 
+        0 8px 16px -4px rgba(15, 23, 42, 0.1),
+        0 4px 8px -2px rgba(15, 23, 42, 0.06),
+        inset 0 2px 4px rgba(255, 255, 255, 1),
+        inset 0 -2px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: translateZ(0);
     cursor: pointer;
 }
 
 .ribbon-logo:hover {
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 8px 16px rgba(6, 182, 212, 0.35);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 
+        0 12px 20px -4px rgba(2, 132, 199, 0.15),
+        inset 0 2px 4px rgba(255, 255, 255, 1);
+    border-color: rgba(2, 132, 199, 0.3);
 }
 
 /* Store Contact & Location Card */
 .hero-store-card {
-    width: min(100%, 540px);
-    padding: 16px;
+    width: 100%; 
+    max-width: 540px;
+    padding: 16px; 
     text-align: left;
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    border-radius: var(--radius-lg);
-    background: rgba(15, 23, 42, 0.75);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    box-shadow: 0 20px 35px -5px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 20px; 
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 
+        0 20px 40px -10px rgba(15, 23, 42, 0.1),
+        inset 0 1px 2px rgba(255, 255, 255, 1);
+    margin: 0;
+}
+
+@media (min-width: 992px) {
+    .hero-store-card {
+        flex: 1; 
+        max-width: 420px; 
+    }
 }
 
 .hero-store-heading {
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
 }
 
 .hero-store-icon {
     display: grid;
     place-items: center;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: var(--radius-md);
-    color: #38bdf8;
-    background: rgba(56, 189, 248, 0.12);
-    border: 1px solid rgba(56, 189, 248, 0.25);
+    background: linear-gradient(135deg, var(--accent-cyan), var(--primary));
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 6px 14px -4px rgba(2, 132, 199, 0.4), inset 0 2px 3px rgba(255, 255, 255, 0.4);
     flex-shrink: 0;
 }
 
 .hero-store-icon svg {
-    width: 18px !important;
-    height: 18px !important;
+    width: 20px !important;
+    height: 20px !important;
     flex-shrink: 0;
 }
 
 .hero-store-label {
     display: block;
     margin-bottom: 2px;
-    color: #38bdf8;
-    font-size: 10px;
+    color: var(--primary-active);
+    font-size: 10.5px;
     font-weight: 800;
     letter-spacing: 0.08em;
 }
 
 #hero-address-text {
-    color: #f1f5f9;
-    font-size: 12px;
+    color: var(--slate-700);
+    font-size: 12.5px;
     line-height: 1.45;
+    font-weight: 500;
 }
 
+/* 3D ATTRACTIVE CONTACT BUTTONS */
 .hero-contact-actions {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    gap: 10px;
 }
 
 .hero-contact-btn {
@@ -1532,18 +1966,15 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     align-items: center;
     justify-content: center;
     gap: 6px;
-    height: 38px;
-    padding: 0 12px;
-    border: 1px solid rgba(148, 163, 184, 0.25);
-    border-radius: var(--radius-md);
-    color: #f1f5f9;
-    background: rgba(255, 255, 255, 0.04);
+    height: 42px; /* Taller, clickable 3D size */
+    padding: 0 10px;
+    border-radius: 12px;
+    font-size: 12.5px;
+    font-weight: 800;
     text-decoration: none;
-    font-size: 12px;
-    font-weight: 700;
     -webkit-tap-highlight-color: transparent;
-    transition: all var(--duration-fast) var(--ease-standard);
-    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: translateZ(0);
 }
 
 .hero-contact-btn svg {
@@ -1552,31 +1983,62 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     flex-shrink: 0;
 }
 
+/* Map & Call - 3D Clean White/Blue Pill */
+.hero-contact-btn:not(.hero-whatsapp-btn) {
+    background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+    color: var(--slate-700);
+    border: 1px solid rgba(226, 232, 240, 1);
+    box-shadow: 
+        0 6px 12px -4px rgba(15, 23, 42, 0.1),
+        inset 0 2px 3px rgba(255, 255, 255, 1),
+        inset 0 -2px 2px rgba(0, 0, 0, 0.05);
+}
+
+.hero-contact-btn:not(.hero-whatsapp-btn) svg {
+    color: var(--primary);
+}
+
 @media (hover: hover) and (pointer: fine) {
-    .hero-contact-btn:hover {
-        transform: translateY(-1px);
-        border-color: rgba(56, 189, 248, 0.6);
-        background: rgba(56, 189, 248, 0.12);
-        color: #ffffff;
-        box-shadow: 0 4px 14px rgba(6, 182, 212, 0.2);
+    .hero-contact-btn:not(.hero-whatsapp-btn):hover {
+        transform: translateY(-3px);
+        color: var(--primary-active);
+        box-shadow: 
+            0 10px 16px -4px rgba(2, 132, 199, 0.15),
+            inset 0 2px 3px rgba(255, 255, 255, 1);
+        border-color: rgba(2, 132, 199, 0.3);
     }
 }
-.hero-contact-btn:active { transform: scale(0.94); transition-duration: 40ms; background: rgba(56, 189, 248, 0.2); }
 
+/* WhatsApp - 3D Vibrant Green Pill */
 .hero-whatsapp-btn {
-    color: #86efac;
-    border-color: rgba(34, 197, 94, 0.35);
-    background: rgba(34, 197, 94, 0.08);
+    background: linear-gradient(135deg, #4ade80, #16a34a);
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 
+        0 8px 16px -4px rgba(22, 163, 74, 0.4),
+        inset 0 2px 3px rgba(255, 255, 255, 0.5),
+        inset 0 -2px 3px rgba(0, 0, 0, 0.15);
+}
+
+.hero-whatsapp-btn svg {
+    fill: #ffffff;
 }
 
 @media (hover: hover) and (pointer: fine) {
     .hero-whatsapp-btn:hover {
-        border-color: rgba(34, 197, 94, 0.7);
-        background: rgba(34, 197, 94, 0.18);
-        color: #bbf7d0;
+        transform: translateY(-3px);
+        box-shadow: 
+            0 12px 20px -4px rgba(22, 163, 74, 0.5),
+            inset 0 2px 3px rgba(255, 255, 255, 0.6);
+        background: linear-gradient(135deg, #4ade80, #15803d);
     }
 }
-.hero-whatsapp-btn:active { background: rgba(34, 197, 94, 0.25); }
+
+.hero-whatsapp-btn:active, .hero-contact-btn:active {
+    transform: translateY(1px) scale(0.96);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    transition-duration: 60ms;
+}
 
 /* Removed Flashy Animations for Premium Subtlety */
 @keyframes statusPulse {
@@ -1587,7 +2049,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 /* Mobile Responsive Adjustments */
 @media (max-width: 600px) {
     .hero-section {
-        min-height: 150px; /* Ultra compact */
+        /* Height scales organically with card contents */
     }
 
     .hero-content {
@@ -1649,8 +2111,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
-    padding-bottom: 10px;
+    margin-bottom: 16px; /* Compressed bottom margin */
+    padding-bottom: 8px; /* Tighter padding */
 }
 
 .filter-sort-bar::after {
@@ -1766,7 +2228,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 @media (min-width: 768px) {
-    .hero-section { padding: 60px 16px; }
+    .hero-section { padding: 0; } /* Removed the massive 60px vertical padding */
     .hero-section h2 { font-size: 32px; }
 }
 /* Product Detail Page Layout */
@@ -2366,44 +2828,43 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .pwa-install-card {
     background: var(--bg-surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
+    border-radius: 10px; /* Tighter radius for slim look */
+    padding: 8px 12px; /* Drastically reduced vertical padding */
     display: flex;
     align-items: center;
-    gap: 12px;
-    box-shadow: var(--shadow-md);
+    gap: 10px;
+    box-shadow: var(--shadow-sm); /* Softer shadow */
     position: relative;
-    border-left: 4px solid var(--primary);
+    border-left: 3px solid var(--primary); /* Thinner accent line */
 }
 
 .pwa-install-icon {
-    width: 42px;
-    height: 42px;
+    width: 28px; /* Micro icon size */
+    height: 28px;
     object-fit: contain;
     flex-shrink: 0;
     background: var(--bg-main);
-    border-radius: 8px;
-    padding: 6px;
+    border-radius: 6px;
+    padding: 4px;
     border: 1px solid var(--border);
 }
 
 .pwa-install-text {
     flex: 1;
+    display: flex;
+    align-items: center;
 }
 
 .pwa-install-text h4 {
-    font-size: 14px;
-    font-weight: 800;
+    font-size: 13px; /* Slightly smaller */
+    font-weight: 700;
     color: var(--text-main);
-    margin: 0 0 2px 0;
-    line-height: 1.2;
+    margin: 0;
+    line-height: 1;
 }
 
 .pwa-install-text p {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin: 0;
-    line-height: 1.3;
+    display: none; /* Hide subtitle completely to force small height */
 }
 
 /* ============================================================
@@ -2818,91 +3279,128 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 /* Sleek Edge-Aligned Discount Badge */
 .product-discount-badge {
     position: absolute;
-    top: -1px; /* Overlaps the inner border slightly */
-    left: -1px; /* Overlaps the inner border slightly */
-    background: #ef4444; /* Solid, crisp red */
+    top: 0; 
+    left: 0; 
+    background: linear-gradient(135deg, #ef4444, #dc2626); /* Vibrant 3D red gradient */
     color: #ffffff;
     font-weight: 800;
-    font-size: 9px; /* Smaller base font */
-    padding: 3px 6px; /* Tighter padding */
-    border-radius: var(--radius-md) 0 6px 0; /* Matches top-left corner, sharp top-right, rounded bottom-right */
-    letter-spacing: 0.02em;
-    box-shadow: 2px 2px 8px rgba(220, 38, 38, 0.25); /* Focused shadow */
+    font-size: 8.5px; /* Squeezed down for perfect proportion */
+    padding: 2px 6px; /* Minimal padding */
+    border-radius: var(--radius-sm) 0 4px 0; /* Sharper curved corner to match wrapper */
+    letter-spacing: 0.2px;
+    box-shadow: 2px 3px 6px rgba(220, 38, 38, 0.3);
     z-index: 10;
     text-transform: uppercase;
 }
 
-/* Responsive adjustment for tighter grids (Cart / PDP) */
+/* Ultra-Compact Badge Variant for Smaller Grids */
+.product-discount-badge.compact,
 .cross-sell-grid .product-discount-badge,
 #cart-recs-grid .product-discount-badge,
 .product-detail-layout .products-grid .product-discount-badge {
-    font-size: 8px; /* Ultra-compact font for smaller cards */
-    padding: 2px 5px; /* Thinner padding */
+    font-size: 7.5px; 
+    padding: 1.5px 4px; 
+    border-radius: var(--radius-sm) 0 4px 0; /* Matches sharper corners */
 }
 
-/* Premium Small SVG-Only Add Button (Mobile & Desktop Optimized) */
-.btn-add-icon-only {
+/* ============================================================
+   PREMIUM 3D RECTANGULAR ADD TO BAG BUTTON
+   ============================================================ */
+.btn-add-rectangular {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: rgba(2, 132, 199, 0.1);
-    border: 1px solid transparent;
-    color: var(--primary);
-    cursor: pointer;
-    /* Smooth, slow return transition so the electric glow elegantly fades back */
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    -webkit-tap-highlight-color: transparent;
-    padding: 0;
-    margin-left: auto;
-    touch-action: manipulation;
-    outline: none; /* Strip browser default focus rings */
-}
-
-.btn-add-icon-only svg {
-    width: 18px;
-    height: 18px;
-    stroke: currentColor;
-    stroke-width: 2.5;
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Desktop ONLY Hover State */
-@media (hover: hover) and (pointer: fine) {
-    .btn-add-icon-only:hover {
-        background: var(--primary);
-        color: #ffffff;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
-    }
-    .btn-add-icon-only:hover svg {
-        transform: scale(1.1) rotate(90deg); 
-    }
-}
-
-/* Universal Active/Tap State - Premium Electric Glow */
-.btn-add-icon-only:active {
-    /* Instant trigger on press */
-    transition: all 0.05s ease;
-    transform: scale(0.82); /* Satisfying deep physical press */
-    background: var(--primary);
+    gap: 6px;
+    height: 32px; /* Standard big button for main/category grids */
+    padding: 0 14px;
+    border-radius: 9px;
+    
+    /* Vibrant 3D Colorful Gradient Surface */
+    background: linear-gradient(135deg, var(--accent-cyan), var(--primary));
     color: #ffffff;
-    /* Immediate Electric Cyan Glow */
-    box-shadow: 0 0 0 2px var(--bg-surface), 0 0 16px 2px var(--accent-cyan);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    
+    /* Deep 3D Bevel and Multi-stage Drop Shadow */
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 
+        0 5px 12px -3px rgba(2, 132, 199, 0.45),
+        inset 0 2px 2px rgba(255, 255, 255, 0.5),
+        inset 0 -2px 2px rgba(0, 0, 0, 0.15);
+        
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    -webkit-tap-highlight-color: transparent;
+    margin-left: 0;
+    touch-action: manipulation;
+    outline: none;
+    transform: translateZ(0);
 }
 
-.btn-add-icon-only:active svg {
-    transition: all 0.05s ease;
-    transform: scale(0.9) rotate(90deg); 
+.btn-add-rectangular svg {
+    width: 14px;
+    height: 14px;
+    stroke: #ffffff;
+    stroke-width: 2.2;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
 }
 
-/* Absolutely strip focus sticking on mobile */
-.btn-add-icon-only:focus,
-.btn-add-icon-only:focus-visible {
-    outline: none !important;
-    box-shadow: none; 
+/* Compact Button Variant for Smaller Product Cards (PDP & Cart Recs) */
+.btn-add-rectangular.compact {
+    height: 26px;
+    padding: 0 6px;
+    font-size: 9.5px;
+    font-weight: 700;
+    border-radius: 6px;
+    gap: 3px;
+    white-space: nowrap; /* Forces "Add to Bag" to stay strictly on one line */
+}
+
+.btn-add-rectangular.compact svg {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+}
+
+/* Desktop Hover State */
+@media (hover: hover) and (pointer: fine) {
+    .btn-add-rectangular:hover {
+        transform: translateY(-3px) scale(1.03);
+        box-shadow: 
+            0 10px 20px -6px rgba(2, 132, 199, 0.55),
+            inset 0 2px 3px rgba(255, 255, 255, 0.7),
+            inset 0 -2px 3px rgba(0, 0, 0, 0.15);
+    }
+    .btn-add-rectangular:hover svg {
+        transform: scale(1.1) rotate(-8deg);
+    }
+}
+
+/* Active Press State */
+.btn-add-rectangular:active {
+    transition: all 0.08s ease;
+    transform: translateY(2px) scale(0.96);
+    box-shadow: 
+        0 2px 5px -2px rgba(2, 132, 199, 0.3),
+        inset 0 3px 5px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, var(--primary), var(--primary-active));
+}
+
+.btn-add-rectangular:active svg {
+    transform: scale(0.9);
+}
+
+/* Disabled / Sold Out State */
+.btn-add-rectangular.disabled-add {
+    background: var(--slate-100);
+    color: var(--slate-400);
+    border-color: var(--border);
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
 }
 
 /* ============================================================
@@ -3171,3 +3669,16 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     background: var(--bg-surface);
 }
 
+/* ============================================================
+   PRODUCT DETAIL PAGE TITLE FIX
+   ============================================================ */
+.product-detail-info h1,
+.pdp-product-title,
+#view-product h1 {
+    font-size: 18px !important; /* Forces compact, elegant title sizing */
+    font-weight: 800 !important;
+    color: var(--slate-900);
+    line-height: 1.35 !important;
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+}

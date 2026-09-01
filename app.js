@@ -569,7 +569,7 @@
 
         // --- RENDERERS ---
 
-        generateProductCardHTML: function(p) {
+        generateProductCardHTML: function(p, isCompact = false) {
             const isAvailable = p.is_active !== false;
             const img = p.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
             
@@ -584,7 +584,7 @@
                 badgeHtml = `<div class="product-status-tag status-unavailable">OUT OF STOCK</div>`;
             } else if (p.mrp_price && p.mrp_price > p.selling_price) {
                 const off = Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100);
-                badgeHtml = `<div class="product-discount-badge">${off}% OFF</div>`;
+                badgeHtml = `<div class="product-discount-badge ${isCompact ? 'compact' : ''}">${off}% OFF</div>`;
             }
 
             return `
@@ -601,12 +601,13 @@
                         <h3 class="store-product-card-title">${p.name}</h3>
                         <div class="store-product-card-action">
                             ${isAvailable ? `
-                            <button type="button" class="btn-add-icon-only" onclick="event.preventDefault(); event.stopPropagation(); Store.addToCart('${p.id}')" aria-label="Add to Bag">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            <button type="button" class="btn-add-rectangular ${isCompact ? 'compact' : ''}" onclick="event.preventDefault(); event.stopPropagation(); Store.addToCart('${p.id}')" aria-label="Add to Bag">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                                <span>Add to Bag</span>
                             </button>
                             ` : `
-                            <button type="button" class="btn-add-icon-only disabled-add" onclick="event.preventDefault(); event.stopPropagation();" aria-label="Unavailable" disabled>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            <button type="button" class="btn-add-rectangular ${isCompact ? 'compact' : ''} disabled-add" onclick="event.preventDefault(); event.stopPropagation();" aria-label="Unavailable" disabled>
+                                <span>Sold Out</span>
                             </button>
                             `}
                         </div>
@@ -635,7 +636,43 @@
             return sorted;
         },
 
+        renderHeroCategories: function() {
+            const track = document.getElementById('hero-3d-cat-track');
+            if (!track) return;
+
+            // Only show categories that actually have active products
+            const activeCatIds = [...new Set(this.state.products.map(p => p.category_id))];
+            let displayCategories = this.state.categories.filter(c => activeCatIds.includes(c.id));
+
+            // Shuffle categories randomly on every page refresh/load
+            displayCategories.sort(() => Math.random() - 0.5);
+
+            if (displayCategories.length === 0) {
+                track.innerHTML = '';
+                return;
+            }
+
+            const html = displayCategories.map(c => {
+                const catProducts = this.state.products.filter(p => p.category_id === c.id);
+                // Pick a random product on every render (refresh)
+                const randomProd = catProducts[Math.floor(Math.random() * catProducts.length)];
+                const img = randomProd?.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
+
+                return `
+                    <a href="javascript:void(0)" class="hero-3d-cat-item" onclick="Store.navigate('category', '${c.id}')">
+                        <div class="hero-3d-cat-box">
+                            <img src="${img}" alt="${c.name}" loading="lazy">
+                        </div>
+                        <span class="hero-3d-cat-label">${c.name}</span>
+                    </a>
+                `;
+            }).join('');
+
+            track.innerHTML = html;
+        },
+
         renderHome: function() {
+            this.renderHeroCategories();
             this.updateHomeGrid();
             setTimeout(() => CustomUI.styleSelects(), 0);
         },
@@ -693,8 +730,15 @@
             
             // Only show categories that actually have active products inside them
             const activeCatIds = [...new Set(this.state.products.map(p => p.category_id))];
-            const displayCategories = this.state.categories.filter(c => activeCatIds.includes(c.id));
+            let displayCategories = this.state.categories.filter(c => activeCatIds.includes(c.id));
             
+            // Sort categories by maximum number of products (descending order)
+            displayCategories.sort((a, b) => {
+                const countA = this.state.products.filter(p => p.category_id === a.id).length;
+                const countB = this.state.products.filter(p => p.category_id === b.id).length;
+                return countB - countA;
+            });
+
             if (displayCategories.length === 0) {
                 container.innerHTML = '<div style="text-align:center; padding: 40px 0; color: var(--text-muted);">No categories available.</div>';
                 return;
@@ -829,12 +873,32 @@
                 .map(item => item.product);
 
             let relatedHtml = '';
-            if (relatedProducts.length > 0) {
+            const activeCatIds = [...new Set(this.state.products.map(x => x.category_id))];
+            let displayCats = this.state.categories.filter(c => activeCatIds.includes(c.id));
+            
+            // Shuffle categories randomly and take 4 to 5 categories for great variety
+            displayCats.sort(() => Math.random() - 0.5);
+            displayCats = displayCats.slice(0, 5);
+
+            if (displayCats.length > 0) {
                 relatedHtml = `
                     <div style="padding: 16px; margin-top: 24px; border-top: 1px solid var(--border);">
-                        <h2 style="font-size: 18px; margin-bottom: 16px;">You may also like</h2>
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                            ${relatedProducts.map(rel => this.generateProductCardHTML(rel)).join('')}
+                        <h2 style="font-size: 18px; margin-bottom: 16px; font-weight: 800;">Explore Categories</h2>
+                        <div style="display: flex; flex-direction: column; gap: 16px;">
+                            ${displayCats.map(c => {
+                                const catProducts = this.state.products.filter(prod => prod.category_id === c.id).slice(0, 4);
+                                return `
+                                    <div class="category-discovery-section" style="margin-bottom: 0;">
+                                        <div class="category-discovery-header">
+                                            <h2>${c.name}</h2>
+                                            <a href="javascript:void(0)" onclick="Store.navigate('category', '${c.id}')">See more →</a>
+                                        </div>
+                                        <div class="category-discovery-row">
+                                            ${catProducts.map(prod => this.generateCategoryThumbnailHTML(prod)).join('')}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                 `;
@@ -857,7 +921,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
                             <div>
                                 <div class="pdp-cat">${p.categories?.name || ''}</div>
-                                <h1 class="pdp-title" style="margin-bottom: 0;">${p.name}</h1>
+                                <h1 class="pdp-product-title">${p.name}</h1>
                             </div>
                             <button class="icon-btn" onclick="Store.shareProduct('${p.id}')" aria-label="Share Product" style="flex-shrink: 0; width: 42px; height: 42px; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 50%; color: var(--slate-700); box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);">
                                 <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
@@ -1144,7 +1208,7 @@
                         <div class="cross-sell-container">
                             <div class="cross-sell-title">Frequently Bought Together</div>
                             <div class="cross-sell-grid">
-                                ${recs.map(acc => this.generateProductCardHTML(acc)).join('')}
+                                ${recs.map(acc => this.generateProductCardHTML(acc, true)).join('')}
                             </div>
                         </div>
                     `;
@@ -1793,38 +1857,36 @@
                 </div>
             `;
 
-            // Recommendation Engine (Products matching cart categories + fillers)
-            const cartCatIds = [...new Set(totals.validItems.map(x => x.category_id))];
-            const cartItemIds = totals.validItems.map(x => x.id);
-            
-            // First try to get related items
-            let recs = this.state.products.filter(p => cartCatIds.includes(p.category_id) && !cartItemIds.includes(p.id));
-            
-            // If we have less than 12 related items, fill the rest with random active products
-            if (recs.length < 12) {
-                const fillCount = 12 - recs.length;
-                const fillerProducts = this.state.products
-                    .filter(p => !cartItemIds.includes(p.id) && !recs.find(r => r.id === p.id))
-                    .sort(() => 0.5 - Math.random()) // Randomize
-                    .slice(0, fillCount);
-                
-                recs = [...recs, ...fillerProducts];
-            }
-            
-            // Cap at 12
-            recs = recs.slice(0, 12);
-
+            // Recommendation Engine (Category Exploration)
             const recSection = document.getElementById('cart-recommendations');
-            if (recs.length > 0) {
-                const recGrid = document.getElementById('cart-recs-grid');
-                
-                // Enforce tight 3-column grid specifically for cart
-                recGrid.className = ''; 
-                recGrid.style.display = 'grid';
-                recGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
-                recGrid.style.gap = '10px';
-                
-                recGrid.innerHTML = recs.map(rel => this.generateProductCardHTML(rel)).join('');
+            const activeCatIds = [...new Set(this.state.products.map(x => x.category_id))];
+            let displayCats = this.state.categories.filter(c => activeCatIds.includes(c.id));
+            
+            // Shuffle categories randomly and take 4 to 5 categories for great variety
+            displayCats.sort(() => Math.random() - 0.5);
+            displayCats = displayCats.slice(0, 4);
+
+            if (displayCats.length > 0) {
+                // Completely overwrite the inner HTML to match the PDP layout perfectly
+                recSection.innerHTML = `
+                    <h2 style="font-size: 18px; margin-bottom: 16px; font-weight: 800;">Explore Categories</h2>
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        ${displayCats.map(c => {
+                            const catProducts = this.state.products.filter(prod => prod.category_id === c.id).slice(0, 4);
+                            return `
+                                <div class="category-discovery-section" style="margin-bottom: 0;">
+                                    <div class="category-discovery-header">
+                                        <h2>${c.name}</h2>
+                                        <a href="javascript:void(0)" onclick="Store.navigate('category', '${c.id}')">See more →</a>
+                                    </div>
+                                    <div class="category-discovery-row">
+                                        ${catProducts.map(prod => this.generateCategoryThumbnailHTML(prod)).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
                 recSection.classList.remove('hidden');
             } else {
                 recSection.classList.add('hidden');
