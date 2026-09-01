@@ -1708,15 +1708,14 @@
                     ? `<span style="font-size: 13px; color: var(--text-muted); margin-left: 8px; font-weight: normal;">MRP <span style="text-decoration: line-through;">₹${item.calculatedMrp}</span></span>` 
                     : '';
                     
-                // Append Pack Label & Options to Title
                 let displayName = item.name;
                 if (item.isPack) displayName += ` <span style="color:var(--primary); font-weight:800; font-size:11px; background:rgba(34,211,238,0.1); padding:3px 6px; border-radius:4px; margin-left:6px; display:inline-block; vertical-align:middle;">Pack of ${item.pack_qty}</span>`;
                 if (item.selectedOptions) displayName += ` <div style="font-size:12px; color:var(--text-muted); margin-top:4px; font-weight:600;">${item.selectedOptions}</div>`;
                 
                 return `
-                    <div class="cart-item">
+                    <div class="cart-item" style="transform: translateZ(0); will-change: transform;">
                         <div class="cart-item-img-wrapper">
-                            <img src="${img}" class="cart-item-img" alt="${item.name}">
+                            <img src="${img}" class="cart-item-img" alt="${item.name}" loading="lazy" decoding="async">
                         </div>
                         <div class="cart-item-details">
                             <div class="cart-item-title">${displayName}</div>
@@ -1805,27 +1804,16 @@
             `;
 
             let bannerStack = [];
-            
             if (totals.isBelowMinOrder && totals.minOrder > 0) {
                 bannerStack.push(`<div style="background: #fee2e2; color: #dc2626; padding: 10px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 12px; border: 1px solid #fecaca;">Add ₹${totals.remainingForMinOrder.toFixed(2)} more to place this order (Minimum ₹${totals.minOrder}).</div>`);
             } else {
-                // Free Delivery Check (Always show first if not met)
                 if (!totals.isFreeDelivery && totals.remainingForFreeDelivery > 0) {
                     bannerStack.push(`<div style="background: #e0f2fe; color: #0369a1; padding: 10px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 12px; border: 1px solid #bae6fd;">Add ₹${totals.remainingForFreeDelivery.toFixed(2)} more for FREE delivery!</div>`);
                 }
-
-                // VIP Checks (Pushed directly below Free Delivery)
                 if (totals.appliedVipName) {
                     const nextTierText = totals.vipProgressMsg ? `<div style="font-size: 11px; margin-top: 4px; color: #a16207; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${totals.vipProgressMsg}</div>` : '';
                     bannerStack.push(`
-                        <style>
-                            @keyframes vip-unlock-pulse {
-                                0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
-                                70% { box-shadow: 0 0 0 8px rgba(234, 179, 8, 0); }
-                                100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
-                            }
-                        </style>
-                        <div style="background: #fefce8; color: #854d0e; padding: 10px 12px; border-radius: 6px; border: 1px solid #fde047; animation: vip-unlock-pulse 2s infinite; display: flex; flex-direction: column; justify-content: center; margin-bottom: 12px;">
+                        <div style="background: #fefce8; color: #854d0e; padding: 10px 12px; border-radius: 6px; border: 1px solid #fde047; display: flex; flex-direction: column; justify-content: center; margin-bottom: 12px;">
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span style="font-size: 16px; flex-shrink: 0;">🎉</span>
                                 <span style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;"><b>${totals.appliedVipName}</b> unlocked!</span>
@@ -1857,17 +1845,19 @@
                 </div>
             `;
 
-            // Recommendation Engine (Category Exploration)
+            // Recommendation Engine: Render ONLY ONCE per cart load (cached) to prevent re-shuffling jank on quantity clicks
             const recSection = document.getElementById('cart-recommendations');
+            if (recSection.dataset.rendered === 'true') {
+                recSection.classList.remove('hidden');
+                return;
+            }
+
             const activeCatIds = [...new Set(this.state.products.map(x => x.category_id))];
             let displayCats = this.state.categories.filter(c => activeCatIds.includes(c.id));
-            
-            // Shuffle categories randomly and take 4 to 5 categories for great variety
             displayCats.sort(() => Math.random() - 0.5);
             displayCats = displayCats.slice(0, 4);
 
             if (displayCats.length > 0) {
-                // Completely overwrite the inner HTML to match the PDP layout perfectly
                 recSection.innerHTML = `
                     <h2 style="font-size: 18px; margin-bottom: 16px; font-weight: 800;">Explore Categories</h2>
                     <div style="display: flex; flex-direction: column; gap: 16px;">
@@ -1887,6 +1877,7 @@
                         }).join('')}
                     </div>
                 `;
+                recSection.dataset.rendered = 'true';
                 recSection.classList.remove('hidden');
             } else {
                 recSection.classList.add('hidden');

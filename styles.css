@@ -3699,14 +3699,13 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     will-change: transform;
 }
 
-/* 2. THE FPS MAGIC BULLET: RENDER SKIPPING */
-/* content-visibility: auto tells the browser NOT to render or calculate the layout 
-   for product cards until they are actually about to scroll onto the screen. 
-   This saves massive amounts of RAM and CPU on pages with lots of products. */
+/* 2. STABLE HARDWARE ACCELERATION FOR PRODUCT CARDS */
+/* Removed content-visibility: auto to eliminate the initial refresh sizing glitch 
+   while keeping cards hardware-accelerated for smooth scrolling. */
 .store-product-card {
-    content-visibility: auto;
-    contain-intrinsic-size: 280px; /* Tells the browser to reserve this height so the scrollbar doesn't jump */
-    contain: layout style paint; /* Strictly isolates the card so changes inside don't trigger full page repaints */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
 }
 
 /* 3. FLAWLESS HORIZONTAL SCROLL PHYSICS */
@@ -3788,4 +3787,22 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 #product-lightbox, 
 #custom-dialog {
     contain: strict;
+}
+
+/* ============================================================
+   MOBILE CART PERFORMANCE ACCELERATION PATCH
+   ============================================================ */
+.cart-item,
+.cart-summary,
+.cart-qty-controls,
+.cart-remove-btn {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform;
+}
+
+/* Isolates repaints strictly to individual cart elements */
+.cart-item {
+    contain: layout style paint;
 }
