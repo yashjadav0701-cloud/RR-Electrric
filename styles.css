@@ -77,7 +77,7 @@
 }
 
 html {
-    scroll-behavior: smooth;
+    /* scroll-behavior: smooth REMOVED: It severely breaks SPA navigation by forcing a slow, visible scroll-to-top animation on every route change. */
     -webkit-text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -509,24 +509,33 @@ button:disabled, .btn-primary:disabled {
 }
 
 /* ============================================================
-   ELEGANT 3D FLOATING BUTTONS (MOBILE NAVIGATION)
+   PREMIUM 3D FLOATING BUTTONS (MOBILE NAVIGATION)
    ============================================================ */
 .mobile-bottom-nav {
     display: flex;
+    flex-direction: row;
+    align-items: center; /* Changed from stretch to center to prevent height bleed */
     position: fixed;
-    bottom: 6px; /* Reduced space from the bottom edge */
-    left: 8px;   /* Reduced space from the left edge */
-    right: 8px;  /* Reduced space from the right edge */
-    background: transparent;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    border: none;
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 28px;
     z-index: 1000;
-    padding: 0;
-    gap: 8px; /* Slightly reduced gap between the buttons for a tighter fit */
-    overflow: visible; 
-    box-shadow: none;
-    pointer-events: none; /* Lets clicks pass through the empty gaps */
+    padding: 4px 8px; /* Tighter padding */
+    min-height: 60px; /* Guarantees a consistent, premium bar height */
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 
+        0 24px 48px -12px rgba(15, 23, 42, 0.35),
+        0 8px 16px -4px rgba(15, 23, 42, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.8),
+        inset 0 2px 4px rgba(255, 255, 255, 1),
+        inset 0 -2px 4px rgba(15, 23, 42, 0.04);
+    transform: translateZ(0); 
+    pointer-events: auto;
 }
 
 @media (min-width: 768px) {
@@ -540,72 +549,82 @@ button:disabled, .btn-primary:disabled {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 10px 4px;
-    color: var(--slate-500);
-    background: rgba(255, 255, 255, 0.98); /* Firmer white, just a tiny bit transparent */
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(226, 232, 240, 0.95);
-    border-radius: 18px;
-    text-decoration: none;
-    font-size: 11px;
+    gap: 2px;
+    padding: 6px 2px;
+    text-align: center;
+    font-size: 10px;
     font-weight: 700;
+    border: none;
+    color: var(--slate-500);
+    background: transparent;
+    text-decoration: none !important;
     -webkit-tap-highlight-color: transparent;
-    box-shadow: 
-        0 10px 20px -6px rgba(15, 23, 42, 0.12),
-        0 4px 8px -2px rgba(15, 23, 42, 0.05);
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    pointer-events: auto; /* Re-enables clicks on the buttons themselves */
+    transition: color 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1; /* Keeps text layered above the background pill */
 }
 
+/* THE FIX: Use an absolute background layer so it is strictly sized */
 .bottom-nav-item::before {
-    display: none; 
-}
-
-.bottom-nav-item:hover {
-    color: var(--primary);
-    transform: translateY(-2px);
-}
-
-/* Solid Light Blue Active State (Fixes Transparency Bleed) */
-.bottom-nav-item.active {
-    /* 95% opaque frosted light-blue base completely blocks dark backgrounds */
-    background: rgba(235, 248, 255, 0.95); 
-    color: var(--primary); /* Vibrant blue for high contrast text/icon */
-    border: 1px solid rgba(2, 132, 199, 0.35); 
+    content: '';
+    position: absolute;
+    top: 2px;      /* Mathematically pushes the background down from the top edge */
+    bottom: 2px;   /* Pushes the background up from the bottom edge */
+    left: 8px;     /* Pulls the sides in slightly */
+    right: 8px;
+    background: rgba(239, 246, 255, 0.8);
+    border-radius: 16px;
     box-shadow: 
-        0 8px 16px -4px rgba(2, 132, 199, 0.2),
-        inset 0 2px 3px rgba(255, 255, 255, 0.9); /* Inner white glow for 3D effect */
-    transform: translateY(-2px); 
+        inset 0 2px 4px rgba(0, 0, 0, 0.02),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.5); /* Inner 3D bezel */
+    z-index: -1; /* Keeps it visually behind the icon and text */
+    opacity: 0;
+    transform: scale(0.85); /* Pre-scales it for the animation pop */
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Standardized Icon Sizing ensures Bag icon matches Home & Categories perfectly */
+.bottom-nav-item:hover { color: var(--primary); }
+
 .bottom-nav-item svg {
     width: 22px !important;
     height: 22px !important;
-    stroke: currentColor;
-    stroke-width: 2.2;
-    margin-bottom: 4px;
-    transition: all 0.3s ease;
+    margin: 0 auto;
+    stroke-width: 2;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.bottom-nav-item span:not(.bottom-nav-cart-badge) {
+    line-height: 1;
+    letter-spacing: 0.2px;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* PREMIUM ACTIVE STATE */
+.bottom-nav-item.active {
+    color: var(--primary);
+    /* Note: background and box-shadow removed here, they are handled by ::before */
+}
+
+.bottom-nav-item.active::before {
+    opacity: 1;
+    transform: scale(1); /* Activates the slick spring-loaded pop animation */
 }
 
 .bottom-nav-item.active svg {
-    stroke: var(--primary);
-    stroke-width: 2.6;
-    transform: scale(1.08); /* Slight pop on active */
+    transform: translateY(-2px) scale(1.1);
+    stroke-width: 2.5; 
+    filter: drop-shadow(0 4px 6px rgba(2, 132, 199, 0.3)); 
 }
 
-.bottom-nav-item span {
-    line-height: 1;
-    letter-spacing: 0.2px;
+.bottom-nav-item.active span:not(.bottom-nav-cart-badge) {
+    transform: translateY(1px); 
 }
 
 /* Flawless Mathematical Badge Positioning */
 .bottom-nav-cart-badge {
     position: absolute;
-    top: 6px; /* Keeps it safely inside the button boundary */
-    left: 50%; /* Anchors to the exact center of the button */
-    margin-left: 4px; /* Pushes it exactly to the right ear of the SVG */
+    top: 2px; /* Adjusted to sit cleanly on the cart icon */
+    left: 50%; 
+    margin-left: 4px; 
     background: #ef4444; 
     color: white;
     font-size: 9.5px;
@@ -619,11 +638,13 @@ button:disabled, .btn-primary:disabled {
     font-weight: 800;
     z-index: 10;
     box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
-    border: 1.5px solid #ffffff; /* Cuts cleanly into the background */
+    border: 1.5px solid #ffffff; 
+    transition: border-color 0.3s ease;
 }
 
+/* Cuts cleanly into the blue background when active */
 .bottom-nav-item.active .bottom-nav-cart-badge {
-    border-color: #f0f9ff; /* Matches the light blue active background tint perfectly */
+    border-color: #f0f9ff;
 }
 
 /* ============================================================
@@ -849,9 +870,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
-    border-radius: var(--radius-sm); /* Matches the inner curve cleanly */
+    border-radius: var(--radius-sm); 
     transition: transform 0.4s var(--ease-standard);
-    mix-blend-mode: multiply;
+    background: #ffffff; /* Ensures clean white background natively */
+    /* mix-blend-mode REMOVED: Saves massive GPU calculations during scrolling */
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -988,6 +1010,33 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* ============================================================
+   PREMIUM VIEW-SPECIFIC SKELETON LOADER
+   ============================================================ */
+.view-skeleton {
+    width: 100%;
+    padding-bottom: 120px; /* Safe space for bottom nav */
+}
+
+/* Fluid Shimmer Animation */
+.sk-item {
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 400% 100%;
+    animation: shimmer 1.5s infinite linear;
+    border-radius: var(--radius-md);
+}
+
+@keyframes shimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+}
+
+.sk-text { height: 14px; border-radius: 4px; margin-bottom: 8px; }
+.sk-text-lg { height: 24px; border-radius: 6px; }
+.sk-circle { border-radius: 50%; }
+.sk-row { display: flex; gap: 8px; }
+.sk-flex-between { display: flex; justify-content: space-between; align-items: center; }
 
 /* ============================================================
    ADMIN DATA TABLES & MODALS
@@ -3687,25 +3736,22 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
    ULTIMATE 144HZ PERFORMANCE & SCROLL PHYSICS OVERHAUL
    ============================================================ */
 
-/* 1. FORCE GPU ACCELERATION ON HEAVY UI ELEMENTS */
-/* By applying translateZ(0) and will-change, we force the browser to put these 
-   glassmorphic elements on their own dedicated hardware layers. */
-.mobile-bottom-nav,
-.hero-section,
-.top-categories-wrapper,
-.mobile-header {
+/* 1. SMART GPU ACCELERATION */
+/* Only promote elements that are actually sticky/fixed. Promoting massive static 
+   blocks like the hero section exhausts mobile GPU memory and causes lag. */
+.site-header,
+.mobile-bottom-nav {
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
     will-change: transform;
 }
 
-/* 2. STABLE HARDWARE ACCELERATION (FIXES INITIAL GRID COLLAPSE) */
-/* Removed content-visibility: auto from grid items because it causes mobile 
-   browsers to miscalculate grid tracks and render items at 100% width on refresh. */
+/* 2. NATIVE SCROLL DELEGATION FOR PRODUCT CARDS */
+/* Removed forced translateZ(0) from individual cards to prevent the creation of 
+   dozens of GPU layers. Native browser scrolling handles flat grids perfectly. */
 .store-product-card {
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    backface-visibility: hidden;
+    position: relative;
+    /* Native scrolling is vastly superior here */
 }
 
 /* 3. FLAWLESS HORIZONTAL SCROLL PHYSICS */
@@ -3810,14 +3856,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 /* ============================================================
    HOME PAGE HERO PERFORMANCE OPTIMIZATION PATCH
    ============================================================ */
-.hero-section,
-.top-categories-wrapper,
-.hero-store-card {
-    contain: layout style paint;
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    backface-visibility: hidden;
-}
+/* We remove toxic 'contain: paint' and 'translateZ(0)' from these giant wrappers 
+   so the browser can scroll them natively without memory exhaustion. */
 
 @media (max-width: 767px) {
     /* Completely remove heavy repeating background grid and radial glow on mobile to eliminate paint lag */
@@ -3826,13 +3866,22 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
         display: none !important;
     }
     
-    /* Simplify hero section background on mobile to a clean solid/semi-transparent surface */
+    /* Simplify hero section background on mobile to a clean solid surface */
     .hero-section {
         background: rgba(248, 250, 252, 0.95);
         box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.06);
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
     }
     
     .top-categories-wrapper {
         background: rgba(248, 250, 252, 0.95);
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    .hero-store-card {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
     }
 }

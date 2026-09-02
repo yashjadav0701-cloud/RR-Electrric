@@ -67,28 +67,52 @@
             if (result.status === "success") {
                 CustomUI.alert("Order successfully loaded into your Google Sheet Draft!", "Success");
             } else {
-                CustomUI.alert("Sheet Error: " + result.message, "Error");
+                ErrorHandler.show(result.message, "Spreadsheet Sync Failed");
             }
         } catch (err) {
             console.error("Sheet Sync Error:", err);
-            CustomUI.alert("Failed to connect to Google Sheets.", "Connection Error");
+            ErrorHandler.show(err, "Connection Error");
         } finally {
             btnElement.innerHTML = originalBtnText;
             btnElement.disabled = false;
         }
     };
 
-    // Custom UI Engine for Modals & Selects
+    // Centralized Error Handling Engine
+    const ErrorHandler = {
+        parse: function(err, fallback = "An unexpected error occurred.") {
+            const msg = (err?.message || err || fallback).toString().toLowerCase();
+            if (msg.includes('fetch') || msg.includes('network')) return "Unable to connect to the server. Please check your internet connection.";
+            if (msg.includes('jwt') || msg.includes('auth')) return "Your secure session has expired. Please log in again.";
+            if (msg.includes('permission denied') || msg.includes('unauthorized')) return "You do not currently have permission to perform this action.";
+            if (msg.includes('timeout')) return "The request took too long. Please try again.";
+            if (msg.includes('duplicate')) return "This item already exists in the system.";
+            
+            // Clean up original error by removing ugly technical prefixes
+            let cleanMsg = (err?.message || err || fallback).toString();
+            cleanMsg = cleanMsg.replace(/TypeError:|Error:|Supabase error:/ig, '').trim();
+            return cleanMsg;
+        },
+        show: function(err, title = "Error") {
+            const friendlyMsg = this.parse(err);
+            CustomUI.alert(friendlyMsg, title);
+        }
+    };
+
+    // Premium Custom UI Engine for Modals & Selects (No Native Alerts)
     const CustomUI = {
         dialogTemplate: `
             <div id="custom-dialog" class="custom-dialog-overlay">
                 <div class="custom-dialog-box">
+                    <div id="custom-dialog-icon-container"></div>
                     <div id="custom-dialog-title" class="custom-dialog-title"></div>
                     <div id="custom-dialog-msg" class="custom-dialog-msg"></div>
                     <div class="custom-dialog-actions">
                         <button id="custom-dialog-cancel" class="btn-secondary">Cancel</button>
                         <button id="custom-dialog-confirm" class="btn-primary">OK</button>
                     </div>
+                </div>
+            </div>
         `,
         init: function() {
             if (!document.getElementById('custom-dialog')) {
@@ -108,12 +132,36 @@
         },
         showDialog: function(title, msg, isConfirm, resolve) {
             const overlay = document.getElementById('custom-dialog');
+            const iconContainer = document.getElementById('custom-dialog-icon-container');
+            
+            // Dynamic Premium Icon Injection
+            let iconHtml = '';
+            const tLow = title.toLowerCase();
+            if (tLow.includes('error') || tLow.includes('fail') || tLow.includes('denied')) {
+                iconHtml = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="dialog-icon error-icon"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+            } else if (tLow.includes('delete') || tLow.includes('reject') || tLow.includes('remove') || tLow.includes('warn')) {
+                iconHtml = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="dialog-icon warn-icon"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+            } else {
+                iconHtml = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="dialog-icon info-icon"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+            }
+            if (iconContainer) iconContainer.innerHTML = iconHtml;
+
             document.getElementById('custom-dialog-title').textContent = title;
             document.getElementById('custom-dialog-msg').innerHTML = msg;
             const cancelBtn = document.getElementById('custom-dialog-cancel');
             const confirmBtn = document.getElementById('custom-dialog-confirm');
             
             cancelBtn.style.display = isConfirm ? 'inline-flex' : 'none';
+            
+            // Destructive Action Styling
+            if (isConfirm && (tLow.includes('delete') || tLow.includes('reject'))) {
+                confirmBtn.className = 'btn-danger';
+                confirmBtn.textContent = 'Yes, Proceed';
+            } else {
+                confirmBtn.className = 'btn-primary';
+                confirmBtn.textContent = 'OK';
+            }
+
             const close = (result) => {
                 overlay.classList.remove('active');
                 cancelBtn.onclick = null; confirmBtn.onclick = null;
@@ -220,7 +268,7 @@
                 
                 this.showApp();
             } catch (err) {
-                this.showError('Access denied. You are not an authorized admin.');
+                this.showError(ErrorHandler.parse(err, 'Access denied. You are not an authorized admin.'));
                 await supabase.auth.signOut();
             }
         },
@@ -268,7 +316,7 @@
                     });
                     
                     if (error) {
-                        this.showError(error.message);
+                        this.showError(ErrorHandler.parse(error));
                         btn.textContent = 'Authenticate';
                         btn.disabled = false;
                     } else {
@@ -814,14 +862,14 @@
         acceptOrder: async function(id) {
             if(!await CustomUI.confirm("Accept this order? It will be moved to the archive.", "Accept Order")) return;
             const { error } = await supabase.from('orders').update({ status: 'accepted' }).eq('id', id);
-            if(error) CustomUI.alert("Failed to accept: " + error.message, "Error");
+            if(error) ErrorHandler.show(error, "Failed to Accept Order");
             else this.loadOrders();
         },
 
         rejectOrder: async function(id) {
             if(!await CustomUI.confirm("Are you sure you want to REJECT and permanently delete this order?", "Reject Order")) return;
             const { error } = await supabase.from('orders').delete().eq('id', id);
-            if(error) CustomUI.alert("Failed to delete: " + error.message, "Error");
+            if(error) ErrorHandler.show(error, "Failed to Reject Order");
             else this.loadOrders();
         },
 
@@ -2012,7 +2060,7 @@
                         document.getElementById('product-category-id').value = data.id;
                         searchInput.value = data.name;
                     } else {
-                        CustomUI.alert("Failed to create category: " + (error?.message || "Unknown error"), "Error");
+                        ErrorHandler.show(error, "Category Creation Failed");
                         searchInput.value = '';
                     }
                 } else {
@@ -2472,7 +2520,7 @@
                         }
                     }
                 }
-                errorEl.textContent = err.message || 'Failed to save product.';
+                errorEl.textContent = ErrorHandler.parse(err, 'Failed to save product.');
                 errorEl.classList.remove('hidden');
             } finally {
                 btn.disabled = false;
@@ -2496,7 +2544,7 @@
             const { error } = await supabase.from('products').delete().eq('id', id);
             
             if (error) {
-                CustomUI.alert('Error deleting product: ' + error.message, 'Error');
+                ErrorHandler.show(error, 'Product Deletion Failed');
                 if (!idToDel) {
                     btn.disabled = false;
                     btn.textContent = 'Delete Product';

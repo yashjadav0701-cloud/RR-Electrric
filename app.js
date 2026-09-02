@@ -124,7 +124,10 @@
             homeDisplayLimit: 12,
             homeCurrentSort: 'recommended',
             categoryCurrentSort: 'recommended',
-            currentCategoryParam: null
+            currentCategoryParam: null,
+            // Professional SPA Navigation State
+            scrollMemory: {},
+            activeRouteKey: 'home'
         },
 
         normalizeSearchText: function(text) {
@@ -220,12 +223,30 @@
             this.loadCart();
             this.loadCustomerInfo();
             
+            // Disable native browser scroll restoration so our SPA router can handle it cleanly without jumping
+            if ('scrollRestoration' in history) {
+                history.scrollRestoration = 'manual';
+            }
+
             // Handle browser Back/Forward buttons via History API
             window.addEventListener('popstate', (e) => {
+                // 1. Intercept hardware/browser Back button to close Full-Screen Lightbox safely
+                const lightbox = document.getElementById('product-lightbox');
+                if (lightbox && !lightbox.classList.contains('hidden')) {
+                    Store.closeLightbox(true); // true = called from popstate, do not push history
+                    return; // Prevent navigating away from the product page
+                }
+
+                // 2. Ignore the popstate triggered programmatically when user clicks the "X" button
+                if (Store.isClosingLightbox) {
+                    Store.isClosingLightbox = false;
+                    return;
+                }
+
                 if (e.state && e.state.view) {
-                    this.renderView(e.state.view, e.state.param, false);
+                    this.renderView(e.state.view, e.state.param, true); // TRUE indicates this is a history 'Back/Forward' event
                 } else {
-                    this.renderView('home', null, false);
+                    this.renderView('home', null, true);
                 }
             });
 
@@ -292,6 +313,39 @@
         },
 
         bindEvents: function() {
+            // Global Keydown Listener for Enter and Escape keys across the storefront
+            document.addEventListener('keydown', (e) => {
+                // 1. Lightbox Escape
+                const lightbox = document.getElementById('product-lightbox');
+                if (lightbox && !lightbox.classList.contains('hidden')) {
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        Store.closeLightbox();
+                    }
+                    return;
+                }
+
+                // 2. Custom Dialog Confirm/Cancel via Enter/Escape
+                const dialog = document.getElementById('custom-dialog');
+                if (dialog && dialog.classList.contains('active')) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        document.getElementById('custom-dialog-confirm')?.click();
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        const cancelBtn = document.getElementById('custom-dialog-cancel');
+                        if (cancelBtn && cancelBtn.style.display !== 'none') cancelBtn.click();
+                    }
+                    return;
+                }
+
+                // 3. Apply Coupon via Enter Key
+                if (e.key === 'Enter' && document.activeElement && document.activeElement.id === 'coupon-input') {
+                    e.preventDefault();
+                    Store.applyCoupon();
+                }
+            });
+
             // Hidden Admin Access trigger: Shift + R
             document.addEventListener('keydown', (e) => {
                 if (e.shiftKey && e.key.toLowerCase() === 'r') {
@@ -505,6 +559,11 @@
         },
 
         navigate: function(view, param = null, pushHistory = true, replaceHistory = false) {
+            // Memory Check: Save the exact scroll position of the CURRENT view before leaving it
+            if (this.state.activeRouteKey) {
+                this.state.scrollMemory[this.state.activeRouteKey] = window.scrollY;
+            }
+
             if (pushHistory || replaceHistory) {
                 let hash = '';
                 if (view === 'product') hash = `#product-${param}`;
@@ -520,51 +579,81 @@
                     window.history.pushState({ view, param }, '', hash || window.location.pathname);
                 }
             }
-            this.renderView(view, param);
+            this.renderView(view, param, false); // FALSE indicates new navigation
         },
 
-        renderView: function(view, param) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-            window.scrollTo(0, 0);
-            
-            // Update Mobile Bottom Nav & Desktop Nav state
+        renderView: function(view, param, isPopState = false) {
+            const newRouteKey = view + (param ? `-${param}` : '');
+            this.state.activeRouteKey = newRouteKey;
+
+            // 1. UPDATE NAVIGATION STATE IMMEDIATELY 
+            // This happens instantly so the CSS GPU animations trigger without delay
             document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.desktop-nav-link').forEach(el => el.classList.remove('active'));
 
             if (view === 'home') {
                 document.getElementById('nav-home')?.classList.add('active');
                 document.getElementById('desktop-nav-home')?.classList.add('active');
-            }
-            if (view === 'categories' || view === 'category') {
+            } else if (view === 'categories' || view === 'category') {
                 document.getElementById('nav-categories')?.classList.add('active');
                 document.getElementById('desktop-nav-categories')?.classList.add('active');
-            }
-            if (view === 'cart' || view === 'checkout') {
+            } else if (view === 'cart' || view === 'checkout') {
                 document.getElementById('nav-cart')?.classList.add('active');
             }
 
-            if (view === 'home') {
-                this.renderHome();
-                document.getElementById('view-home').classList.remove('hidden');
-            } else if (view === 'categories') {
-                this.renderCategoriesIndex();
-                document.getElementById('view-categories').classList.remove('hidden');
-            } else if (view === 'category') {
-                this.renderCategory(param);
-                document.getElementById('view-category').classList.remove('hidden');
-            } else if (view === 'product') {
-                this.renderProduct(param);
-                document.getElementById('view-product').classList.remove('hidden');
-            } else if (view === 'search') {
-                this.renderSearch(param);
-                document.getElementById('view-search').classList.remove('hidden');
-            } else if (view === 'cart') {
-                this.renderCart();
-                document.getElementById('view-cart').classList.remove('hidden');
-            } else if (view === 'checkout') {
-                this.renderCheckout();
-                document.getElementById('view-checkout').classList.remove('hidden');
-            }
+            // INSTANTLY hide old views and show the VIEW-SPECIFIC Skeleton Loader
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.view-skeleton').forEach(el => el.classList.add('hidden'));
+
+            let activeSkeleton = null;
+            if (view === 'home') activeSkeleton = document.getElementById('skeleton-home');
+            else if (view === 'categories') activeSkeleton = document.getElementById('skeleton-categories');
+            else if (view === 'cart' || view === 'checkout') activeSkeleton = document.getElementById('skeleton-cart');
+            else if (view === 'product') activeSkeleton = document.getElementById('skeleton-product');
+            else activeSkeleton = document.getElementById('skeleton-grid'); // Fallback for Category/Search
+            
+            if (activeSkeleton) activeSkeleton.classList.remove('hidden');
+
+            // 2. YIELD THE MAIN THREAD (Performance Fix)
+            // requestAnimationFrame gives the browser time to physically paint the active button state 
+            // AND the exact layout skeleton to the screen BEFORE the CPU locks up.
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    // Render the heavy new view
+                    if (view === 'home') {
+                        this.renderHome();
+                        document.getElementById('view-home').classList.remove('hidden');
+                    } else if (view === 'categories') {
+                        this.renderCategoriesIndex();
+                        document.getElementById('view-categories').classList.remove('hidden');
+                    } else if (view === 'category') {
+                        this.renderCategory(param);
+                        document.getElementById('view-category').classList.remove('hidden');
+                    } else if (view === 'product') {
+                        this.renderProduct(param);
+                        document.getElementById('view-product').classList.remove('hidden');
+                    } else if (view === 'search') {
+                        this.renderSearch(param);
+                        document.getElementById('view-search').classList.remove('hidden');
+                    } else if (view === 'cart') {
+                        this.renderCart();
+                        document.getElementById('view-cart').classList.remove('hidden');
+                    } else if (view === 'checkout') {
+                        this.renderCheckout();
+                        document.getElementById('view-checkout').classList.remove('hidden');
+                    }
+
+                    // Hide the Skeleton Loader once the new DOM is fully built
+                    if (activeSkeleton) activeSkeleton.classList.add('hidden');
+
+                    // Restore or reset scroll position instantly AFTER the DOM is fully constructed
+                    if (isPopState && this.state.scrollMemory[newRouteKey] !== undefined) {
+                        window.scrollTo({ top: this.state.scrollMemory[newRouteKey], behavior: 'instant' });
+                    } else {
+                        window.scrollTo({ top: 0, behavior: 'instant' });
+                    }
+                }, 20); // 20ms ensures the GPU completes the paint cycle flawlessly
+            });
         },
 
         // --- RENDERERS ---
@@ -1219,15 +1308,32 @@
             }
         },
 
+        isClosingLightbox: false,
+        
+        closeLightbox: function(fromPopState = false) {
+            const lightbox = document.getElementById('product-lightbox');
+            if (lightbox && !lightbox.classList.contains('hidden')) {
+                const imgEl = document.getElementById('lightbox-img');
+                if (imgEl && imgEl.resetZoom) imgEl.resetZoom();
+                lightbox.classList.add('hidden');
+                
+                // If closed manually via click/Escape (not popstate), pop the dummy history state 
+                if (!fromPopState && window.history.state && window.history.state.lightbox) {
+                    this.isClosingLightbox = true;
+                    window.history.back();
+                }
+            }
+        },
+
         openLightbox: function(imgSrc) {
             let lightbox = document.getElementById('product-lightbox');
             if (!lightbox) {
                 lightbox = document.createElement('div');
                 lightbox.id = 'product-lightbox';
                 lightbox.innerHTML = `
-                    <div class="lightbox-overlay" onclick="document.getElementById('product-lightbox').classList.add('hidden')"></div>
+                    <div class="lightbox-overlay" onclick="Store.closeLightbox()"></div>
                     <div class="lightbox-content">
-                        <button class="lightbox-close" onclick="document.getElementById('product-lightbox').classList.add('hidden')" title="Close">
+                        <button class="lightbox-close" onclick="Store.closeLightbox()" title="Close">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
                         <div class="panzoom-container" id="panzoom-container">
@@ -1322,6 +1428,11 @@
             imgEl.src = imgSrc;
             if (imgEl.resetZoom) imgEl.resetZoom();
             lightbox.classList.remove('hidden');
+
+            // Push a dummy history state so the hardware Back button can be intercepted to close the image
+            if (!window.history.state || !window.history.state.lightbox) {
+                window.history.pushState({ lightbox: true, view: this.state.activeRouteKey }, '', '');
+            }
         },
 
         shareProduct: async function(productId) {

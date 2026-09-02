@@ -27,8 +27,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="/styles.css?v=5.0">
-    <link rel="icon" type="image/svg+xml" href="/assets/logo-short.svg?v=5.0">
+    <link rel="stylesheet" href="/styles.css?v=5.1">
+    <link rel="icon" type="image/svg+xml" href="/assets/logo-short.svg?v=5.1">
     
     <!-- Preconnect to Supabase for faster API handshakes -->
     <link rel="preconnect" href="https://ycckkswajajrqobrohcx.supabase.co" crossorigin>
@@ -39,13 +39,13 @@
 <body>
     <!-- Global Preloader -->
     <div id="global-preloader" class="global-preloader">
-        <img src="/assets/logo-full.svg?v=5.0" alt="RR" class="preloader-logo">
+        <img src="/assets/logo-full.svg?v=5.1" alt="RR" class="preloader-logo">
     </div>
 
     <header class="site-header">
         <div class="container header-inner">
             <a href="javascript:void(0)" onclick="Store.navigate('home')" class="brand-link" aria-label="RR ELECTRRIC Home" style="display: flex; align-items: center;">
-                <img src="/assets/logo-full.svg?v=5.0" alt="RR ELECTRRIC" style="height: 44px; width: auto; max-width: 180px; object-fit: contain;">
+                <img src="/assets/logo-full.svg?v=5.1" alt="RR ELECTRRIC" style="height: 44px; width: auto; max-width: 180px; object-fit: contain;">
             </a>
             
             <!-- Desktop Header Navigation Links -->
@@ -76,6 +76,132 @@
         <!-- Initial Loader -->
         <div id="store-loader" class="container loading-state">
             Loading products...
+        </div>
+
+        <!-- Premium View-Specific SPA Skeletons -->
+        
+        <!-- HOME SKELETON -->
+        <div id="skeleton-home" class="view-skeleton hidden">
+            <div style="display: flex; gap: 8px; padding: 14px 16px; overflow: hidden; margin-top: 10px;">
+                <div class="sk-item" style="width: 78px; height: 78px; border-radius: 20px; flex-shrink: 0;"></div>
+                <div class="sk-item" style="width: 78px; height: 78px; border-radius: 20px; flex-shrink: 0;"></div>
+                <div class="sk-item" style="width: 78px; height: 78px; border-radius: 20px; flex-shrink: 0;"></div>
+                <div class="sk-item" style="width: 78px; height: 78px; border-radius: 20px; flex-shrink: 0;"></div>
+                <div class="sk-item" style="width: 78px; height: 78px; border-radius: 20px; flex-shrink: 0;"></div>
+            </div>
+            <div class="container">
+                <div class="sk-item" style="width: 100%; height: 200px; border-radius: 20px; margin-bottom: 24px;"></div>
+                <div class="sk-flex-between" style="margin-bottom: 16px;">
+                    <div class="sk-item sk-text-lg" style="width: 120px; margin: 0;"></div>
+                    <div class="sk-item" style="width: 140px; height: 32px; border-radius: 8px;"></div>
+                </div>
+                <div class="products-grid">
+                    <div class="sk-item" style="aspect-ratio: 1/1.3;"></div>
+                    <div class="sk-item" style="aspect-ratio: 1/1.3;"></div>
+                    <div class="sk-item" style="aspect-ratio: 1/1.3;"></div>
+                    <div class="sk-item" style="aspect-ratio: 1/1.3;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CATEGORIES SKELETON -->
+        <div id="skeleton-categories" class="view-skeleton hidden">
+            <div class="container" style="max-width: 1280px; padding-top: 16px;">
+                <!-- Header Title & Subtitle matching real DOM -->
+                <div class="sk-item sk-text-lg" style="width: 160px; height: 28px; margin-bottom: 6px;"></div>
+                <div class="sk-item sk-text" style="width: 220px; height: 14px; margin-bottom: 20px;"></div>
+                
+                <!-- Category Row Card 1 -->
+                <div style="background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.9); border-radius: 18px; padding: 14px; margin-bottom: 12px; box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.04);">
+                    <div class="sk-flex-between" style="margin-bottom: 12px;">
+                        <div class="sk-item sk-text-lg" style="width: 110px; height: 18px; margin: 0;"></div>
+                        <div class="sk-item" style="width: 84px; height: 24px; border-radius: 9999px;"></div>
+                    </div>
+                    <div class="sk-row" style="overflow: hidden; gap: 8px;">
+                        <div class="sk-item" style="min-width: 70px; width: 70px; height: 70px; border-radius: 14px; flex-shrink: 0;"></div>
+                        <div class="sk-item" style="min-width: 70px; width: 70px; height: 70px; border-radius: 14px; flex-shrink: 0;"></div>
+                        <div class="sk-item" style="min-width: 70px; width: 70px; height: 70px; border-radius: 14px; flex-shrink: 0;"></div>
+                        <div class="sk-item" style="min-width: 70px; width: 70px; height: 70px; border-radius: 14px; flex-shrink: 0;"></div>
+                        <div class="sk-item" style="min-width: 70px; width: 70px; height: 70px; border-radius: 14px; flex-shrink: 0;"></div>
+                    </div>
+                </div>
+
+                <!-- Category Row Card 2 -->
+                <div style="background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.9); border-radius: 18px; padding: 14px; margin-bottom: 12px; box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.04);">
+                    <div class="sk-flex-between" style="margin-bottom: 12px;">
+                        <div class="sk-item sk-text-lg" style="width: 80px; height: 18px; margin: 0;"></div>
+                        <div class="sk-item" style="width: 84px; height: 24px; border-radius: 9999px;"></div>
+                    </div>
+                    <div class="sk-row" style="overflow: hidden; gap: 8px;">
+                        <div class="sk-item" style="min-width: 70px; width: 70px; height: 70px; border-radius: 14px; flex-shrink: 0;"></div>
+                        <div class="sk-item" style="min-width: 70px; width: 70px; height: 70px; border-radius: 14px; flex-shrink: 0;"></div>
+                        <div class="sk-item" style="min-width: 70px; width: 70px; height: 70px; border-radius: 14px; flex-shrink: 0;"></div>
+                        <div class="sk-item" style="min-width: 70px; width: 70px; height: 70px; border-radius: 14px; flex-shrink: 0;"></div>
+                    </div>
+                </div>
+
+                <!-- Category Row Card 3 -->
+                <div style="background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.9); border-radius: 18px; padding: 14px; margin-bottom: 12px; box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.04);">
+                    <div class="sk-flex-between" style="margin-bottom: 12px;">
+                        <div class="sk-item sk-text-lg" style="width: 95px; height: 18px; margin: 0;"></div>
+                        <div class="sk-item" style="width: 84px; height: 24px; border-radius: 9999px;"></div>
+                    </div>
+                    <div class="sk-row" style="overflow: hidden; gap: 8px;">
+                        <div class="sk-item" style="min-width: 70px; width: 70px; height: 70px; border-radius: 14px; flex-shrink: 0;"></div>
+                        <div class="sk-item" style="min-width: 70px; width: 70px; height: 70px; border-radius: 14px; flex-shrink: 0;"></div>
+                        <div class="sk-item" style="min-width: 70px; width: 70px; height: 70px; border-radius: 14px; flex-shrink: 0;"></div>
+                        <div class="sk-item" style="min-width: 70px; width: 70px; height: 70px; border-radius: 14px; flex-shrink: 0;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CART SKELETON -->
+        <div id="skeleton-cart" class="view-skeleton hidden">
+            <div class="container" style="padding-top: 16px;">
+                <div class="sk-flex-between" style="margin-bottom: 24px;">
+                    <div class="sk-item sk-circle" style="width: 32px; height: 32px;"></div>
+                    <div class="sk-item sk-text-lg" style="width: 120px; margin: 0;"></div>
+                    <div class="sk-item sk-text" style="width: 40px; margin: 0;"></div>
+                </div>
+                <div class="sk-item" style="width: 100%; height: 40px; border-radius: 8px; margin-bottom: 16px;"></div>
+                <div class="sk-item" style="width: 100%; height: 100px; border-radius: 16px; margin-bottom: 12px;"></div>
+                <div class="sk-item" style="width: 100%; height: 100px; border-radius: 16px; margin-bottom: 32px;"></div>
+                <div class="sk-item" style="width: 100%; height: 300px; border-radius: 22px;"></div>
+            </div>
+        </div>
+
+        <!-- PRODUCT DETAIL SKELETON -->
+        <div id="skeleton-product" class="view-skeleton hidden">
+            <div class="sk-item" style="width: 100%; aspect-ratio: 1; border-radius: 0; margin-bottom: 16px;"></div>
+            <div class="container">
+                <div class="sk-item sk-text" style="width: 80px;"></div>
+                <div class="sk-item sk-text-lg" style="width: 90%; height: 28px; margin-bottom: 16px;"></div>
+                <div class="sk-item sk-text-lg" style="width: 120px; height: 36px; margin-bottom: 24px;"></div>
+                <div class="sk-item" style="width: 100%; height: 80px; border-radius: 12px; margin-bottom: 16px;"></div>
+                <div class="sk-item" style="width: 100%; height: 60px; border-radius: 12px; margin-bottom: 24px;"></div>
+                <div class="sk-item" style="width: 100%; height: 50px; border-radius: 12px;"></div>
+            </div>
+        </div>
+
+        <!-- GENERIC GRID SKELETON (Category detail & Search) -->
+        <div id="skeleton-grid" class="view-skeleton hidden">
+            <div class="container" style="padding-top: 16px;">
+                <div class="sk-flex-between" style="margin-bottom: 16px;">
+                    <div class="sk-item sk-circle" style="width: 32px; height: 32px;"></div>
+                    <div class="sk-item sk-text-lg" style="width: 150px; margin: 0;"></div>
+                    <div style="width: 32px;"></div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+                    <div class="sk-item" style="width: 140px; height: 32px; border-radius: 8px;"></div>
+                </div>
+                <div class="products-grid">
+                    <div class="sk-item" style="aspect-ratio: 1/1.3;"></div>
+                    <div class="sk-item" style="aspect-ratio: 1/1.3;"></div>
+                    <div class="sk-item" style="aspect-ratio: 1/1.3;"></div>
+                    <div class="sk-item" style="aspect-ratio: 1/1.3;"></div>
+                </div>
+            </div>
         </div>
 
         <!-- Home View (Actual Storefront) -->
@@ -119,11 +245,11 @@
                                 <span class="ribbon-line"></span>
                             </div>
                             <div class="ribbon-track">
-                                <img src="/assets/rr.svg" alt="RR Kabel" class="ribbon-logo" onclick="Store.navigate('search', 'RR')" title="Shop RR">
-                                <img src="/assets/havells.svg" alt="Havells" class="ribbon-logo" onclick="Store.navigate('search', 'Havells')" title="Shop Havells">
-                                <img src="/assets/l&t.svg" alt="L&T" class="ribbon-logo" onclick="Store.navigate('search', 'L&T')" title="Shop L&T">
-                                <img src="/assets/anchor.svg" alt="Anchor" class="ribbon-logo" onclick="Store.navigate('search', 'Anchor')" title="Shop Anchor">
-                                <img src="/assets/hi-fi.svg" alt="Hi-Fi" class="ribbon-logo" onclick="Store.navigate('search', 'Hi-Fi')" title="Shop Hi-Fi">
+                                <img src="/assets/rr.svg?v=5.1" alt="RR Kabel" class="ribbon-logo" onclick="Store.navigate('search', 'RR')" title="Shop RR">
+                                <img src="/assets/havells.svg?v=5.1" alt="Havells" class="ribbon-logo" onclick="Store.navigate('search', 'Havells')" title="Shop Havells">
+                                <img src="/assets/l&t.svg?v=5.1" alt="L&T" class="ribbon-logo" onclick="Store.navigate('search', 'L&T')" title="Shop L&T">
+                                <img src="/assets/anchor.svg?v=5.1" alt="Anchor" class="ribbon-logo" onclick="Store.navigate('search', 'Anchor')" title="Shop Anchor">
+                                <img src="/assets/hi-fi.svg?v=5.1" alt="Hi-Fi" class="ribbon-logo" onclick="Store.navigate('search', 'Hi-Fi')" title="Shop Hi-Fi">
                             </div>
                         </div>
                     </div>
@@ -177,7 +303,7 @@
             <!-- PWA Install Banner -->
         <div id="pwa-install-container" class="container hidden" style="padding-top: 0px; padding-bottom: 4px;">
             <div class="pwa-install-card">
-                <img src="/assets/icon.png?v=5.0" class="pwa-install-icon" alt="RR Electrric App Icon">
+                <img src="/assets/icon.png?v=5.1" class="pwa-install-icon" alt="RR Electrric App Icon">
                 <div class="pwa-install-text">
                     <h4>Install RR ELECTRRIC App</h4>
                 </div>
@@ -352,7 +478,7 @@
 
     <footer class="site-footer">
         <div class="container" style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
-            <img src="/assets/logo-full.svg?v=5.0" alt="RR ELECTRRIC" class="footer-logo" style="height: 32px; width: auto; opacity: 0.8;">
+            <img src="/assets/logo-full.svg?v=5.1" alt="RR ELECTRRIC" class="footer-logo" style="height: 32px; width: auto; opacity: 0.8;">
             <p>Fast local delivery for branded electrical products across Nadiad.</p>
             <div id="footer-address-text" style="font-size: 13px; color: var(--text-muted); text-align: center; max-width: 400px; line-height: 1.5; margin-bottom: 4px;"></div>
             <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
@@ -387,6 +513,6 @@
         </a>
     </nav>
 
-    <script src="/app.js?v=5.0"></script>
+    <script src="/app.js?v=5.1"></script>
 </body>
 </html>
