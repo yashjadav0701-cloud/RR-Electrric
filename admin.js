@@ -87,6 +87,9 @@
             if (msg.includes('permission denied') || msg.includes('unauthorized')) return "You do not currently have permission to perform this action.";
             if (msg.includes('timeout')) return "The request took too long. Please try again.";
             if (msg.includes('duplicate')) return "This item already exists in the system.";
+            if (msg.includes('check constraint') || msg.includes('products_check')) return "MRP Price cannot be lower than the Selling Price. Please correct the pricing.";
+            if (msg.includes('violates foreign key')) return "This record cannot be deleted because it is linked to active orders or other items in the system.";
+            if (msg.includes('not-null constraint') || msg.includes('null value in column')) return "Please fill in all required fields before submitting.";
             
             // Clean up original error by removing ugly technical prefixes
             let cleanMsg = (err?.message || err || fallback).toString();
@@ -2410,11 +2413,22 @@
                 bulkPacks.sort((a, b) => a.qty - b.qty);
                 const primaryPack = bulkPacks[0] || null;
 
+                const sellingPrice = parseFloat(document.getElementById('product-price').value);
+                const mrpPrice = document.getElementById('product-mrp').value ? parseFloat(document.getElementById('product-mrp').value) : null;
+
+                if (mrpPrice !== null && mrpPrice < sellingPrice) {
+                    errorEl.textContent = 'MRP Price cannot be lower than the Selling Price.';
+                    errorEl.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.textContent = 'Save Product';
+                    return;
+                }
+
                 const payload = {
                     name: document.getElementById('product-name').value.trim(),
                     category_id: catId,
-                    selling_price: parseFloat(document.getElementById('product-price').value),
-                    mrp_price: document.getElementById('product-mrp').value ? parseFloat(document.getElementById('product-mrp').value) : null,
+                    selling_price: sellingPrice,
+                    mrp_price: mrpPrice,
                     warranty: warrantyStr,
                     description: document.getElementById('product-description').value.trim(),
                     is_active: document.getElementById('product-active').checked,

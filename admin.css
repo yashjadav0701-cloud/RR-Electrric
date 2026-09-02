@@ -446,7 +446,15 @@ body {
     color: var(--text-main);
 }
 .inventory-filters input {
-    min-width: 260px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+@media (min-width: 1024px) {
+    .inventory-filters input {
+        min-width: 260px;
+    }
 }
 .inventory-table-container {
     background: var(--bg-surface);
