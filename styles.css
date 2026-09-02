@@ -522,15 +522,16 @@ button:disabled, .btn-primary:disabled {
 .mobile-bottom-nav {
     display: flex;
     flex-direction: row;
-    align-items: center; /* Changed from stretch to center to prevent height bleed */
+    align-items: center; 
     position: fixed;
     bottom: 8px;
     left: 8px;
     right: 8px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(226, 232, 240, 0.8);
+    /* Removed expensive background blur. Replaced with 98% opaque solid color for flawless 60fps scrolling */
+    background: rgba(252, 253, 255, 0.98);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid rgba(226, 232, 240, 0.9);
     border-radius: 28px;
     z-index: 1000;
     padding: 4px 8px; /* Tighter padding */
@@ -826,12 +827,23 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     overflow: visible;
     display: flex;
     flex-direction: column;
-    text-decoration: none !important; /* Forces underline removal */
+    text-decoration: none !important;
     color: inherit;
     position: relative;
-    isolation: isolate;
+    
+    /* BIG TECH SECRET: Skips rendering layout/paint for off-screen cards */
+    content-visibility: auto;
+    contain-intrinsic-size: 280px; /* Estimated height to prevent scrollbar jumping */
+    contain: layout style paint;
+    
+    /* Force GPU Acceleration */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform, opacity;
+    
     box-shadow: none;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    /* Never transition 'all' on mobile, it causes severe scroll jank */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 /* Animate the image wrapper instead of the invisible card on hover */
@@ -1440,7 +1452,9 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
         scroll-snap-type: x mandatory;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
-        padding: 4px 0;
+        /* Increased vertical padding for shadows, and 4px horizontal padding to prevent edge clipping */
+        padding: 8px 4px;
+        scroll-padding-left: 4px; /* Ensures snap alignment respects the padding */
         --category-gap: 10px; /* Uniform, balanced gap across all mobile viewports */
         gap: var(--category-gap);
     }
@@ -3976,4 +3990,50 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 @keyframes fadeInImage {
     from { opacity: 0; transform: scale(0.97); }
     to { opacity: 1; transform: scale(1); }
+}
+
+/* ============================================================
+   PERFORMANCE FIX: ZERO CUMULATIVE LAYOUT SHIFT (CLS)
+   ============================================================ */
+
+/* 1. Lock Product Card Image Wrappers to a rigid 1:1 square */
+.store-product-card .img-wrapper,
+.store-product-card-img-container {
+    width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    position: relative !important;
+    display: block !important;
+    background-color: #f8fafc; /* Soft placeholder color while loading */
+    overflow: hidden;
+}
+
+/* 2. Pin the actual image inside the reserved box so it doesn't stretch the height */
+.store-product-card .img-wrapper img,
+.store-product-card-img-container img {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    /* Hardware acceleration to prevent image decode lagging the scroll */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* 3. Lock Category images to prevent header jumping */
+.hero-3d-cat-box {
+    width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    background-color: #f1f5f9;
+    position: relative !important;
+    overflow: hidden !important;
+}
+.hero-3d-cat-box img {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
 }

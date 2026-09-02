@@ -532,10 +532,9 @@
                     if (footerWa) footerWa.style.display = 'none';
                 }
 
-                document.getElementById('store-loader').classList.add('hidden');
             } catch (err) {
                 console.error("Failed to load store data:", err);
-                document.getElementById('store-loader').textContent = "Failed to load store. Please refresh.";
+                // Graceful fail without breaking DOM
             }
         },
 
@@ -682,8 +681,7 @@
             return `
                 <a href="javascript:void(0)" onclick="Store.navigate('product', '${p.id}')" class="store-product-card ${!isAvailable ? 'is-unavailable' : ''}">
                     <div class="img-wrapper">
-                        ${badgeHtml}
-                        <img src="${img}" alt="${p.name}" loading="lazy" decoding="async">
+                        <img src="${img}" alt="${p.name}" ${loadingAttr}>
                     </div>
                     <div class="store-product-card-details">
                         <div class="store-product-card-price-row">
@@ -753,7 +751,7 @@
                 return `
                     <a href="javascript:void(0)" class="hero-3d-cat-item" onclick="Store.navigate('category', '${c.id}')">
                         <div class="hero-3d-cat-box">
-                            <img src="${img}" alt="${c.name}" loading="lazy" decoding="async">
+                            <img src="${img}" alt="${c.name}" loading="eager" fetchpriority="high">
                         </div>
                         <span class="hero-3d-cat-label">${c.name}</span>
                     </a>
