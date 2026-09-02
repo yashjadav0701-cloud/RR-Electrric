@@ -658,9 +658,12 @@
 
         // --- RENDERERS ---
 
-        generateProductCardHTML: function(p, isCompact = false) {
+        generateProductCardHTML: function(p, isCompact = false, isPriority = false) {
             const isAvailable = p.is_active !== false;
             const img = p.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
+            
+            // Critical LCP Optimization: Load top products instantly, defer the rest
+            const loadingAttr = isPriority ? 'loading="eager" fetchpriority="high"' : 'loading="lazy" decoding="async"';
             
             let badgeHtml = '';
             let compareString = '';
@@ -773,11 +776,12 @@
         },
 
         loadMoreHomeProducts: function() {
+            const oldLimit = this.state.homeDisplayLimit;
             this.state.homeDisplayLimit += 12;
-            this.updateHomeGrid();
+            this.updateHomeGrid(true, oldLimit);
         },
 
-        updateHomeGrid: function() {
+        updateHomeGrid: function(isAppend = false, oldLimit = 0) {
             const grid = document.getElementById('home-products-grid');
             const loadMoreContainer = document.getElementById('home-load-more-container');
             
@@ -794,8 +798,16 @@
                 return;
             }
 
-            const paginatedList = displayList.slice(0, this.state.homeDisplayLimit);
-            grid.innerHTML = paginatedList.map(p => this.generateProductCardHTML(p)).join('');
+            if (isAppend) {
+                // DOM APPEND STRATEGY: Only render and inject the newly requested items
+                // This stops layout thrashing and prevents existing images from flickering
+                const newItems = displayList.slice(oldLimit, this.state.homeDisplayLimit);
+                grid.insertAdjacentHTML('beforeend', newItems.map(p => this.generateProductCardHTML(p, false, false)).join(''));
+            } else {
+                // INITIAL LOAD STRATEGY: Render first batch, eagerly load first 4 images for instant paint
+                const paginatedList = displayList.slice(0, this.state.homeDisplayLimit);
+                grid.innerHTML = paginatedList.map((p, index) => this.generateProductCardHTML(p, false, index < 4)).join('');
+            }
 
             // Hide Load More if we reached the end
             if (displayList.length <= this.state.homeDisplayLimit) {
