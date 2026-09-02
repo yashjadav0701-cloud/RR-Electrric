@@ -413,7 +413,7 @@
                             const img = p.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
                             return `
                                 <a href="javascript:void(0)" class="search-suggestion-item" onclick="document.getElementById('search-bar').classList.add('hidden'); Store.navigate('product', '${p.id}')">
-                                    <img src="${img}" class="search-suggestion-img" alt="${p.name}">
+                                    <img src="${img}" class="search-suggestion-img" alt="${p.name}" loading="lazy" decoding="async">
                                     <div class="search-suggestion-details">
                                         <div style="font-size: 10px; color: var(--primary); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">${p.categories?.name || 'Uncategorized'}</div>
                                         <div class="search-suggestion-title">${p.name}</div>
@@ -750,7 +750,7 @@
                 return `
                     <a href="javascript:void(0)" class="hero-3d-cat-item" onclick="Store.navigate('category', '${c.id}')">
                         <div class="hero-3d-cat-box">
-                            <img src="${img}" alt="${c.name}" loading="lazy">
+                            <img src="${img}" alt="${c.name}" loading="lazy" decoding="async">
                         </div>
                         <span class="hero-3d-cat-label">${c.name}</span>
                     </a>
@@ -1138,7 +1138,7 @@
                                                             <a href="javascript:void(0)" onclick="Store.navigate('product', '${lp.id}', false, true)" class="variant-card ${isActive ? 'active' : ''}">
                                                                 ${isActive ? '<div class="vc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>' : ''}
                                                                 <div class="vc-img-wrapper">
-                                                                    <img src="${img}" alt="${lp.name}" loading="lazy">
+                                                                    <img src="${img}" alt="${lp.name}" loading="lazy" decoding="async">
                                                                 </div>
                                                                 <div class="vc-details">
                                                                     <div class="vc-title" title="${lp.name}">${lp.name}</div>

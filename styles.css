@@ -3885,3 +3885,35 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
         -webkit-backdrop-filter: none !important;
     }
 }
+
+/* ============================================================
+   IMAGE DECODING & RENDER PERFORMANCE ISOLATION PATCH
+   ============================================================ */
+
+/* Force strict layout isolation on image containers to prevent layout reflows */
+.store-product-card .img-wrapper,
+.category-thumb-card,
+.hero-3d-cat-box,
+.vc-img-wrapper,
+.cart-item-img-wrapper {
+    contain: layout paint;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Smooth GPU Fade-In Effect when images finish decoding (Eliminates pop-in jank) */
+.store-product-card img,
+.category-thumb-card img,
+.hero-3d-cat-box img,
+.search-suggestion-img,
+.cart-item-img,
+.vc-img-wrapper img {
+    opacity: 0;
+    animation: fadeInImage 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInImage {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+}
