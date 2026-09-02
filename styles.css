@@ -811,12 +811,15 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
    ============================================================ */
 .products-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px; /* Optimized gap so two product cards fit side-by-side cleanly on all mobile screens */
+    /* minmax(0, 1fr) is the golden rule to mathematically prevent CSS grids from blowing out */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px; 
+    width: 100%;
+    max-width: 100%;
 }
 
 @media (min-width: 768px) {
-    .products-grid { grid-template-columns: repeat(4, 1fr); gap: 24px; }
+    .products-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; }
 }
 
 /* 3D Floating Product Cards */
@@ -830,14 +833,11 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     text-decoration: none !important;
     color: inherit;
     position: relative;
+    min-width: 0; /* Strictly prevents flex children from blowing out container boundaries */
     
-    /* BIG TECH SECRET: Skips rendering layout/paint for off-screen cards */
-    content-visibility: auto;
-    /* FIX: 'auto' width prevents layout blowouts, 320px cleanly estimates height */
-    contain-intrinsic-size: auto 320px; 
-    
-    /* Force GPU Acceleration */
+    /* Force GPU Acceleration securely without conflicting with CSS Grid */
     transform: translateZ(0);
+    -webkit-transform: translateZ(0);
     backface-visibility: hidden;
     will-change: transform, opacity;
     
@@ -1977,10 +1977,16 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     display: flex;
     align-items: center;
     justify-content: space-between; 
-    gap: 6px; /* Tighter gap to ensure all 5 fit beautifully */
+    gap: 6px; 
     width: 100%;
-    flex-wrap: nowrap; /* STRICTLY forces them onto a single line */
-    padding-bottom: 8px; /* Space for the 3D shadow */
+    flex-wrap: nowrap; 
+    padding-bottom: 8px; 
+    overflow-x: auto; /* CRITICAL: Prevents the 5 logos from stretching the entire page width */
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+.ribbon-track::-webkit-scrollbar {
+    display: none;
 }
 
 .ribbon-logo {
