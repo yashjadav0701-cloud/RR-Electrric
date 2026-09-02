@@ -1968,6 +1968,7 @@
             const mrpInputs = document.querySelectorAll('.qe-mrp');
             
             const updatesMap = new Map();
+            let validationError = null;
 
             // Gather all new prices (works for both mobile and desktop inputs safely)
             priceInputs.forEach(input => {
@@ -1979,35 +1980,60 @@
             mrpInputs.forEach(input => {
                 const id = input.dataset.id;
                 if (!updatesMap.has(id)) updatesMap.set(id, { id });
-                updatesMap.get(id).mrp_price = parseFloat(input.value) || null;
+                
+                const mrpVal = parseFloat(input.value);
+                const sellingVal = updatesMap.get(id).selling_price;
+                
+                if (!isNaN(mrpVal) && mrpVal < sellingVal) {
+                    validationError = "MRP cannot be lower than the Selling Price. Please correct your inputs.";
+                }
+                
+                updatesMap.get(id).mrp_price = isNaN(mrpVal) ? null : mrpVal;
             });
 
-            const promises = [];
-            let updatedCount = 0;
+            // 1. FRONT-END GUARD: Stop submission immediately if MRP is invalid
+            if (validationError) {
+                ErrorHandler.show(validationError, "Pricing Error");
+                btn.textContent = 'Save Prices';
+                btn.disabled = false;
+                return;
+            }
 
-            for (const [id, data] of updatesMap) {
-                const original = this.state.products.find(p => p.id === id);
-                if (original) {
-                    // Only perform database updates on products that were ACTUALLY changed
-                    if (original.selling_price !== data.selling_price || original.mrp_price !== data.mrp_price) {
-                        promises.push(supabase.from('products').update({ 
-                            selling_price: data.selling_price, 
-                            mrp_price: data.mrp_price 
-                        }).eq('id', id));
-                        updatedCount++;
+            try {
+                const promises = [];
+                let updatedCount = 0;
+
+                for (const [id, data] of updatesMap) {
+                    const original = this.state.products.find(p => p.id === id);
+                    if (original) {
+                        // Only perform database updates on products that were ACTUALLY changed
+                        if (original.selling_price !== data.selling_price || original.mrp_price !== data.mrp_price) {
+                            promises.push(supabase.from('products').update({ 
+                                selling_price: data.selling_price, 
+                                mrp_price: data.mrp_price 
+                            }).eq('id', id));
+                            updatedCount++;
+                        }
                     }
                 }
-            }
 
-            // Blast all changes to Supabase concurrently
-            if (promises.length > 0) {
-                await Promise.all(promises);
-            }
+                // 2. BACK-END GUARD: Blast all changes to Supabase concurrently and check for DB constraint errors
+                if (promises.length > 0) {
+                    const results = await Promise.all(promises);
+                    const firstError = results.find(r => r.error);
+                    if (firstError) throw firstError.error;
+                }
 
-            CustomUI.alert(`Successfully updated prices for ${updatedCount} products!`, 'Quick Edit Saved');
-            
-            this.state.isQuickEditMode = false;
-            await this.loadProducts(); // Fully reload to lock in changes
+                CustomUI.alert(`Successfully updated prices for ${updatedCount} products!`, 'Quick Edit Saved');
+                
+                this.state.isQuickEditMode = false;
+                await this.loadProducts(); // Fully reload to lock in changes
+            } catch (err) {
+                ErrorHandler.show(err, "Quick Edit Failed");
+            } finally {
+                btn.textContent = 'Save Prices';
+                btn.disabled = false;
+            }
         },
 
         bindProductEvents: function() {
