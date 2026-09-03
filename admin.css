@@ -13,6 +13,55 @@ html, body {
     box-sizing: border-box;
 }
 
+/* ============================================================
+   STRICT BRAND LOGO & SVG DIMENSION LOCK (PREVENTS BLOW-UPS)
+   ============================================================ */
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    padding: 20px 24px;
+    height: 72px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.sidebar-brand img,
+.auth-card img,
+.preloader-logo {
+    object-fit: contain !important;
+    display: block !important;
+}
+
+/* Desktop Sidebar Logo */
+.sidebar-brand .desktop-only {
+    width: 130px !important;
+    height: 32px !important;
+    max-width: 130px !important;
+    max-height: 32px !important;
+}
+
+/* Mobile Sidebar Logo */
+.sidebar-brand .mobile-only {
+    width: 32px !important;
+    height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
+}
+
+/* Auth Card Gateway Logo */
+.auth-card img {
+    width: 160px !important;
+    height: 40px !important;
+    max-width: 100% !important;
+    margin: 0 auto 24px auto !important;
+}
+
+/* Global Preloader Logo */
+.preloader-logo {
+    width: 160px !important;
+    height: 40px !important;
+    max-width: 80vw !important;
+}
+
 /* Fix mobile filter inputs and toolbars from forcing side-scrolling */
 @media (max-width: 768px) {
     .inventory-toolbar,

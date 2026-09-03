@@ -1335,7 +1335,8 @@
                 
                 if (subscription) {
                     const endpoint = subscription.endpoint;
-                    const { data: dbSub } = await supabase.from('admin_push_subscriptions').select('id').eq('endpoint', endpoint).single();
+                    // FIX: Use maybeSingle() instead of single() to prevent 406 errors when 0 rows match
+                    const { data: dbSub } = await supabase.from('admin_push_subscriptions').select('id').eq('endpoint', endpoint).maybeSingle();
                     
                     if (dbSub) {
                         this.renderPushActive(subscription.endpoint);
