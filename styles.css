@@ -1907,24 +1907,15 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     animation: sweepText 4s linear infinite;
 }
 
-/* MOBILE PERFORMANCE OVERRIDE: Stop heavy continuous background animations on mobile devices */
+/* MOBILE PERFORMANCE OVERRIDE: Refined */
 @media (max-width: 767px) {
-    .ribbon-line::before,
-    .ribbon-text::after {
-        animation: none !important;
-    }
-    /* Keep a clean, static glowing look on mobile without background CPU drain */
-    .ribbon-text::after {
-        -webkit-mask-position: 0% 0;
-        mask-position: 0% 0;
-        opacity: 0.85;
-    }
     .hero-section,
     .top-categories-wrapper,
     .hero-store-card {
         backdrop-filter: none; /* Removes expensive mobile blur calculations */
         -webkit-backdrop-filter: none;
     }
+    /* The ribbon animation remains active on mobile. */
 }
 
 /* === THE PERFECT TIMELINE (4 Seconds) === */

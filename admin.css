@@ -14,29 +14,139 @@ html, body {
 }
 
 /* ============================================================
+   1. GLOBAL SVG & ICON LOCKS (PREVENTS GIANT BLUE SQUARES)
+   ============================================================ */
+svg { max-width: 100%; height: auto; }
+
+.metric-icon svg { 
+    width: 24px !important; 
+    height: 24px !important; 
+    min-width: 24px !important; 
+    min-height: 24px !important; 
+    flex-shrink: 0 !important; 
+}
+
+.admin-nav a svg, .sidebar-footer .btn-text svg { 
+    width: 20px !important; 
+    height: 20px !important; 
+    flex-shrink: 0 !important; 
+}
+
+/* ============================================================
+   2. DESKTOP ADMIN ARCHITECTURE (SIDEBAR + MAIN CONTENT)
+   ============================================================ */
+.admin-layout {
+    display: flex !important;
+    flex-direction: row !important;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: var(--bg-tech);
+}
+
+.admin-sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border);
+    display: flex !important;
+    flex-direction: column;
+    z-index: 20;
+}
+
+.admin-nav {
+    flex: 1;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+}
+
+.admin-nav a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: var(--slate-600);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    border-radius: 10px;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.admin-nav a:hover { background: var(--slate-100); color: var(--slate-900); }
+.admin-nav a.active { background: #eff6ff; color: var(--primary); }
+
+.sidebar-footer { padding: 16px; border-top: 1px solid var(--border-subtle); }
+.sidebar-footer .btn-text {
+    width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 12px;
+    background: transparent; border: none; padding: 12px 16px; border-radius: 10px;
+    color: var(--danger) !important; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s;
+}
+.sidebar-footer .btn-text:hover { background: #fee2e2; }
+
+.admin-main {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+}
+
+.admin-topbar {
+    height: 80px;
+    padding: 0 32px;
+    display: flex !important;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-subtle);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#view-title { font-size: 22px; font-weight: 800; color: var(--slate-900); margin: 0; letter-spacing: -0.02em; }
+
+.mobile-topbar-logo {
+    height: 46px !important; /* Significantly increased height to fill the header */
+    width: auto !important;
+    max-width: 180px !important; /* Expanded max-width so the text part of the logo has room to breathe */
+    margin-right: 14px;
+    object-fit: contain !important;
+    flex-shrink: 0;
+}
+
+.admin-content-area {
+    padding: 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* ============================================================
    STRICT BRAND LOGO & SVG DIMENSION LOCK (PREVENTS BLOW-UPS)
    ============================================================ */
 .sidebar-brand {
     display: flex;
     align-items: center;
-    padding: 20px 24px;
-    height: 72px;
+    justify-content: center; /* Forces perfect centering */
+    padding: 0 16px; /* Removes vertical padding dead-space */
+    height: 80px;
     border-bottom: 1px solid var(--border-subtle);
 }
 
-.sidebar-brand img,
-.auth-card img,
-.preloader-logo {
-    object-fit: contain !important;
-    display: block !important;
-}
-
-/* Desktop Sidebar Logo */
-.sidebar-brand .desktop-only {
-    width: 130px !important;
-    height: 32px !important;
-    max-width: 130px !important;
-    max-height: 32px !important;
+/* Sidebar Main Logo */
+.sidebar-brand .admin-main-logo { 
+    width: auto !important; 
+    height: 58px !important; /* Maximizes vertical height */
+    max-width: 100% !important;
+    object-fit: contain !important; 
+    margin: 0 auto; 
 }
 
 /* Mobile Sidebar Logo */

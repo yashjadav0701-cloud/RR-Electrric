@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rr-electrric-core-v6';
+const CACHE_NAME = 'rr-electrric-core-v7';
 const IMAGE_CACHE = 'rr-images-v2';
 
 const SAFE_ASSETS = [
@@ -81,8 +81,8 @@ self.addEventListener('push', function(event) {
             const data = event.data.json();
             const options = {
                 body: data.body,
-                icon: '/assets/icon.png',
-                badge: '/assets/logo-short.svg',
+                icon: '/assets/icon.png', // The large, full-color logo on the right
+                badge: '/assets/badge.png', // The small, monochrome silhouette on the left
                 vibrate: [100, 50, 100],
                 data: { url: data.url || '/admin.html' }
             };
