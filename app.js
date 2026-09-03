@@ -168,9 +168,15 @@
                 ];
                 
                 for(let i = startIndex; i < startIndex + count; i++) {
-                    const isShelf = (i % 2 !== 0); 
-                    const layoutType = isShelf ? shelfTypes[Math.floor(Math.random() * shelfTypes.length)] : 'grid';
-                    const limit = isShelf ? (Math.floor(Math.random() * 6) + 6) : ([8, 10, 12, 14, 16][Math.floor(Math.random() * 5)]); 
+                    // STRICT RHYTHM: Perfectly alternates between Grid and an Interruption (Shelf or List) every cycle
+                    const isInterruption = (i % 2 !== 0); // Odd indices are shelves/lists, Even indices are grids
+                    const layoutType = isInterruption ? shelfTypes[Math.floor(Math.random() * shelfTypes.length)] : 'grid';
+                    
+                    // DYNAMIC LIMITS: Grids pull 4, 6, or 8 items (Frequent interruptions!). Lists pull 3-5. Shelves pull 6-11.
+                    let limit = 8;
+                    if (layoutType === 'list') limit = [3, 4, 5][Math.floor(Math.random() * 3)];
+                    else if (isInterruption) limit = Math.floor(Math.random() * 6) + 6;
+                    else limit = [4, 6, 8][Math.floor(Math.random() * 3)];
                     
                     let title = '';
                     let keyword = '';
@@ -793,7 +799,7 @@
 
         // --- RENDERERS ---
 
-        generateProductCardHTML: function(p, size = 'standard', isPriority = false) {
+        generateProductCardHTML: function(p, size = 'standard', layout = 'grid', isPriority = false) {
             const isAvailable = p.is_active !== false;
             const img = p.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
             const loadingAttr = isPriority ? 'loading="eager" fetchpriority="high"' : 'loading="lazy" decoding="async"';
@@ -833,7 +839,7 @@
                 : `<button type="button" class="btn-add-standard disabled-add" disabled><span class="btn-text-content">Sold Out</span></button>`;
 
             return `
-                <a href="javascript:void(0)" onclick="Store.navigate('product', '${p.id}')" class="store-product-card size-${size} ${!isAvailable ? 'is-unavailable' : ''}">
+                <a href="javascript:void(0)" onclick="Store.navigate('product', '${p.id}')" class="store-product-card size-${size} layout-${layout} ${!isAvailable ? 'is-unavailable' : ''}">
                     <div class="img-wrapper">
                         ${statusHtml}
                         <img src="${img}" alt="${p.name}" ${loadingAttr}>
@@ -965,16 +971,18 @@
             // Directly interpret the strict engine types into precise CSS configurations
             let wrapperClass = 'products-grid-2col';
             let cardSize = 'standard';
+            let cardLayout = 'grid';
 
             if (sec.type === 'shelf-small') { wrapperClass = 'shelf-track'; cardSize = 'small'; }
             else if (sec.type === 'shelf-standard') { wrapperClass = 'shelf-track'; cardSize = 'standard'; }
             else if (sec.type === 'shelf-large') { wrapperClass = 'shelf-track'; cardSize = 'large'; }
+            else if (sec.type === 'list') { wrapperClass = 'list-track'; cardSize = 'standard'; cardLayout = 'list'; }
 
             return `
                 <div class="storefront-section" id="section-${sec.id}">
                     ${headerHtml}
                     <div class="${wrapperClass}">
-                        ${sec.products.map((p, i) => this.generateProductCardHTML(p, cardSize, isPriority && i < 4)).join('')}
+                        ${sec.products.map((p, i) => this.generateProductCardHTML(p, cardSize, cardLayout, isPriority && i < 4)).join('')}
                     </div>
                 </div>
             `;
@@ -1499,7 +1507,7 @@
                         <div class="cross-sell-container">
                             <div class="cross-sell-title">Frequently Bought Together</div>
                             <div class="shelf-track" style="margin-top: 8px;">
-                                ${recs.map(acc => this.generateProductCardHTML(acc, 'small', false)).join('')}
+                                ${recs.map(acc => this.generateProductCardHTML(acc, 'small', 'grid', false)).join('')}
                             </div>
                         </div>
                     `;
