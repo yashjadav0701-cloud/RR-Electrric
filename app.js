@@ -1186,10 +1186,12 @@
             let relatedHtml = '';
             
             if (pdpSections.length > 0) {
-                // Rendered as standard sections natively inside the existing layout
+                // Rendered inside .container to match main page margin exactly
                 relatedHtml = `
-                    <div class="storefront-sections-wrapper" style="margin-top: 32px; padding-top: 32px; border-top: 1px dashed var(--border-subtle); padding-bottom: 40px;">
-                        ${pdpSections.map(sec => this.renderSingleSectionHTML(sec, false)).join('')}
+                    <div class="container" style="margin: 32px auto 0 auto; padding-top: 32px; border-top: 1px dashed var(--border-subtle); padding-bottom: 40px;">
+                        <div class="storefront-sections-wrapper">
+                            ${pdpSections.map(sec => this.renderSingleSectionHTML(sec, false)).join('')}
+                        </div>
                     </div>
                 `;
             }
