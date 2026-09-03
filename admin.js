@@ -1,6 +1,9 @@
 (function() {
     'use strict';
 
+    // MUST MATCH YOUR GENERATED PUBLIC KEY (npx web-push generate-vapid-keys)
+    const VAPID_PUBLIC_KEY = 'BLD4-vOI6rWbwlHiJYYYJZB_lJkRwe_Au9zQVC3_FQzCCDaq-JmqZhDClcGa0O0pUTp5bQDewyUCbXKJ232I4fw'; 
+
     // --- INVOICE GENERATOR CONFIGURATION ---
     const InvoiceSettings = {
         storeName: "RR ELECTRRIC",
@@ -905,15 +908,16 @@
                 document.getElementById('btn-delete-vip').addEventListener('click', () => this.deleteVip());
                 
                 // Coupons
-                document.getElementById('btn-add-coupon').addEventListener('click', () => this.openCouponModal());
-                document.getElementById('btn-close-coupon-modal').addEventListener('click', () => document.getElementById('coupon-modal').classList.add('hidden'));
-                document.getElementById('coupon-form').addEventListener('submit', (e) => this.saveCoupon(e));
-                document.getElementById('btn-delete-coupon').addEventListener('click', () => this.deleteCoupon());
-            }
+                        document.getElementById('btn-add-coupon').addEventListener('click', () => this.openCouponModal());
+                        document.getElementById('btn-close-coupon-modal').addEventListener('click', () => document.getElementById('coupon-modal').classList.add('hidden'));
+                        document.getElementById('coupon-form').addEventListener('submit', (e) => this.saveCoupon(e));
+                        document.getElementById('btn-delete-coupon').addEventListener('click', () => this.deleteCoupon());
+                    }
 
             await this.loadConfigurations();
             await this.loadVipTiers();
             await this.loadCoupons();
+            await this.initPushEngine();
         },
 
         loadConfigurations: async function() {
@@ -1312,6 +1316,149 @@
                 btn.textContent = 'Save All Configurations';
                 // Hide success message after 3 seconds
                 setTimeout(() => { if(msgEl.style.color === 'var(--success)') msgEl.classList.add('hidden'); }, 3000);
+            }
+        },
+
+        // --- ADMIN PUSH NOTIFICATION ENGINE ---
+        initPushEngine: async function() {
+            const container = document.getElementById('push-status-container');
+            if (!container) return;
+
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                container.innerHTML = `<div style="color: var(--danger); font-size: 13px; font-weight: 600;">⚠️ Push notifications are not supported on this browser/OS.</div>`;
+                return;
+            }
+
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+                
+                if (subscription) {
+                    const endpoint = subscription.endpoint;
+                    const { data: dbSub } = await supabase.from('admin_push_subscriptions').select('id').eq('endpoint', endpoint).single();
+                    
+                    if (dbSub) {
+                        this.renderPushActive(subscription.endpoint);
+                    } else {
+                        await subscription.unsubscribe();
+                        this.renderPushInactive();
+                    }
+                } else {
+                    this.renderPushInactive();
+                }
+            } catch (err) {
+                container.innerHTML = `<div style="color: var(--danger); font-size: 13px;">Error checking push status: ${err.message}</div>`;
+            }
+        },
+
+        renderPushInactive: function() {
+            const container = document.getElementById('push-status-container');
+            container.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--slate-300);"></div>
+                    <strong style="color: var(--slate-600); font-size: 14px;">Notifications Disabled</strong>
+                </div>
+                <button type="button" class="btn-primary" onclick="AdminApp.enablePush()" style="width: 100%;">Enable on this Device</button>
+            `;
+        },
+
+        renderPushActive: function(endpoint) {
+            const container = document.getElementById('push-status-container');
+            
+            const ua = navigator.userAgent;
+            let os = "Unknown OS"; let browser = "Browser";
+            if (/android/i.test(ua)) os = "Android";
+            else if (/iphone|ipad|ipod/i.test(ua)) os = "iOS";
+            else if (/windows/i.test(ua)) os = "Windows";
+            else if (/mac/i.test(ua)) os = "Mac";
+            
+            if (/chrome|crios/i.test(ua)) browser = "Chrome";
+            else if (/safari/i.test(ua)) browser = "Safari";
+
+            container.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--success); box-shadow: 0 0 6px var(--success);"></div>
+                    <strong style="color: var(--success); font-size: 14px;">Notifications Enabled</strong>
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+                    This Device: <strong>${os} • ${browser}</strong>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-secondary" onclick="AdminApp.testPush('${endpoint}')" style="flex: 2;">Test Alert</button>
+                    <button type="button" class="btn-danger" onclick="AdminApp.disablePush()" style="flex: 1; padding: 0;">Disable</button>
+                </div>
+            `;
+        },
+
+        enablePush: async function() {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    throw new Error("Permission denied by user. Check browser settings.");
+                }
+
+                const registration = await navigator.serviceWorker.ready;
+                
+                const urlBase64ToUint8Array = (base64String) => {
+                    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+                    const rawData = window.atob(base64);
+                    const outputArray = new Uint8Array(rawData.length);
+                    for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
+                    return outputArray;
+                };
+
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                });
+
+                const { data: { user } } = await supabase.auth.getUser();
+
+                const { error } = await supabase.from('admin_push_subscriptions').insert({
+                    user_id: user.id,
+                    endpoint: subscription.endpoint,
+                    auth_key: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth')))),
+                    p256dh_key: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))),
+                    device_info: navigator.userAgent
+                });
+
+                if (error) throw error;
+                this.renderPushActive(subscription.endpoint);
+                CustomUI.alert("Push notifications enabled successfully!", "Success");
+
+            } catch (err) {
+                ErrorHandler.show(err, "Push Setup Failed");
+            }
+        },
+
+        disablePush: async function() {
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+                if (subscription) {
+                    await supabase.from('admin_push_subscriptions').delete().eq('endpoint', subscription.endpoint);
+                    await subscription.unsubscribe();
+                }
+                this.renderPushInactive();
+            } catch (err) {
+                ErrorHandler.show(err, "Failed to disable");
+            }
+        },
+
+        testPush: async function(endpoint) {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-test-push`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                    body: JSON.stringify({ endpoint })
+                });
+                
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.error);
+            } catch (err) {
+                ErrorHandler.show(err, "Test Failed");
             }
         },
 

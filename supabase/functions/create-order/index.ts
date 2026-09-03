@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3"
+import webpush from "npm:web-push@3.6.7"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -60,6 +61,8 @@ serve(async (req) => {
         product_name_snapshot: dbProd.name,
         quantity: item.qty,
         unit_price_snapshot: unitPrice,
+        mrp_price_snapshot: Number(dbProd.mrp_price || unitPrice),
+        warranty_snapshot: dbProd.warranty || null,
         total_price: unitPrice * item.qty,
         is_pack: item.isPack || false,
         pack_qty: isPack ? item.packQty : null,
@@ -192,12 +195,48 @@ serve(async (req) => {
         await supabase.from('coupons').update({ used_count: (cData?.used_count || 0) + 1 }).eq('id', couponId)
     }
 
+    // ==========================================
+    // SERVER-SIDE PUSH NOTIFICATION TRIGGER
+    // ==========================================
+    try {
+        const { data: subs } = await supabase.from('admin_push_subscriptions').select('*');
+        
+        if (subs && subs.length > 0) {
+            webpush.setVapidDetails(
+                Deno.env.get('VAPID_SUBJECT') ?? 'mailto:admin@rrelectrric.com',
+                Deno.env.get('VAPID_PUBLIC_KEY') ?? '',
+                Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
+            );
+
+            const payload = JSON.stringify({
+                title: '🔔 New Order Received',
+                body: `Order #${orderRef}\n₹${finalTotal}`,
+                url: `/admin.html#orders`
+            });
+
+            const pushPromises = subs.map((sub: any) => 
+                webpush.sendNotification({
+                    endpoint: sub.endpoint,
+                    keys: { auth: sub.auth_key, p256dh: sub.p256dh_key }
+                }, payload).catch(async (err: any) => {
+                    if (err.statusCode === 410 || err.statusCode === 404) {
+                        await supabase.from('admin_push_subscriptions').delete().eq('id', sub.id);
+                    }
+                })
+            );
+            await Promise.allSettled(pushPromises);
+        }
+    } catch (pushErr) {
+        console.error('Push notification execution failed (Isolated):', pushErr);
+    }
+    // ==========================================
+
     return new Response(
         JSON.stringify({ order_reference: orderRef, final_total: finalTotal }), 
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
-  } catch (err) {
+  } catch (err: any) {
     return new Response(
         JSON.stringify({ error: err.message }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
