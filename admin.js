@@ -856,12 +856,89 @@
         toggleOrderDetails: function(orderId) {
             const details = document.getElementById(`order-details-${orderId}`);
             const icon = document.getElementById(`icon-toggle-${orderId}`);
-            if (details.classList.contains('hidden')) {
+            const card = details.closest('.admin-order-card');
+            
+            const isOpening = details.classList.contains('hidden');
+
+            // 1. Close all currently open orders (Smart Accordion Behavior)
+            const allDetails = document.querySelectorAll('[id^="order-details-"]:not(.hidden)');
+            allDetails.forEach(el => {
+                if (el.id !== `order-details-${orderId}`) {
+                    el.classList.add('hidden');
+                    const otherId = el.id.replace('order-details-', '');
+                    const otherIcon = document.getElementById(`icon-toggle-${otherId}`);
+                    if (otherIcon) otherIcon.style.transform = 'rotate(0deg)';
+                    
+                    // Remove the premium focus styling from closed cards
+                    const otherCard = el.closest('.admin-order-card');
+                    if (otherCard) {
+                        otherCard.style.borderColor = '';
+                        otherCard.style.boxShadow = '';
+                    }
+                }
+            });
+
+            if (isOpening) {
+                // Open the target order
                 details.classList.remove('hidden');
                 icon.style.transform = 'rotate(180deg)';
+                
+                // 2. Add Premium 3D Focus Highlight (Cyan/Blue Glow from your image)
+                if (card) {
+                    card.style.borderColor = '#38bdf8'; 
+                    card.style.boxShadow = '0 0 0 3px rgba(56, 189, 248, 0.15), 0 20px 40px -10px rgba(15, 23, 42, 0.15)';
+                    card.style.transition = 'all 0.4s ease';
+                }
+                
+                // 3. Super Smooth & Slow Scroll with Perfect Top Margin
+                setTimeout(() => {
+                    if (card) {
+                        // Locate the scrolling container and the sticky topbar
+                        const scroller = document.querySelector('.admin-main');
+                        const topbar = document.querySelector('.admin-topbar');
+                        
+                        const topbarHeight = topbar ? topbar.offsetHeight : 0; 
+                        const visualMargin = 12; // Perfectly leaves a 16px breathing gap above the card
+                        
+                        const cardRect = card.getBoundingClientRect();
+                        const scrollerRect = scroller.getBoundingClientRect();
+                        
+                        // Math: Target position aligns the card with the required visual margin under the topbar
+                        const startScroll = scroller.scrollTop;
+                        const targetScroll = startScroll + (cardRect.top - scrollerRect.top) - topbarHeight - visualMargin;
+                        const distance = targetScroll - startScroll;
+                        
+                        const duration = 750; // 750ms for a highly deliberate, luxurious slow glide
+                        let startTime = null;
+                        
+                        function animation(currentTime) {
+                            if (startTime === null) startTime = currentTime;
+                            const timeElapsed = currentTime - startTime;
+                            const progress = Math.min(timeElapsed / duration, 1);
+                            
+                            // EaseOutQuart function: Starts fast, then slows down beautifully at the end
+                            const ease = 1 - Math.pow(1 - progress, 4);
+                            
+                            scroller.scrollTo(0, startScroll + (distance * ease));
+                            
+                            if (timeElapsed < duration) {
+                                requestAnimationFrame(animation);
+                            }
+                        }
+                        
+                        requestAnimationFrame(animation);
+                    }
+                }, 60); // 60ms delay ensures the accordion DOM has fully expanded before calculating height bounds
             } else {
+                // Close the target order manually
                 details.classList.add('hidden');
                 icon.style.transform = 'rotate(0deg)';
+                
+                // Remove highlight when manually closing
+                if (card) {
+                    card.style.borderColor = '';
+                    card.style.boxShadow = '';
+                }
             }
         },
 
@@ -2078,7 +2155,7 @@
                                         }
                                     </div>
                                 </div>
-                                <div style="display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; flex-shrink: 0; width: 32px;">
+                                <div style="display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; flex-shrink: 0; width: auto; min-width: 44px;">
                                     <span class="status-badge ${p.is_active ? 'status-active' : 'status-inactive'}" style="padding: 2px 6px; font-size: 9px; border-radius: 4px; margin-bottom: 8px; letter-spacing: 0;">
                                         ${p.is_active ? 'ON' : 'OFF'}
                                     </span>
