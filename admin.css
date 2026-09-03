@@ -168,8 +168,9 @@ svg { max-width: 100%; height: auto; }
 /* Global Preloader Logo */
 .preloader-logo {
     width: 160px !important;
-    height: 40px !important;
+    height: auto !important; /* Restored natural height to match storefront */
     max-width: 80vw !important;
+    object-fit: contain !important;
 }
 
 /* Fix mobile filter inputs and toolbars from forcing side-scrolling */
@@ -1473,5 +1474,18 @@ body {
         left: 0 !important;
         right: auto !important;
         transform: none !important;
+    }
+    
+    /* Force Topbar Layout: Logo on Left, Title on Right */
+    .admin-topbar {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important; /* Pushes the title to the far right */
+        padding: 16px 20px !important;
+    }
+    
+    #view-title {
+        text-align: right !important;
+        margin: 0 !important;
     }
 }
