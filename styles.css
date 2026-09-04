@@ -1430,7 +1430,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     overflow: hidden; 
 }
 
-@@media (max-width: 768px) {
+@media (max-width: 768px) {
     .hero-3d-cat-track {
         display: flex;
         flex-wrap: nowrap;
