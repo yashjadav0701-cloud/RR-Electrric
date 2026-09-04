@@ -3904,27 +3904,25 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 /* ============================================================
-   3. FLAWLESS SCROLL PHYSICS (APPLE/AMAZON PREMIUM FEEL)
+   3. FAST & FREE-FLOWING SCROLL PHYSICS
    ============================================================ */
-/* Prevents "scroll chaining" where swiping accidentally pulls the whole page back/forward. 
-   Enables native iOS momentum scrolling, and perfectly snaps each card to the edge so they never rest halfway. */
+/* Unlocked momentum scrolling. Removed 'mandatory' snapping which acts like 
+   a brake and forces stops. touch-action: pan-x ensures instant response. */
 .category-discovery-row,
 .products-grid.horizontal-scroll,
 .ribbon-track,
 .cross-sell-grid,
 .variant-card-list,
-.variant-pill-list {
+.variant-pill-list,
+.shelf-track,
+.hero-3d-cat-track {
     overscroll-behavior-x: contain !important;
     -webkit-overflow-scrolling: touch !important;
-    scroll-snap-type: x mandatory !important;
+    scroll-snap-type: none !important; /* Kills the sticky 'stopping' feeling */
+    touch-action: pan-x !important; /* Instant horizontal tracking */
     will-change: scroll-position;
     scrollbar-width: none !important; 
     -ms-overflow-style: none !important;
-}
-
-/* Relax pill lists so they don't force rigid snapping on tiny UI elements */
-.variant-pill-list {
-    scroll-snap-type: x proximity !important;
 }
 
 .category-discovery-row::-webkit-scrollbar,
@@ -3932,18 +3930,22 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .ribbon-track::-webkit-scrollbar,
 .cross-sell-grid::-webkit-scrollbar,
 .variant-card-list::-webkit-scrollbar,
-.variant-pill-list::-webkit-scrollbar {
+.variant-pill-list::-webkit-scrollbar,
+.shelf-track::-webkit-scrollbar,
+.hero-3d-cat-track::-webkit-scrollbar {
     display: none !important;
 }
 
-/* Enforce strict magnetic snap targets on all child items */
+/* Remove strict snap targets so scrolling can fly freely */
 .category-discovery-row > *,
 .products-grid.horizontal-scroll > *,
 .ribbon-track > *,
 .cross-sell-grid > *,
 .variant-card-list > *,
-.variant-pill-list > * {
-    scroll-snap-align: start !important;
+.variant-pill-list > *,
+.shelf-track > *,
+.hero-3d-cat-track > * {
+    scroll-snap-align: none !important;
 }
 
 /* Smooth vertical momentum scrolling for internal scroll areas */
@@ -3951,6 +3953,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .search-results {
     overscroll-behavior-y: contain !important;
     -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
 }
 
 /* 4. OPTIMIZE THE ELECTRIC ANIMATIONS */
