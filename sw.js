@@ -84,7 +84,7 @@ self.addEventListener('push', function(event) {
             const options = {
                 body: data.body,
                 icon: data.icon || '/assets/icon.png', // Large brand identifier on the left
-                badge: '/assets/badge.png', // Small monochrome status bar silhouette
+                badge: '/assets/icon.png', // Fixed 404 error
                 image: data.image || null, // Massive edge-to-edge promotional image
                 vibrate: [200, 100, 200, 100, 200], // Premium haptic rhythm
                 actions: data.actions || [], // Interactive buttons (e.g. [🛒 Checkout])

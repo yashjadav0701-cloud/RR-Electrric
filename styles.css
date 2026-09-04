@@ -3903,23 +3903,54 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     /* Native scrolling is vastly superior here */
 }
 
-/* 3. FLAWLESS HORIZONTAL SCROLL PHYSICS */
-/* Prevents the annoying "scroll chaining" where swiping left/right accidentally 
-   pulls the whole page up or down. Enables native iOS momentum scrolling. */
+/* ============================================================
+   3. FLAWLESS SCROLL PHYSICS (APPLE/AMAZON PREMIUM FEEL)
+   ============================================================ */
+/* Prevents "scroll chaining" where swiping accidentally pulls the whole page back/forward. 
+   Enables native iOS momentum scrolling, and perfectly snaps each card to the edge so they never rest halfway. */
 .category-discovery-row,
 .products-grid.horizontal-scroll,
-.ribbon-track {
-    overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch;
+.ribbon-track,
+.cross-sell-grid,
+.variant-card-list,
+.variant-pill-list {
+    overscroll-behavior-x: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x mandatory !important;
     will-change: scroll-position;
-    /* Hide scrollbars for a cleaner look while keeping the smooth scroll */
-    scrollbar-width: none; 
-    -ms-overflow-style: none;
+    scrollbar-width: none !important; 
+    -ms-overflow-style: none !important;
 }
+
+/* Relax pill lists so they don't force rigid snapping on tiny UI elements */
+.variant-pill-list {
+    scroll-snap-type: x proximity !important;
+}
+
 .category-discovery-row::-webkit-scrollbar,
 .products-grid.horizontal-scroll::-webkit-scrollbar,
-.ribbon-track::-webkit-scrollbar {
-    display: none;
+.ribbon-track::-webkit-scrollbar,
+.cross-sell-grid::-webkit-scrollbar,
+.variant-card-list::-webkit-scrollbar,
+.variant-pill-list::-webkit-scrollbar {
+    display: none !important;
+}
+
+/* Enforce strict magnetic snap targets on all child items */
+.category-discovery-row > *,
+.products-grid.horizontal-scroll > *,
+.ribbon-track > *,
+.cross-sell-grid > *,
+.variant-card-list > *,
+.variant-pill-list > * {
+    scroll-snap-align: start !important;
+}
+
+/* Smooth vertical momentum scrolling for internal scroll areas */
+.cart-items-scroll,
+.search-results {
+    overscroll-behavior-y: contain !important;
+    -webkit-overflow-scrolling: touch !important;
 }
 
 /* 4. OPTIMIZE THE ELECTRIC ANIMATIONS */

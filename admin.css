@@ -1663,3 +1663,26 @@ td[style*="text-align: right;"] button:active,
     transform: translateY(-2px) scale(1.05) !important; border-color: var(--primary) !important; color: var(--primary) !important;
     box-shadow: 0 8px 16px -4px rgba(2, 132, 199, 0.25), inset 0 1.5px 1px #fff !important;
 }
+
+/* ============================================================
+   7. FLAWLESS SCROLL PHYSICS (APPLE/AMAZON PREMIUM FEEL)
+   ============================================================ */
+/* Guarantees buttery-smooth momentum scrolling on iOS and prevents 
+   internal scrollbars from chaining and pulling the whole app shell */
+.admin-main,
+.admin-nav,
+.modal-form,
+.inventory-table-container,
+.table-responsive,
+.linked-products-container,
+.custom-select-options,
+.orders-layout {
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+}
+
+/* Ensure the horizontal ribbon tracks on mobile admin also scroll smoothly */
+.action-btn-row, 
+.action-buttons-stack {
+    -webkit-overflow-scrolling: touch !important;
+}

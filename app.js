@@ -2604,7 +2604,7 @@
                     await registration.showNotification("Welcome to RR ELECTRRIC! ⚡", {
                         body: "Your VIP access is confirmed. Get ready for exclusive deals, instant price drops, and lightning-fast Nadiad delivery on top electrical brands.",
                         icon: "/assets/icon.png",
-                        badge: "/assets/badge.png",
+                        badge: "/assets/icon.png", // Fixed 404 error
                         vibrate: [200, 100, 200, 100, 200], // Premium haptic rhythm
                         data: { url: "/", isAdmin: false },
                         actions: [{ action: "home", title: "Start Shopping" }]
