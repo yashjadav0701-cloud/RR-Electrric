@@ -322,6 +322,7 @@
             this._initStartTime = Date.now();
             document.getElementById('year').textContent = new Date().getFullYear();
             this.initPWA();
+            this.CustomerPushEngine.init(); // Boot the proactive notification engine
             this.bindEvents();
             this.loadCart();
             this.loadCustomerInfo();
@@ -1710,6 +1711,8 @@
             if (document.getElementById('view-cart').classList.contains('hidden') === false) {
                 this.renderCart();
             }
+            // Silently sync abandoned cart data to server
+            if (this.CustomerPushEngine) this.CustomerPushEngine.syncUserSession();
         },
 
         updateCartBadge: function() {
@@ -2511,6 +2514,121 @@
             
             // Open WhatsApp in a new tab/app window
             window.open(waUrl, '_blank');
+        },
+
+        // --- PROACTIVE ENGAGEMENT ENGINE ---
+        CustomerPushEngine: {
+            VAPID_PUBLIC_KEY: 'BLD4-vOI6rWbwlHiJYYYJZB_lJkRwe_Au9zQVC3_FQzCCDaq-JmqZhDClcGa0O0pUTp5bQDewyUCbXKJ232I4fw',
+            
+            init: async function() {
+                if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+                
+                const bellBtn = document.getElementById('push-opt-in-trigger');
+                const softPrompt = document.getElementById('push-soft-prompt');
+
+                const permission = Notification.permission;
+                
+                // If they haven't decided yet
+                if (permission === 'default') {
+                    // 1. Show the top right Bell icon just in case
+                    if (bellBtn) {
+                        bellBtn.classList.remove('hidden');
+                        bellBtn.addEventListener('click', () => this.subscribeUser());
+                    }
+                    
+                    // 2. Automatically slide up the aggressive 3D Soft Prompt
+                    if (softPrompt) {
+                        // Delay 0.5 seconds so it doesn't fight the page load animation
+                        setTimeout(() => softPrompt.classList.remove('hidden'), 500);
+                        
+                        // Handle "Allow"
+                        document.getElementById('btn-push-allow')?.addEventListener('click', () => {
+                            softPrompt.classList.add('hidden');
+                            this.subscribeUser();
+                        });
+                        
+                        // Handle "Maybe Later"
+                        document.getElementById('btn-push-later')?.addEventListener('click', () => {
+                            softPrompt.classList.add('hidden');
+                            // Notice: We intentionally DO NOT save this choice to local storage.
+                            // This guarantees the prompt will appear again on the next page refresh/visit!
+                        });
+                    }
+                } else if (permission === 'granted') {
+                    if (bellBtn) bellBtn.classList.add('hidden');
+                    if (softPrompt) softPrompt.classList.add('hidden');
+                    this.syncUserSession();
+                } else {
+                    // They clicked the system-level "Block/Deny" previously
+                    if (bellBtn) bellBtn.classList.add('hidden');
+                    if (softPrompt) softPrompt.classList.add('hidden');
+                }
+            },
+
+            subscribeUser: async function() {
+                const bellBtn = document.getElementById('push-opt-in-trigger');
+                bellBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>';
+                
+                try {
+                    const permission = await Notification.requestPermission();
+                    if (permission !== 'granted') throw new Error("Notifications disabled.");
+
+                    const registration = await navigator.serviceWorker.ready;
+                    const urlBase64ToUint8Array = (base64String) => {
+                        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+                        const rawData = window.atob(base64);
+                        const outputArray = new Uint8Array(rawData.length);
+                        for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
+                        return outputArray;
+                    };
+
+                    const subscription = await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(this.VAPID_PUBLIC_KEY)
+                    });
+
+                    const payload = {
+                        endpoint: subscription.endpoint,
+                        auth_key: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth')))),
+                        p256dh_key: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))),
+                        cart_data: Store.state.cart,
+                        last_active: new Date().toISOString()
+                    };
+
+                    await supabase.from('user_push_subscriptions').upsert(payload, { onConflict: 'endpoint' });
+
+                    if (bellBtn) bellBtn.classList.add('hidden');
+                    
+                    // 🚀 FIRE THE INSTANT NATIVE MARKETING NOTIFICATION
+                    await registration.showNotification("Welcome to RR ELECTRRIC! ⚡", {
+                        body: "Your VIP access is confirmed. Get ready for exclusive deals, instant price drops, and lightning-fast Nadiad delivery on top electrical brands.",
+                        icon: "/assets/icon.png",
+                        badge: "/assets/badge.png",
+                        vibrate: [200, 100, 200, 100, 200], // Premium haptic rhythm
+                        data: { url: "/", isAdmin: false },
+                        actions: [{ action: "home", title: "Start Shopping" }]
+                    });
+
+                } catch (err) {
+                    if (bellBtn) bellBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><line x1="12" y1="17" x2="12" y2="17.01"></line></svg>';
+                }
+            },
+
+            syncUserSession: async function() {
+                try {
+                    const registration = await navigator.serviceWorker.ready;
+                    const subscription = await registration.pushManager.getSubscription();
+                    if (subscription) {
+                        await supabase.from('user_push_subscriptions').update({
+                            cart_data: Store.state.cart,
+                            last_active: new Date().toISOString()
+                        }).eq('endpoint', subscription.endpoint);
+                    }
+                } catch (e) {
+                    // Fail silently, background process
+                }
+            }
         }
     };
     

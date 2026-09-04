@@ -27,8 +27,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="/styles.css?v=6.4">
-    <link rel="icon" type="image/svg+xml" href="/assets/logo-short.svg?v=6.4">
+    <link rel="stylesheet" href="/styles.css?v=6.5">
+    <link rel="icon" type="image/svg+xml" href="/assets/logo-short.svg?v=6.5">
     
     <!-- Preconnect to Supabase for faster API handshakes -->
     <link rel="preconnect" href="https://ycckkswajajrqobrohcx.supabase.co" crossorigin>
@@ -39,13 +39,13 @@
 <body>
     <!-- Global Preloader -->
     <div id="global-preloader" class="global-preloader">
-        <img src="/assets/logo-full.svg?v=6.4" alt="RR" class="preloader-logo">
+        <img src="/assets/logo-full.svg?v=6.5" alt="RR" class="preloader-logo">
     </div>
 
     <header class="site-header">
         <div class="container header-inner">
             <a href="javascript:void(0)" onclick="Store.navigate('home')" class="brand-link" aria-label="RR ELECTRRIC Home" style="display: flex; align-items: center;">
-                <img src="/assets/logo-full.svg?v=6.4" alt="RR ELECTRRIC" style="height: 44px; width: auto; max-width: 180px; object-fit: contain;">
+                <img src="/assets/logo-full.svg?v=6.5" alt="RR ELECTRRIC" style="height: 44px; width: auto; max-width: 180px; object-fit: contain;">
             </a>
             
             <!-- Desktop Header Navigation Links -->
@@ -57,6 +57,9 @@
             <div class="header-actions">
                 <button class="icon-btn search-trigger" aria-label="Search products">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
+                <button class="icon-btn hidden" id="push-opt-in-trigger" aria-label="Enable Notifications">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                 </button>
                 <button class="icon-btn cart-trigger" aria-label="Open cart">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
@@ -204,11 +207,11 @@
                                 <span class="ribbon-line"></span>
                             </div>
                             <div class="ribbon-track">
-                                <img src="/assets/rr.svg?v=6.4" alt="RR Kabel" class="ribbon-logo" onclick="Store.navigate('search', 'RR')" title="Shop RR">
-                                <img src="/assets/havells.svg?v=6.4" alt="Havells" class="ribbon-logo" onclick="Store.navigate('search', 'Havells')" title="Shop Havells">
-                                <img src="/assets/l&t.svg?v=6.4" alt="L&T" class="ribbon-logo" onclick="Store.navigate('search', 'L&T')" title="Shop L&T">
-                                <img src="/assets/anchor.svg?v=6.4" alt="Anchor" class="ribbon-logo" onclick="Store.navigate('search', 'Anchor')" title="Shop Anchor">
-                                <img src="/assets/hi-fi.svg?v=6.4" alt="Hi-Fi" class="ribbon-logo" onclick="Store.navigate('search', 'Hi-Fi')" title="Shop Hi-Fi">
+                                <img src="/assets/rr.svg?v=6.5" alt="RR Kabel" class="ribbon-logo" onclick="Store.navigate('search', 'RR')" title="Shop RR">
+                                <img src="/assets/havells.svg?v=6.5" alt="Havells" class="ribbon-logo" onclick="Store.navigate('search', 'Havells')" title="Shop Havells">
+                                <img src="/assets/l&t.svg?v=6.5" alt="L&T" class="ribbon-logo" onclick="Store.navigate('search', 'L&T')" title="Shop L&T">
+                                <img src="/assets/anchor.svg?v=6.5" alt="Anchor" class="ribbon-logo" onclick="Store.navigate('search', 'Anchor')" title="Shop Anchor">
+                                <img src="/assets/hi-fi.svg?v=6.5" alt="Hi-Fi" class="ribbon-logo" onclick="Store.navigate('search', 'Hi-Fi')" title="Shop Hi-Fi">
                             </div>
                         </div>
                     </div>
@@ -262,11 +265,28 @@
             <!-- PWA Install Banner -->
         <div id="pwa-install-container" class="container hidden" style="padding-top: 0px; padding-bottom: 4px;">
             <div class="pwa-install-card">
-                <img src="/assets/icon.png?v=6.4" class="pwa-install-icon" alt="RR Electrric App Icon">
+                <img src="/assets/icon.png?v=6.5" class="pwa-install-icon" alt="RR Electrric App Icon">
                 <div class="pwa-install-text">
                     <h4>Install RR ELECTRRIC App</h4>
                 </div>
                 <button id="btn-install-pwa" class="btn-primary" style="padding: 0 12px; font-size: 11px; min-width: auto; height: 28px; border-radius: 6px; box-shadow: inset 0 1px 1px rgba(255,255,255,0.3);">Install</button>
+            </div>
+        </div>
+
+        <!-- Premium Push Notification Soft Prompt -->
+        <div id="push-soft-prompt" class="push-prompt-container hidden">
+            <div class="push-prompt-card">
+                <div class="push-prompt-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                </div>
+                <div class="push-prompt-content">
+                    <h3>Never Miss a Deal!</h3>
+                    <p>Enable notifications to get instant alerts for flash sales, price drops, and order updates.</p>
+                </div>
+                <div class="push-prompt-actions">
+                    <button id="btn-push-allow" class="btn-primary">Allow Notifications</button>
+                    <button id="btn-push-later" class="btn-text-muted">Maybe Later</button>
+                </div>
             </div>
         </div>
 
@@ -434,7 +454,7 @@
 
     <footer class="site-footer">
         <div class="container" style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
-            <img src="/assets/logo-full.svg?v=6.4" alt="RR ELECTRRIC" class="footer-logo" style="height: 32px; width: auto; opacity: 0.8;">
+            <img src="/assets/logo-full.svg?v=6.5" alt="RR ELECTRRIC" class="footer-logo" style="height: 32px; width: auto; opacity: 0.8;">
             <p>Fast local delivery for branded electrical products across Nadiad.</p>
             <div id="footer-address-text" style="font-size: 13px; color: var(--text-muted); text-align: center; max-width: 400px; line-height: 1.5; margin-bottom: 4px;"></div>
             <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
@@ -469,6 +489,6 @@
         </a>
     </nav>
 
-    <script src="/app.js?v=6.4"></script>
+    <script src="/app.js?v=6.5"></script>
 </body>
 </html>

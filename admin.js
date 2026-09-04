@@ -989,6 +989,9 @@
                         document.getElementById('btn-close-coupon-modal').addEventListener('click', () => document.getElementById('coupon-modal').classList.add('hidden'));
                         document.getElementById('coupon-form').addEventListener('submit', (e) => this.saveCoupon(e));
                         document.getElementById('btn-delete-coupon').addEventListener('click', () => this.deleteCoupon());
+                        
+                        // Marketing Broadcast
+                        document.getElementById('broadcast-form')?.addEventListener('submit', (e) => this.sendMarketingBroadcast(e));
                     }
 
             await this.loadConfigurations();
@@ -1537,6 +1540,55 @@
                 if (!res.ok) throw new Error(result.error);
             } catch (err) {
                 ErrorHandler.show(err, "Test Failed");
+            }
+        },
+
+        sendMarketingBroadcast: async function(e) {
+            e.preventDefault();
+            if (!await CustomUI.confirm("Are you sure you want to blast this notification to ALL subscribed customers?", "Broadcast Confirmation")) return;
+
+            const btn = document.getElementById('btn-send-broadcast');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = 'Broadcasting...';
+            btn.disabled = true;
+
+            const title = document.getElementById('broadcast-title').value.trim();
+            const body = document.getElementById('broadcast-body').value.trim();
+            const url = document.getElementById('broadcast-url').value.trim() || '/';
+            const image = document.getElementById('broadcast-image').value.trim();
+
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                const res = await fetch(`${SUPABASE_URL}/functions/v1/proactive-engagement`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({
+                        audience: 'all',
+                        notification: {
+                            title: title,
+                            body: body,
+                            url: url,
+                            image: image || null,
+                            icon: '/assets/icon.png',
+                            actions: [{ action: "home", title: "Shop Now" }]
+                        }
+                    })
+                });
+
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.error || 'Failed to dispatch broadcast.');
+
+                CustomUI.alert(`Broadcast successful! Delivered to ${result.sent} active devices. (Cleaned up ${result.cleaned} inactive tokens).`, "Mission Accomplished");
+                document.getElementById('broadcast-form').reset();
+            } catch (err) {
+                ErrorHandler.show(err, "Broadcast Failed");
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
             }
         },
 

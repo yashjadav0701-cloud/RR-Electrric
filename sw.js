@@ -74,18 +74,26 @@ self.addEventListener('fetch', (e) => {
     );
 });
 
-// --- ADMIN PUSH NOTIFICATIONS ---
+// --- UNIFIED RICH PUSH NOTIFICATIONS ---
 self.addEventListener('push', function(event) {
     if (event.data) {
         try {
             const data = event.data.json();
+            
+            // Rich Media Formatting (Amazon / McDonald's Style)
             const options = {
                 body: data.body,
-                icon: '/assets/icon.png', // The large, full-color logo on the right
-                badge: '/assets/badge.png', // The small, monochrome silhouette on the left
-                vibrate: [100, 50, 100],
-                data: { url: data.url || '/admin.html' }
+                icon: data.icon || '/assets/icon.png', // Large brand identifier on the left
+                badge: '/assets/badge.png', // Small monochrome status bar silhouette
+                image: data.image || null, // Massive edge-to-edge promotional image
+                vibrate: [200, 100, 200, 100, 200], // Premium haptic rhythm
+                actions: data.actions || [], // Interactive buttons (e.g. [🛒 Checkout])
+                data: { 
+                    url: data.url || '/',
+                    isAdmin: data.isAdmin || false 
+                }
             };
+            
             event.waitUntil(self.registration.showNotification(data.title, options));
         } catch (e) {
             console.error('Push data parse error:', e);
@@ -95,16 +103,31 @@ self.addEventListener('push', function(event) {
 
 self.addEventListener('notificationclick', function(event) {
     event.notification.close();
-    const urlToTarget = event.notification.data.url;
+    
+    let urlToTarget = event.notification.data.url;
+    const isAdmin = event.notification.data.isAdmin;
+    
+    // Action Button Routing Interception
+    if (event.action) {
+        if (event.action === 'checkout') urlToTarget = '/#checkout';
+        if (event.action === 'cart') urlToTarget = '/#cart';
+        if (event.action === 'home') urlToTarget = '/';
+    }
     
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windowClients) {
+            // Check if we already have the correct app open (Admin vs Storefront)
             for (let i = 0; i < windowClients.length; i++) {
                 const client = windowClients[i];
-                if (client.url.includes('/admin.html') && 'focus' in client) {
+                const isTargetAdmin = urlToTarget.includes('admin.html');
+                const isClientAdmin = client.url.includes('admin.html');
+                
+                // If it's the right domain and app type, focus and navigate smoothly via SPA
+                if (client.url.includes(self.location.origin) && isTargetAdmin === isClientAdmin && 'focus' in client) {
                     return client.focus().then(() => client.navigate(urlToTarget));
                 }
             }
+            // If the app is closed, open a fresh window
             if (clients.openWindow) {
                 return clients.openWindow(urlToTarget);
             }

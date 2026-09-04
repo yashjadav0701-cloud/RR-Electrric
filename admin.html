@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin — RR ELECTRRIC</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" href="styles.css?v=6.4">
-    <link rel="stylesheet" href="admin.css?v=6.4">
-    <link rel="icon" type="image/svg+xml" href="assets/logo-short.svg?v=6.4">
+    <link rel="stylesheet" href="styles.css?v=6.5">
+    <link rel="stylesheet" href="admin.css?v=6.5">
+    <link rel="icon" type="image/svg+xml" href="assets/logo-short.svg?v=6.5">
     
     <!-- Preconnect to Supabase for faster API handshakes -->
     <link rel="preconnect" href="https://ycckkswajajrqobrohcx.supabase.co" crossorigin>
@@ -17,12 +17,12 @@
 <body>
     <!-- Global Preloader -->
     <div id="global-preloader" class="global-preloader">
-        <img src="/assets/logo-full.svg?v=6.4" alt="RR" class="preloader-logo">
+        <img src="/assets/logo-full.svg?v=6.5" alt="RR" class="preloader-logo">
     </div>
 
     <div id="admin-auth" class="admin-auth-container">
         <div class="auth-card">
-            <img src="/assets/logo-full.svg?v=6.4" alt="RR ELECTRRIC" width="200" style="margin-bottom: 24px;">
+            <img src="/assets/logo-full.svg?v=6.5" alt="RR ELECTRRIC" width="200" style="margin-bottom: 24px;">
             <h2>Admin Gateway</h2>
             <p>Authentication required.</p>
             <div id="login-error" class="hidden" style="color: var(--danger); margin-bottom: 16px; font-size: 14px;"></div>
@@ -37,7 +37,7 @@
     <div id="admin-app" class="admin-layout hidden">
         <aside class="admin-sidebar">
             <div class="sidebar-brand">
-                <img src="/assets/logo-full.svg?v=6.4" alt="RR ELECTRRIC" class="admin-main-logo">
+                <img src="/assets/logo-full.svg?v=6.5" alt="RR ELECTRRIC" class="admin-main-logo">
             </div>
             <nav class="admin-nav">
                 <a href="#dashboard" class="active">
@@ -67,7 +67,7 @@
         
         <main class="admin-main">
             <header class="admin-topbar">
-                <img src="assets/logo-full.svg?v=6.4" alt="RR ELECTRRIC" class="mobile-topbar-logo mobile-only">
+                <img src="assets/logo-full.svg?v=6.5" alt="RR ELECTRRIC" class="mobile-topbar-logo mobile-only">
                 <h1 id="view-title">Dashboard</h1>
             </header>
             <div id="admin-content" class="admin-content-area">
@@ -246,13 +246,51 @@
                         <!-- Push Notifications Card -->
                         <div class="config-card">
                             <div class="card-header-flex">
-                                <h3 style="border: none; padding: 0; margin: 0;">Order Notifications</h3>
+                                <h3 style="border: none; padding: 0; margin: 0;">Admin Order Notifications</h3>
                             </div>
-                            <p style="font-size: 13px; color: var(--text-muted); margin-top: 8px; margin-bottom: 16px;">Receive instant push notifications on this device when a new order is placed. The browser must remain running in the background.</p>
+                            <p style="font-size: 13px; color: var(--text-muted); margin-top: 8px; margin-bottom: 16px;">Receive instant push notifications on this device when a new order is placed.</p>
                             
                             <div id="push-status-container" style="background: var(--bg-main); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px;">
                                 <div style="text-align: center; color: var(--text-muted);">Checking device compatibility...</div>
                             </div>
+                        </div>
+
+                        <!-- 🚀 NEW: MARKETING COMMAND CENTER -->
+                        <div class="config-card" style="grid-column: 1 / -1; border-color: var(--primary); box-shadow: 0 4px 20px -5px rgba(2, 132, 199, 0.15);">
+                            <div class="card-header-flex" style="border-bottom-color: rgba(2, 132, 199, 0.2);">
+                                <h3 style="border: none; padding: 0; margin: 0; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    Marketing Broadcast Center
+                                </h3>
+                            </div>
+                            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Blast a rich-media push notification to <b>all subscribed customers</b> simultaneously.</p>
+                            
+                            <form id="broadcast-form" style="display: flex; flex-direction: column; gap: 16px;">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Notification Title *</label>
+                                        <input type="text" id="broadcast-title" placeholder="e.g., ⚡ Weekend Flash Sale!" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Action Link (URL)</label>
+                                        <input type="text" id="broadcast-url" placeholder="e.g., /#categories" value="/">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Message Body *</label>
+                                    <textarea id="broadcast-body" rows="2" placeholder="e.g., Use code INSTA10 for 10% off all lighting fixtures today!" required></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Hero Image URL <small>(Optional - Renders massive edge-to-edge banner)</small></label>
+                                    <input type="url" id="broadcast-image" placeholder="https://ycckk...supabase.co/storage/v1/object/public/...">
+                                </div>
+                                <div style="margin-top: 8px;">
+                                    <button type="submit" id="btn-send-broadcast" class="btn-primary" style="width: auto; padding: 12px 32px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border-color: #6366f1; box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                                        Blast Notification Now
+                                    </button>
+                                </div>
+                            </form>
                         </div>
 
                     </div>
@@ -481,6 +519,6 @@
         </div>
     </div>
 
-    <script src="/admin.js?v=6.4"></script>
+    <script src="/admin.js?v=6.5"></script>
 </body>
 </html>
