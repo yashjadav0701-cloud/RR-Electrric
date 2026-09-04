@@ -1430,20 +1430,19 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     overflow: hidden; 
 }
 
-@media (max-width: 768px) {
+@@media (max-width: 768px) {
     .hero-3d-cat-track {
         display: flex;
         flex-wrap: nowrap;
         overflow-x: auto;
         overflow-y: hidden;
         width: 100%;
-        scroll-snap-type: x mandatory;
         -webkit-overflow-scrolling: touch;
+        touch-action: pan-x;
+        overscroll-behavior-x: auto;
         scrollbar-width: none;
-        /* Increased vertical padding for shadows, and 4px horizontal padding to prevent edge clipping */
         padding: 8px 4px;
-        scroll-padding-left: 4px; /* Ensures snap alignment respects the padding */
-        --category-gap: 10px; /* Uniform, balanced gap across all mobile viewports */
+        --category-gap: 10px;
         gap: var(--category-gap);
     }
 
@@ -1452,8 +1451,6 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     }
 
     .hero-3d-cat-item {
-        /* Bounded fluid sizing: perfectly maintains 4.5 items view while preventing cards 
-           from collapsing on small screens or exploding on large mobile viewports */
         flex: 0 0 clamp(68px, calc((100% - 4 * var(--category-gap)) / 4.5), 84px);
         width: auto;
         min-width: 0;
@@ -1462,23 +1459,9 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
         align-items: center;
         gap: 4px;
         cursor: pointer;
-        scroll-snap-align: start;
         text-decoration: none;
         -webkit-tap-highlight-color: transparent;
         transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    .hero-3d-cat-box {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 1;
-        border-radius: 16px;
-    }
-
-    .hero-3d-cat-item .hero-3d-cat-label {
-        font-size: 10px;
-        min-height: 24px;
-        line-height: 1.2;
     }
 }
 
@@ -3904,7 +3887,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 /* ============================================================
-   3. FAST & FREE-FLOWING SCROLL PHYSICS
+   3. FAST & FREE-FLOWING SCROLL PHYSICS (PURE NATIVE MOMENTUM)
    ============================================================ */
 /* Unlocked momentum scrolling. Removed 'mandatory' snapping which acts like 
    a brake and forces stops. touch-action: pan-x ensures instant response. */
@@ -3916,11 +3899,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .variant-pill-list,
 .shelf-track,
 .hero-3d-cat-track {
-    overscroll-behavior-x: contain !important;
+    scroll-snap-type: none !important; 
+    touch-action: pan-x !important; 
     -webkit-overflow-scrolling: touch !important;
-    scroll-snap-type: none !important; /* Kills the sticky 'stopping' feeling */
-    touch-action: pan-x !important; /* Instant horizontal tracking */
-    will-change: scroll-position;
+    overscroll-behavior-x: auto !important; 
     scrollbar-width: none !important; 
     -ms-overflow-style: none !important;
 }
@@ -4161,10 +4143,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .products-grid-2col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; }
 @media (min-width: 768px) { .products-grid-2col { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; } }
 
-/* Horizontal Shelves */
-.shelf-track { display: flex; flex-wrap: nowrap; gap: 12px; overflow-x: auto; padding-bottom: 16px; margin-bottom: -16px; scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; }
+/* Horizontal Shelves (Pure Natural Momentum) */
+.shelf-track { display: flex; flex-wrap: nowrap; gap: 12px; overflow-x: auto; padding-bottom: 16px; margin-bottom: -16px; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x; overscroll-behavior-x: auto; }
 .shelf-track::-webkit-scrollbar { display: none; }
-.shelf-track > * { scroll-snap-align: start; flex-shrink: 0; }
+.shelf-track > * { flex-shrink: 0; }
 
 /* UNIVERSAL PRODUCT CARD (Transparent Design) */
 .store-product-card {

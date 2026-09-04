@@ -83,8 +83,8 @@ self.addEventListener('push', function(event) {
             // Rich Media Formatting (Amazon / McDonald's Style)
             const options = {
                 body: data.body,
-                icon: data.icon || '/assets/icon.png', // Large brand identifier on the left
-                badge: '/assets/icon.png', // Fixed 404 error
+                // Removed 'icon' so Android natively places the app logo in the top-left holder
+                badge: '/assets/icon.png', 
                 image: data.image || null, // Massive edge-to-edge promotional image
                 vibrate: [200, 100, 200, 100, 200], // Premium haptic rhythm
                 actions: data.actions || [], // Interactive buttons (e.g. [🛒 Checkout])
