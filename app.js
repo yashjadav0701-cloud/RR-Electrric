@@ -969,7 +969,6 @@
                 `;
             }
 
-            // Directly interpret the strict engine types into precise CSS configurations
             let wrapperClass = 'products-grid-2col';
             let cardSize = 'standard';
             let cardLayout = 'grid';
@@ -979,8 +978,11 @@
             else if (sec.type === 'shelf-large') { wrapperClass = 'shelf-track'; cardSize = 'large'; }
             else if (sec.type === 'list') { wrapperClass = 'list-track'; cardSize = 'standard'; cardLayout = 'list'; }
 
+            // Randomly assign between 4 to 6 columns for PC grid sections
+            const randomCols = Math.floor(Math.random() * 3) + 4; // Generates 4, 5, or 6
+
             return `
-                <div class="storefront-section" id="section-${sec.id}">
+                <div class="storefront-section" id="section-${sec.id}" data-pc-cols="${randomCols}">
                     ${headerHtml}
                     <div class="${wrapperClass}">
                         ${sec.products.map((p, i) => this.generateProductCardHTML(p, cardSize, cardLayout, isPriority && i < 4)).join('')}
