@@ -272,13 +272,52 @@ button:disabled, .btn-primary:disabled {
    ============================================================ */
 .container {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 0 16px;
+    padding: 0 24px;
 }
 
 .hidden {
     display: none !important;
+}
+
+/* ============================================================
+   UNIFIED DESKTOP BOXED MARGINS (Header to Footer alignment)
+   ============================================================ */
+@media (min-width: 768px) {
+    .site-header,
+    .top-categories-wrapper,
+    .hero-section,
+    .site-footer {
+        max-width: 1400px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        box-sizing: border-box !important;
+    }
+
+    .site-header {
+        border-bottom: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+        margin-top: 12px;
+        border-radius: var(--radius-lg);
+    }
+
+    .top-categories-wrapper {
+        padding: 4px 0 !important;
+        margin-top: 16px !important;
+    }
+
+    .hero-section {
+        border-radius: var(--radius-lg) !important;
+        border: 1px solid rgba(226, 232, 240, 0.9) !important;
+        margin-bottom: 24px !important;
+    }
+
+    .site-footer {
+        margin-bottom: 16px !important;
+        border-radius: var(--radius-lg) !important;
+        border: 1px solid var(--border) !important;
+    }
 }
 
 .hero-3d-cat-item .hero-3d-cat-label {
@@ -823,7 +862,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 @media (min-width: 768px) {
-    .products-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; }
+    .products-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
 }
 
 /* 3D Floating Product Cards */
@@ -3900,7 +3939,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .shelf-track,
 .hero-3d-cat-track {
     scroll-snap-type: none !important; 
-    touch-action: pan-x !important; 
+    /* pan-x pan-y allows natural axis-locking: vertical swipes scroll the page, horizontal swipes scroll the list */
+    touch-action: pan-x pan-y !important; 
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior-x: auto !important; 
     scrollbar-width: none !important; 
@@ -4139,14 +4179,54 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .section-header-link { font-size: 12px; font-weight: 700; color: var(--primary); text-decoration: none; padding: 4px 10px; border-radius: 999px; background: rgba(2, 132, 199, 0.08); transition: all 0.2s ease; margin-bottom: 2px; }
 .section-header-link:hover { background: var(--primary); color: #fff; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3); }
 
-/* Backbone 2-Column Grid */
+/* Backbone Grid */
 .products-grid-2col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; }
-@media (min-width: 768px) { .products-grid-2col { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; } }
+.products-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; }
 
-/* Horizontal Shelves (Pure Natural Momentum) */
-.shelf-track { display: flex; flex-wrap: nowrap; gap: 12px; overflow-x: auto; padding-bottom: 16px; margin-bottom: -16px; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x; overscroll-behavior-x: auto; }
-.shelf-track::-webkit-scrollbar { display: none; }
-.shelf-track > * { flex-shrink: 0; }
+/* ============================================================
+   UNIVERSAL 6-COLUMN GRID ON PC FOR ALL PRODUCT GROUPS
+   ============================================================ */
+@media (min-width: 768px) {
+    /* Force grids, shelves, lists, and cross-sells to ALWAYS use a strict 6-column grid on desktop */
+    .products-grid,
+    .products-grid-2col,
+    .shelf-track,
+    .list-track,
+    .cross-sell-grid {
+        display: grid !important;
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+        gap: 16px !important;
+        overflow-x: visible !important;
+        flex-wrap: wrap !important;
+        padding-bottom: 0 !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* Reset mobile-specific fixed widths and flex constraints on product cards */
+    .shelf-track > *,
+    .list-track > *,
+    .cross-sell-grid > *,
+    .store-product-card {
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        flex: none !important;
+    }
+
+    /* Ensure list-style cards switch to vertical grid format inside the 6-col PC layout */
+    .layout-list {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    .layout-list .img-wrapper {
+        width: 100% !important;
+        aspect-ratio: 1 / 1 !important;
+        padding: 0 !important;
+    }
+    .layout-list .store-product-card-details {
+        padding: 8px 2px 2px 2px !important;
+    }
+}
 
 /* UNIVERSAL PRODUCT CARD (Transparent Design) */
 .store-product-card {
