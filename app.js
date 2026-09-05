@@ -2605,9 +2605,10 @@
                     // 🚀 FIRE THE INSTANT NATIVE MARKETING NOTIFICATION
                     await registration.showNotification("Welcome to RR ELECTRRIC! ⚡", {
                         body: "Your VIP access is confirmed. Get ready for exclusive deals, instant price drops, and lightning-fast Nadiad delivery on top electrical brands.",
-                        icon: "/assets/icon.png", // CRITICAL FIX: Restored for Android Chrome compatibility
-                        badge: "/assets/icon.png",
+                        icon: window.location.origin + "/assets/icon.png", // CRITICAL FIX: Absolute URL required
+                        badge: window.location.origin + "/assets/icon.png",
                         vibrate: [200, 100, 200, 100, 200], // Premium haptic rhythm
+                        requireInteraction: true, // Forces Android to show it on screen
                         data: { url: "/", isAdmin: false },
                         actions: [{ action: "home", title: "Start Shopping" }]
                     });
@@ -2622,10 +2623,16 @@
                     const registration = await navigator.serviceWorker.ready;
                     const subscription = await registration.pushManager.getSubscription();
                     if (subscription) {
-                        await supabase.from('user_push_subscriptions').update({
+                        // CRITICAL FIX: If the mobile browser rotated the push token, an 'update' will fail to find it.
+                        // We must use 'upsert' and include the security keys to ensure the database always has the active route.
+                        const payload = {
+                            endpoint: subscription.endpoint,
+                            auth_key: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth')))),
+                            p256dh_key: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))),
                             cart_data: Store.state.cart,
                             last_active: new Date().toISOString()
-                        }).eq('endpoint', subscription.endpoint);
+                        };
+                        await supabase.from('user_push_subscriptions').upsert(payload, { onConflict: 'endpoint' });
                     }
                 } catch (e) {
                     // Fail silently, background process

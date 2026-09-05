@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rr-electrric-core-v7';
+const CACHE_NAME = 'rr-electrric-core-v8'; // Bumped to force SW update on all devices
 const IMAGE_CACHE = 'rr-images-v2';
 
 const SAFE_ASSETS = [
@@ -83,10 +83,11 @@ self.addEventListener('push', function(event) {
             // Rich Media Formatting (Amazon / McDonald's Style)
             const options = {
                 body: data.body,
-                icon: data.icon || '/assets/icon.png', // CRITICAL FIX: Android Chrome requires this to show the push
-                badge: data.badge || '/assets/icon.png', 
+                icon: data.icon || (self.location.origin + '/assets/icon.png'), // ABSOLUTE URL REQUIRED FOR MOBILE
+                badge: data.badge || (self.location.origin + '/assets/icon.png'), 
                 vibrate: [200, 100, 200, 100, 200], // Premium haptic rhythm
-                actions: data.actions || [], // Interactive buttons (e.g. [🛒 Checkout])
+                requireInteraction: true, // Forces Android OS to display it prominently
+                actions: data.actions || [], 
                 data: { 
                     url: data.url || '/',
                     isAdmin: data.isAdmin || false 
