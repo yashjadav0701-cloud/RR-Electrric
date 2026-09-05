@@ -2598,7 +2598,13 @@
                         last_active: new Date().toISOString()
                     };
 
-                    await supabase.from('user_push_subscriptions').upsert(payload, { onConflict: 'endpoint' });
+                    // Check for database errors explicitly
+                    const { error: dbError } = await supabase.from('user_push_subscriptions').upsert(payload, { onConflict: 'endpoint' });
+                    
+                    if (dbError) {
+                        console.error("Database Save Failed:", dbError);
+                        throw new Error("Failed to save push subscription to database.");
+                    }
 
                     if (bellBtn) bellBtn.classList.add('hidden');
                     
@@ -2614,6 +2620,7 @@
                     });
 
                 } catch (err) {
+                    console.error("Push Opt-in Error:", err); // Logs the exact reason to the console
                     if (bellBtn) bellBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><line x1="12" y1="17" x2="12" y2="17.01"></line></svg>';
                 }
             },

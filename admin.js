@@ -1616,6 +1616,21 @@
                     }
                 }
 
+                // Safely build the payload, omitting nulls which can crash backend JSON parsers
+                const notificationPayload = {
+                    title: broadcastData.title,
+                    body: broadcastData.body,
+                    url: broadcastData.url || '/',
+                    icon: window.location.origin + '/assets/icon.png', // CRITICAL: Must be an absolute URL for Android
+                    badge: window.location.origin + '/assets/icon.png',
+                    actions: [{ action: "home", title: "Shop Now" }]
+                };
+                
+                // Only attach the image property if an image actually exists
+                if (broadcastData.image_url) {
+                    notificationPayload.image = broadcastData.image_url;
+                }
+
                 // Call the Transmission Tower (Edge Function)
                 const { data: { session } } = await supabase.auth.getSession();
                 const res = await fetch(`${SUPABASE_URL}/functions/v1/proactive-engagement`, {
@@ -1623,15 +1638,7 @@
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
                     body: JSON.stringify({
                         audience: 'all',
-                        notification: {
-                            title: broadcastData.title,
-                            body: broadcastData.body,
-                            url: broadcastData.url,
-                            image: broadcastData.image_url || null,
-                            icon: '/assets/icon.png', // CRITICAL FIX: Restored for Android compatibility
-                            badge: '/assets/icon.png',
-                            actions: [{ action: "home", title: "Shop Now" }]
-                        }
+                        notification: notificationPayload
                     })
                 });
 
