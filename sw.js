@@ -83,10 +83,10 @@ self.addEventListener('push', function(event) {
             // Rich Media Formatting (Amazon / McDonald's Style)
             const options = {
                 body: data.body,
-                icon: data.icon || (self.location.origin + '/assets/icon.png'), // ABSOLUTE URL REQUIRED FOR MOBILE
+                icon: data.icon || (self.location.origin + '/assets/icon.png'), // Explicitly using assets/icon.png
                 badge: data.badge || (self.location.origin + '/assets/icon.png'), 
-                vibrate: [200, 100, 200, 100, 200], // Premium haptic rhythm
-                requireInteraction: true, // Forces Android OS to display it prominently
+                vibrate: [200, 100, 200, 100, 200], 
+                requireInteraction: true, 
                 actions: data.actions || [], 
                 data: { 
                     url: data.url || '/',

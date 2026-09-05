@@ -2611,10 +2611,10 @@
                     // 🚀 FIRE THE INSTANT NATIVE MARKETING NOTIFICATION
                     await registration.showNotification("Welcome to RR ELECTRRIC! ⚡", {
                         body: "Your VIP access is confirmed. Get ready for exclusive deals, instant price drops, and lightning-fast Nadiad delivery on top electrical brands.",
-                        icon: window.location.origin + "/assets/icon.png", // CRITICAL FIX: Absolute URL required
+                        icon: window.location.origin + "/assets/icon.png", 
                         badge: window.location.origin + "/assets/icon.png",
-                        vibrate: [200, 100, 200, 100, 200], // Premium haptic rhythm
-                        requireInteraction: true, // Forces Android to show it on screen
+                        vibrate: [200, 100, 200, 100, 200], 
+                        requireInteraction: true, 
                         data: { url: "/", isAdmin: false },
                         actions: [{ action: "home", title: "Start Shopping" }]
                     });

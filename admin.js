@@ -1752,7 +1752,7 @@
                     title: broadcastData.title,
                     body: broadcastData.body,
                     url: finalUrl,
-                    icon: window.location.origin + '/assets/icon.png', 
+                    icon: window.location.origin + '/assets/icon.png', // Explicitly bound to assets/icon.png
                     badge: window.location.origin + '/assets/icon.png',
                     actions: [{ action: "dynamic", title: actionTitle }]
                 };
