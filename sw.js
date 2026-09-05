@@ -83,9 +83,8 @@ self.addEventListener('push', function(event) {
             // Rich Media Formatting (Amazon / McDonald's Style)
             const options = {
                 body: data.body,
-                // Removed 'icon' so Android natively places the app logo in the top-left holder
-                badge: '/assets/icon.png', 
-                image: data.image || null, // Massive edge-to-edge promotional image
+                icon: data.icon || '/assets/icon.png', // CRITICAL FIX: Android Chrome requires this to show the push
+                badge: data.badge || '/assets/icon.png', 
                 vibrate: [200, 100, 200, 100, 200], // Premium haptic rhythm
                 actions: data.actions || [], // Interactive buttons (e.g. [🛒 Checkout])
                 data: { 
@@ -93,6 +92,9 @@ self.addEventListener('push', function(event) {
                     isAdmin: data.isAdmin || false 
                 }
             };
+
+            // Safely append image only if it exists to prevent Android 404 errors
+            if (data.image) options.image = data.image;
             
             event.waitUntil(self.registration.showNotification(data.title, options));
         } catch (e) {

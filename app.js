@@ -2605,7 +2605,7 @@
                     // 🚀 FIRE THE INSTANT NATIVE MARKETING NOTIFICATION
                     await registration.showNotification("Welcome to RR ELECTRRIC! ⚡", {
                         body: "Your VIP access is confirmed. Get ready for exclusive deals, instant price drops, and lightning-fast Nadiad delivery on top electrical brands.",
-                        // Removed 'icon' so Android natively places the app logo in the top-left holder
+                        icon: "/assets/icon.png", // CRITICAL FIX: Restored for Android Chrome compatibility
                         badge: "/assets/icon.png",
                         vibrate: [200, 100, 200, 100, 200], // Premium haptic rhythm
                         data: { url: "/", isAdmin: false },

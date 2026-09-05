@@ -992,12 +992,24 @@
                         
                         // Marketing Broadcast
                         document.getElementById('broadcast-form')?.addEventListener('submit', (e) => this.sendMarketingBroadcast(e));
+                        
+                        // Marketing Image Upload
+                        document.getElementById('broadcast-image-file')?.addEventListener('change', async (e) => {
+                            const file = e.target.files[0];
+                            if (!file) return;
+                            const webpBlob = await this.compressToWebP(file);
+                            this.state.pendingBroadcastImage = webpBlob;
+                            this.state.existingBroadcastImage = null;
+                            this.renderBroadcastImagePreview();
+                            e.target.value = '';
+                        });
                     }
 
             await this.loadConfigurations();
             await this.loadVipTiers();
             await this.loadCoupons();
             await this.initPushEngine();
+            await this.loadMarketingHistory();
         },
 
         loadConfigurations: async function() {
@@ -1543,37 +1555,81 @@
             }
         },
 
-        sendMarketingBroadcast: async function(e) {
-            e.preventDefault();
-            if (!await CustomUI.confirm("Are you sure you want to blast this notification to ALL subscribed customers?", "Broadcast Confirmation")) return;
+        sendMarketingBroadcast: async function(e, forcePushId = null) {
+            if(e) e.preventDefault();
+            
+            let broadcastData = null;
+            let isPushAgain = false;
+
+            if (forcePushId) {
+                 if (!await CustomUI.confirm("Are you sure you want to blast this historical notification to ALL subscribed customers again?", "Re-Push Campaign")) return;
+                 broadcastData = this.state.marketingBroadcasts.find(b => b.id === forcePushId);
+                 isPushAgain = true;
+            } else {
+                 if (!await CustomUI.confirm("Are you sure you want to save and blast this notification to ALL subscribed customers?", "Broadcast Confirmation")) return;
+            }
 
             const btn = document.getElementById('btn-send-broadcast');
             const originalHtml = btn.innerHTML;
-            btn.innerHTML = 'Broadcasting...';
-            btn.disabled = true;
-
-            const title = document.getElementById('broadcast-title').value.trim();
-            const body = document.getElementById('broadcast-body').value.trim();
-            const url = document.getElementById('broadcast-url').value.trim() || '/';
-            const image = document.getElementById('broadcast-image').value.trim();
+            if(btn) { btn.innerHTML = 'Broadcasting...'; btn.disabled = true; }
 
             try {
+                let finalImageUrl = null;
+                const broadcastId = document.getElementById('broadcast-id').value;
+
+                if (isPushAgain) {
+                    finalImageUrl = broadcastData.image_url;
+                } else {
+                    // Upload new image if it exists
+                    if (this.state.pendingBroadcastImage) {
+                        const fileName = `broadcast-${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
+                        const { data, error } = await supabase.storage.from('product-images').upload(fileName, this.state.pendingBroadcastImage, { contentType: 'image/webp' });
+                        if (error) throw error;
+                        
+                        // If replacing an existing image during an edit, delete the old one to prevent bloat
+                        if (this.state.existingBroadcastImage) {
+                            const oldPath = this.state.existingBroadcastImage.split('/product-images/')[1];
+                            if(oldPath) await supabase.storage.from('product-images').remove([oldPath]).catch(()=>{});
+                        }
+
+                        const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName);
+                        finalImageUrl = publicUrl;
+                    } else {
+                        finalImageUrl = this.state.existingBroadcastImage;
+                    }
+
+                    // Save or Update in DB
+                    const payload = {
+                        title: document.getElementById('broadcast-title').value.trim(),
+                        body: document.getElementById('broadcast-body').value.trim(),
+                        url: document.getElementById('broadcast-url').value.trim() || '/',
+                        image_url: finalImageUrl
+                    };
+
+                    if (broadcastId) {
+                        await supabase.from('marketing_notifications').update(payload).eq('id', broadcastId);
+                        broadcastData = payload; // Update local ref
+                    } else {
+                        const { data, error: insertError } = await supabase.from('marketing_notifications').insert(payload).select().single();
+                        if (insertError) throw insertError;
+                        broadcastData = data;
+                    }
+                }
+
+                // Call the Transmission Tower (Edge Function)
                 const { data: { session } } = await supabase.auth.getSession();
-                
                 const res = await fetch(`${SUPABASE_URL}/functions/v1/proactive-engagement`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
                     body: JSON.stringify({
                         audience: 'all',
                         notification: {
-                            title: title,
-                            body: body,
-                            url: url,
-                            image: image || null,
-                            icon: '/assets/icon.png',
+                            title: broadcastData.title,
+                            body: broadcastData.body,
+                            url: broadcastData.url,
+                            image: broadcastData.image_url || null,
+                            icon: '/assets/icon.png', // CRITICAL FIX: Restored for Android compatibility
+                            badge: '/assets/icon.png',
                             actions: [{ action: "home", title: "Shop Now" }]
                         }
                     })
@@ -1582,14 +1638,149 @@
                 const result = await res.json();
                 if (!res.ok) throw new Error(result.error || 'Failed to dispatch broadcast.');
 
-                CustomUI.alert(`Broadcast successful! Delivered to ${result.sent} active devices. (Cleaned up ${result.cleaned} inactive tokens).`, "Mission Accomplished");
-                document.getElementById('broadcast-form').reset();
+                CustomUI.alert(`Broadcast successful! Delivered to ${result.sent || 0} active devices.`, "Mission Accomplished");
+                
+                // Clear the form only if it was a fresh push or an edit (not a re-push from history)
+                if (!isPushAgain) {
+                    document.getElementById('broadcast-form').reset();
+                    this.state.pendingBroadcastImage = null;
+                    this.state.existingBroadcastImage = null;
+                    document.getElementById('broadcast-id').value = '';
+                    this.renderBroadcastImagePreview();
+                }
+                
+                await this.loadMarketingHistory();
+
             } catch (err) {
                 ErrorHandler.show(err, "Broadcast Failed");
             } finally {
-                btn.innerHTML = originalHtml;
-                btn.disabled = false;
+                if(btn) { 
+                    btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Blast Notification Now'; 
+                    btn.disabled = false; 
+                }
             }
+        },
+
+        loadMarketingHistory: async function() {
+            const { data, error } = await supabase.from('marketing_notifications').select('*').order('created_at', { ascending: false });
+            if (!error && data) {
+                this.state.marketingBroadcasts = data;
+                this.renderMarketingHistory();
+            }
+        },
+
+        renderMarketingHistory: function() {
+            const container = document.getElementById('broadcast-history-container');
+            if (!container) return;
+            if (this.state.marketingBroadcasts.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted); border: 1px dashed var(--border); border-radius: 8px;">No broadcast history available.</div>`;
+                return;
+            }
+            container.innerHTML = this.state.marketingBroadcasts.map(b => {
+                // Tighter 64px image
+                const imgHtml = b.image_url ? `<img src="${b.image_url}" style="width:64px; height:64px; border-radius:8px; object-fit:cover; border: 1px solid var(--border); flex-shrink: 0; background: #fff;">` : `<div style="width:64px; height:64px; border-radius:8px; background:var(--bg-main); display:flex; align-items:center; justify-content:center; border: 1px solid var(--border); flex-shrink: 0;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--slate-400)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></div>`;
+                const dateStr = new Date(b.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                
+                return `
+                <div style="display:flex; align-items:flex-start; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-surface); box-shadow: var(--shadow-sm); margin-bottom: 8px;">
+                    ${imgHtml}
+                    <div style="flex: 1; min-width:0; display: flex; flex-direction: column; justify-content: space-between; height: 64px;">
+                        <div style="margin-top: -2px;">
+                            <div style="font-weight:800; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color: var(--text-main); margin-bottom: 2px; line-height: 1.2;">${b.title}</div>
+                            <div style="font-size:11px; color:var(--text-muted); font-weight: 500; line-height: 1;">${dateStr}</div>
+                        </div>
+                        <div style="display:flex; gap: 6px; justify-content: flex-end; align-items: flex-end;">
+                            <button type="button" class="btn-secondary" style="padding: 0 10px; font-size: 11px; height: 28px; border-radius: 6px; display: inline-flex;" onclick="AdminApp.pushAgain('${b.id}')" title="Re-Push Campaign">
+                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 4px;"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                                Push
+                            </button>
+                            <button type="button" class="btn-secondary" style="padding: 0; width: 28px; height: 28px; border-radius: 6px; display: inline-flex;" onclick="AdminApp.editBroadcast('${b.id}')" title="Edit Campaign">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            </button>
+                            <button type="button" class="btn-danger" style="padding: 0; width: 28px; height: 28px; border-radius: 6px; display: inline-flex;" onclick="AdminApp.deleteBroadcast('${b.id}')" title="Delete Campaign">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        },
+
+        renderBroadcastImagePreview: function() {
+            const container = document.getElementById('broadcast-image-preview');
+            if (!container) return;
+            let html = '';
+            if (this.state.existingBroadcastImage) {
+                html = `
+                    <div class="preview-box">
+                        <img src="${this.state.existingBroadcastImage}">
+                        <button type="button" class="remove-img" onclick="AdminApp.removeBroadcastImage()">&times;</button>
+                    </div>`;
+            } else if (this.state.pendingBroadcastImage) {
+                const url = URL.createObjectURL(this.state.pendingBroadcastImage);
+                html = `
+                    <div class="preview-box" style="border-color: var(--primary)">
+                        <img src="${url}">
+                        <button type="button" class="remove-img" onclick="AdminApp.removeBroadcastImage()">&times;</button>
+                    </div>`;
+            }
+            container.innerHTML = html;
+        },
+
+        removeBroadcastImage: function() {
+            this.state.pendingBroadcastImage = null;
+            this.state.existingBroadcastImage = null;
+            this.renderBroadcastImagePreview();
+        },
+
+        editBroadcast: function(id) {
+            const b = this.state.marketingBroadcasts.find(x => x.id === id);
+            if(!b) return;
+            
+            document.getElementById('broadcast-id').value = b.id;
+            document.getElementById('broadcast-title').value = b.title;
+            document.getElementById('broadcast-body').value = b.body;
+            document.getElementById('broadcast-url').value = b.url;
+            
+            this.state.existingBroadcastImage = b.image_url;
+            this.state.pendingBroadcastImage = null;
+            this.renderBroadcastImagePreview();
+            
+            document.getElementById('btn-send-broadcast').innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Update & Blast Now';
+            
+            // Scroll to the top of the form smoothly
+            document.getElementById('broadcast-form').scrollIntoView({behavior: 'smooth', block: 'center'});
+        },
+
+        deleteBroadcast: async function(id) {
+            if(!await CustomUI.confirm("Delete this notification? It will be removed from history completely.", "Delete Notification")) return;
+            
+            const b = this.state.marketingBroadcasts.find(x => x.id === id);
+            
+            // Delete the image securely from Supabase storage if it exists
+            if (b && b.image_url) {
+                 const path = b.image_url.split('/product-images/')[1];
+                 if(path) {
+                      await supabase.storage.from('product-images').remove([path]).catch(err => console.warn("Image delete skipped:", err));
+                 }
+            }
+            
+            await supabase.from('marketing_notifications').delete().eq('id', id);
+            await this.loadMarketingHistory();
+            
+            // If the user was currently editing the one they just deleted, reset the form
+            if (document.getElementById('broadcast-id').value === id) {
+                document.getElementById('broadcast-form').reset();
+                this.removeBroadcastImage();
+                document.getElementById('broadcast-id').value = '';
+                document.getElementById('btn-send-broadcast').innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Blast Notification Now';
+            }
+        },
+
+        pushAgain: function(id) {
+            // Re-use the existing function but flag it as a history re-push
+            this.sendMarketingBroadcast(null, id);
         },
 
         // --- PHASE 5: PRODUCT MANAGEMENT ---
@@ -1603,7 +1794,10 @@
                 category: 'all',
                 status: 'all',
                 sort: 'newest'
-            }
+            },
+            marketingBroadcasts: [],
+            pendingBroadcastImage: null,
+            existingBroadcastImage: null
         },
         
         searchDebounceTimer: null,
