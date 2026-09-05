@@ -107,14 +107,17 @@ self.addEventListener('push', function(event) {
 self.addEventListener('notificationclick', function(event) {
     event.notification.close();
     
-    let urlToTarget = event.notification.data.url;
+    let urlToTarget = event.notification.data.url || '/';
     const isAdmin = event.notification.data.isAdmin;
     
     // Action Button Routing Interception
     if (event.action) {
         if (event.action === 'checkout') urlToTarget = '/#checkout';
-        if (event.action === 'cart') urlToTarget = '/#cart';
-        if (event.action === 'home') urlToTarget = '/';
+        else if (event.action === 'cart') urlToTarget = '/#cart';
+        else if (event.action === 'dynamic' || event.action === 'home') {
+            // Respect the smart deep link exactly as provided by the Intent Bar
+            urlToTarget = event.notification.data.url || '/'; 
+        }
     }
     
     event.waitUntil(

@@ -1003,7 +1003,79 @@
                             this.renderBroadcastImagePreview();
                             e.target.value = '';
                         });
+
+                        // Smart Command Bar Toggle Logic
+                        document.querySelectorAll('.target-type-btn').forEach(btn => {
+                            btn.addEventListener('click', (e) => {
+                                document.querySelectorAll('.target-type-btn').forEach(b => {
+                                    b.classList.remove('active');
+                                    b.style.background = 'var(--bg-surface)';
+                                    b.style.color = 'var(--slate-600)';
+                                    b.style.borderColor = 'var(--slate-300)';
+                                });
+                                const t = e.target;
+                                t.classList.add('active');
+                                t.style.background = '#eff6ff';
+                                t.style.color = 'var(--primary)';
+                                t.style.borderColor = '#bfdbfe';
+                                
+                                document.querySelectorAll('.target-view').forEach(v => v.classList.add('hidden'));
+                                document.getElementById('target-' + t.dataset.type)?.classList.remove('hidden');
+                            });
+                        });
+
+                        // Product Combobox Logic for Command Bar
+                        const prodSearch = document.getElementById('broadcast-product-search');
+                        const prodList = document.getElementById('broadcast-product-suggestions');
+                        if (prodSearch && prodList) {
+                            prodSearch.addEventListener('input', (e) => {
+                                const val = e.target.value.toLowerCase().trim();
+                                prodList.innerHTML = '';
+                                if (!val) { prodList.classList.add('hidden'); document.getElementById('broadcast-product-id').value = ''; return; }
+                                
+                                // Multi-word smart search
+                                const searchTokens = val.split(' ');
+                                const matches = this.state.products.filter(p => {
+                                    const prodName = p.name.toLowerCase();
+                                    return searchTokens.every(token => prodName.includes(token));
+                                }).slice(0, 15);
+
+                                if (matches.length === 0) {
+                                    prodList.innerHTML = '<li style="color:var(--text-muted); text-align:center; padding: 16px;">No products found</li>';
+                                } else {
+                                    prodList.innerHTML = matches.map(p => `
+                                        <li data-id="${p.id}" data-name="${p.name}" style="display:flex; align-items:center; gap:12px; padding: 10px; transition: background 0.2s;">
+                                            <img src="${p.image_urls?.[0]||''}" style="width:32px; height:32px; object-fit:contain; border-radius:6px; border:1px solid var(--border); background:#fff; flex-shrink:0;"> 
+                                            <span style="font-weight:600; font-size:13px; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</span>
+                                        </li>
+                                    `).join('');
+                                }
+                                prodList.classList.remove('hidden');
+                            });
+                            
+                            prodList.addEventListener('click', (e) => {
+                                const li = e.target.closest('li');
+                                if (!li || !li.dataset.id) return;
+                                document.getElementById('broadcast-product-id').value = li.dataset.id;
+                                prodSearch.value = li.dataset.name;
+                                prodList.classList.add('hidden');
+                            });
+                            
+                            document.addEventListener('click', (e) => {
+                                if (!e.target.closest('#target-product')) prodList.classList.add('hidden');
+                            });
+                        }
                     }
+
+            // CRITICAL FIX: Ensure catalog data is loaded so the Command Bar has data to search through
+            if (this.state.categories.length === 0) {
+                const { data } = await supabase.from('categories').select('*').order('name');
+                if (data) this.state.categories = data;
+            }
+            if (this.state.products.length === 0) {
+                const { data } = await supabase.from('products').select('id, name, image_urls, category_id').order('created_at', { ascending: false });
+                if (data) this.state.products = data;
+            }
 
             await this.loadConfigurations();
             await this.loadVipTiers();
@@ -1036,6 +1108,22 @@
             document.getElementById('config-delivery-min-order').value = deliverySettings.min_order !== undefined ? deliverySettings.min_order : 149;
             
             document.getElementById('config-home-categories').value = (homeSettings.featured_categories || []).join(', ');
+
+            // Inject Categories into Command Bar Dropdown and Apply Custom UI Box Styling
+            const catSelect = document.getElementById('broadcast-category-select');
+            if (catSelect) {
+                catSelect.innerHTML = '<option value="">Select a Category...</option>' + 
+                    this.state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                
+                // Re-initialize custom select wrapper so it matches the input box styling
+                const wrapper = catSelect.nextElementSibling;
+                if (wrapper && wrapper.classList.contains('custom-select-wrapper')) {
+                    wrapper.remove();
+                    catSelect.classList.remove('custom-styled');
+                    catSelect.style.display = '';
+                }
+                CustomUI.styleSelects();
+            }
         },
 
         loadVipTiers: async function() {
@@ -1573,6 +1661,36 @@
             const originalHtml = btn.innerHTML;
             if(btn) { btn.innerHTML = 'Broadcasting...'; btn.disabled = true; }
 
+            // Build Smart Deep Link URL and Dynamic Call-to-Action Text
+            let finalUrl = '/';
+            let actionTitle = 'Shop Now';
+            const targetType = document.querySelector('.target-type-btn.active')?.dataset.type || 'home';
+
+            if (!isPushAgain) {
+                if (targetType === 'category') {
+                    const catId = document.getElementById('broadcast-category-select').value;
+                    if (!catId) { if(btn) { btn.innerHTML = originalHtml; btn.disabled = false; } return CustomUI.alert('Please select a category from the dropdown.'); }
+                    finalUrl = `/#category-${catId}`;
+                    actionTitle = 'Explore Range';
+                } else if (targetType === 'product') {
+                    const prodId = document.getElementById('broadcast-product-id').value;
+                    if (!prodId) { if(btn) { btn.innerHTML = originalHtml; btn.disabled = false; } return CustomUI.alert('Please search and select a specific product.'); }
+                    finalUrl = `/#product-${prodId}`;
+                    actionTitle = 'View Deal';
+                } else if (targetType === 'search') {
+                    const term = document.getElementById('broadcast-search-term').value.trim();
+                    if (!term) { if(btn) { btn.innerHTML = originalHtml; btn.disabled = false; } return CustomUI.alert('Please enter a search keyword.'); }
+                    finalUrl = `/#search-${encodeURIComponent(term)}`;
+                    actionTitle = 'See Results';
+                }
+            } else {
+                finalUrl = broadcastData.url || '/';
+                actionTitle = 'Shop Now'; 
+                if (finalUrl.includes('#category')) actionTitle = 'Explore Range';
+                if (finalUrl.includes('#product')) actionTitle = 'View Deal';
+                if (finalUrl.includes('#search')) actionTitle = 'See Results';
+            }
+
             try {
                 let finalImageUrl = null;
                 const broadcastId = document.getElementById('broadcast-id').value;
@@ -1580,13 +1698,11 @@
                 if (isPushAgain) {
                     finalImageUrl = broadcastData.image_url;
                 } else {
-                    // Upload new image if it exists
                     if (this.state.pendingBroadcastImage) {
                         const fileName = `broadcast-${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
                         const { data, error } = await supabase.storage.from('product-images').upload(fileName, this.state.pendingBroadcastImage, { contentType: 'image/webp' });
                         if (error) throw error;
                         
-                        // If replacing an existing image during an edit, delete the old one to prevent bloat
                         if (this.state.existingBroadcastImage) {
                             const oldPath = this.state.existingBroadcastImage.split('/product-images/')[1];
                             if(oldPath) await supabase.storage.from('product-images').remove([oldPath]).catch(()=>{});
@@ -1594,21 +1710,37 @@
 
                         const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName);
                         finalImageUrl = publicUrl;
-                    } else {
+                    } else if (this.state.existingBroadcastImage) {
                         finalImageUrl = this.state.existingBroadcastImage;
+                    } else {
+                        // SMART IMAGE AUTO-FILL: Automatically inject Product or Category images if left blank!
+                        if (targetType === 'product') {
+                            const prodId = document.getElementById('broadcast-product-id').value;
+                            const p = this.state.products.find(x => x.id === prodId);
+                            if (p && p.image_urls && p.image_urls.length > 0) {
+                                finalImageUrl = p.image_urls[0];
+                            }
+                        } else if (targetType === 'category') {
+                            const catId = document.getElementById('broadcast-category-select').value;
+                            const catProds = this.state.products.filter(x => x.category_id === catId && x.image_urls && x.image_urls.length > 0);
+                            if (catProds.length > 0) {
+                                // Pick a completely random product from this category to feature in the notification
+                                const randomProd = catProds[Math.floor(Math.random() * catProds.length)];
+                                finalImageUrl = randomProd.image_urls[0];
+                            }
+                        }
                     }
 
-                    // Save or Update in DB
                     const payload = {
                         title: document.getElementById('broadcast-title').value.trim(),
                         body: document.getElementById('broadcast-body').value.trim(),
-                        url: document.getElementById('broadcast-url').value.trim() || '/',
+                        url: finalUrl,
                         image_url: finalImageUrl
                     };
 
                     if (broadcastId) {
                         await supabase.from('marketing_notifications').update(payload).eq('id', broadcastId);
-                        broadcastData = payload; // Update local ref
+                        broadcastData = payload; 
                     } else {
                         const { data, error: insertError } = await supabase.from('marketing_notifications').insert(payload).select().single();
                         if (insertError) throw insertError;
@@ -1616,22 +1748,19 @@
                     }
                 }
 
-                // Safely build the payload, omitting nulls which can crash backend JSON parsers
                 const notificationPayload = {
                     title: broadcastData.title,
                     body: broadcastData.body,
-                    url: broadcastData.url || '/',
-                    icon: window.location.origin + '/assets/icon.png', // CRITICAL: Must be an absolute URL for Android
+                    url: finalUrl,
+                    icon: window.location.origin + '/assets/icon.png', 
                     badge: window.location.origin + '/assets/icon.png',
-                    actions: [{ action: "home", title: "Shop Now" }]
+                    actions: [{ action: "dynamic", title: actionTitle }]
                 };
                 
-                // Only attach the image property if an image actually exists
                 if (broadcastData.image_url) {
                     notificationPayload.image = broadcastData.image_url;
                 }
 
-                // Call the Transmission Tower (Edge Function)
                 const { data: { session } } = await supabase.auth.getSession();
                 const res = await fetch(`${SUPABASE_URL}/functions/v1/proactive-engagement`, {
                     method: 'POST',
@@ -1748,8 +1877,60 @@
             document.getElementById('broadcast-id').value = b.id;
             document.getElementById('broadcast-title').value = b.title;
             document.getElementById('broadcast-body').value = b.body;
-            document.getElementById('broadcast-url').value = b.url;
             
+            // Reverse Engineer the Target URL back into the Command Bar UI
+            const bUrl = b.url || '/';
+            document.querySelectorAll('.target-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.background = 'var(--bg-surface)';
+                btn.style.color = 'var(--slate-600)';
+                btn.style.borderColor = 'var(--slate-300)';
+            });
+            document.querySelectorAll('.target-view').forEach(v => v.classList.add('hidden'));
+
+            const activateTab = (type) => {
+                const t = document.querySelector(`.target-type-btn[data-type="${type}"]`);
+                if(t) {
+                    t.classList.add('active');
+                    t.style.background = '#eff6ff';
+                    t.style.color = 'var(--primary)';
+                    t.style.borderColor = '#bfdbfe';
+                }
+                const targetView = document.getElementById(`target-${type}`);
+                if (targetView) targetView.classList.remove('hidden');
+            };
+
+            if (bUrl.startsWith('/#category-')) {
+                activateTab('category');
+                const catSelect = document.getElementById('broadcast-category-select');
+                if (catSelect) {
+                    catSelect.value = bUrl.replace('/#category-', '');
+                    // Visually sync the custom dropdown box
+                    const wrapper = catSelect.nextElementSibling;
+                    if (wrapper && wrapper.classList.contains('custom-select-wrapper')) {
+                        const selectedText = catSelect.options[catSelect.selectedIndex]?.text || 'Select a Category...';
+                        wrapper.querySelector('.custom-select-trigger span').textContent = selectedText;
+                        wrapper.querySelectorAll('.custom-select-option').forEach((opt, idx) => {
+                            opt.classList.toggle('selected', idx === catSelect.selectedIndex);
+                        });
+                    }
+                }
+            } else if (bUrl.startsWith('/#product-')) {
+                activateTab('product');
+                const pid = bUrl.replace('/#product-', '');
+                const prodIdField = document.getElementById('broadcast-product-id');
+                if (prodIdField) prodIdField.value = pid;
+                const p = this.state.products.find(x => x.id === pid);
+                const prodSearch = document.getElementById('broadcast-product-search');
+                if (prodSearch) prodSearch.value = p ? p.name : 'Unknown Product';
+            } else if (bUrl.startsWith('/#search-')) {
+                activateTab('search');
+                const searchInput = document.getElementById('broadcast-search-term');
+                if (searchInput) searchInput.value = decodeURIComponent(bUrl.replace('/#search-', ''));
+            } else {
+                activateTab('home');
+            }
+
             this.state.existingBroadcastImage = b.image_url;
             this.state.pendingBroadcastImage = null;
             this.renderBroadcastImagePreview();
