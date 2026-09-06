@@ -123,6 +123,8 @@
             // Front-end UI state
             homeDisplayLimit: 12,
             homeCurrentSort: 'recommended',
+            homeFeedIndex: 0,
+            masterFeed: [],
             categoryCurrentSort: 'recommended',
             currentCategoryParam: null,
             // Professional SPA Navigation State
@@ -130,104 +132,91 @@
             activeRouteKey: 'home'
         },
 
-        // --- MASTER COMPOSITION ENGINE (INFINITE DISCOVERY) ---
+        // --- MASTER COMPOSITION ENGINE (INFINITE DISCOVERY & LOCAL INTENT) ---
         SmartComposer: {
-            lastUsedIds: [], 
+            userIntentScores: {},
 
-            getMixedProducts: function(products, limit, preferKeyword = '') {
-                let pool = [...products].sort(() => 0.5 - Math.random());
-                if (preferKeyword) {
-                    const k = preferKeyword.toLowerCase();
-                    const matches = pool.filter(p => p.name.toLowerCase().includes(k) || (p.categories?.name || '').toLowerCase().includes(k));
-                    const others = pool.filter(p => !matches.includes(p));
-                    pool = [...matches, ...others];
+            initIntentTracker: function() {
+                try {
+                    const stored = localStorage.getItem('rr_intent');
+                    if (stored) this.userIntentScores = JSON.parse(stored);
+                } catch (e) {
+                    this.userIntentScores = {};
                 }
-                
-                // Track usage to prevent back-to-back duplicates, but fallback to full catalog to allow infinite looping
-                let filtered = pool.filter(p => !this.lastUsedIds.includes(p.id));
-                if (filtered.length < limit) filtered = pool; 
-                
-                const selected = filtered.slice(0, limit);
-                this.lastUsedIds = selected.map(p => p.id);
-                return selected;
             },
 
-            generateInfiniteSections: function(products, categories, startIndex, count) {
-                const sections = [];
-                const active = products.filter(p => p.is_active !== false);
-                if(active.length === 0) return sections;
+            logIntent: function(keyword, weight = 1) {
+                if (!keyword) return;
+                const k = keyword.toLowerCase().trim();
+                if (k.length < 3) return; // Ignore short generic words
                 
-                const catList = [...categories].sort(() => 0.5 - Math.random());
-                const shelfTypes = ['shelf-small', 'shelf-standard', 'shelf-large', 'list']; 
+                this.initIntentTracker();
+                this.userIntentScores[k] = (this.userIntentScores[k] || 0) + weight;
                 
-                // Rich theme pool for complete randomization on every refresh
-                const randomThemePool = [
-                    'Fresh Arrivals', 'Steal Deals', 'Trending Now', 'Must Haves', 
-                    'Premium Picks', 'Quick Grabs', 'Discover More', 'Popular Choices', 
-                    'You May Also Like', 'Recommended For You'
-                ];
+                // Keep only top 15 intents to prevent localstorage bloat and keep algorithm fast
+                const sortedIntents = Object.entries(this.userIntentScores)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 15);
+                this.userIntentScores = Object.fromEntries(sortedIntents);
                 
-                for(let i = startIndex; i < startIndex + count; i++) {
-                    // STRICT RHYTHM: Perfectly alternates between Grid and an Interruption (Shelf or List) every cycle
-                    const isInterruption = (i % 2 !== 0); // Odd indices are shelves/lists, Even indices are grids
-                    const layoutType = isInterruption ? shelfTypes[Math.floor(Math.random() * shelfTypes.length)] : 'grid';
-                    
-                    // DYNAMIC LIMITS: Grids pull 4, 6, or 8 items (Frequent interruptions!). Lists pull 3-5. Shelves pull 6-11.
-                    let limit = 8;
-                    if (layoutType === 'list') limit = [3, 4, 5][Math.floor(Math.random() * 3)];
-                    else if (isInterruption) limit = Math.floor(Math.random() * 6) + 6;
-                    else limit = [4, 6, 8][Math.floor(Math.random() * 3)];
-                    
-                    let title = '';
-                    let keyword = '';
-                    
-                    // FULL SHUFFLE: Completely randomized section selection on every single refresh without search locking
-                    const randRoll = Math.random();
-                    if (randRoll < 0.25) {
-                        title = 'Steal Deals';
-                    } else if (randRoll < 0.5 && catList.length > 0) {
-                        const rc = catList[Math.floor(Math.random() * catList.length)];
-                        title = `Explore ${rc.name}`;
-                        keyword = rc.name;
-                    } else {
-                        title = randomThemePool[Math.floor(Math.random() * randomThemePool.length)];
+                localStorage.setItem('rr_intent', JSON.stringify(this.userIntentScores));
+            },
+
+            buildMasterFeed: function(allProducts) {
+                this.initIntentTracker();
+                let activeProducts = allProducts.filter(p => p.is_active !== false);
+
+                let interactedGroup = [];
+                let unInteractedGroup = [];
+
+                // Step 1: Separate products into Interacted vs Un-interacted
+                activeProducts.forEach(p => {
+                    let maxWeight = 0;
+                    const pName = p.name.toLowerCase();
+                    const pCat = (p.categories?.name || '').toLowerCase();
+
+                    for (const [intentToken, weight] of Object.entries(this.userIntentScores)) {
+                        if (intentToken.length < 25 && (pName.includes(intentToken) || pCat.includes(intentToken))) {
+                            if (weight > maxWeight) maxWeight = weight;
+                        }
                     }
-                    
-                    let items = [];
-                    if (title === 'Fresh Arrivals') {
-                        items = [...active].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, limit);
-                    } else if (title === 'Steal Deals') {
-                         items = [...active].filter(p => p.mrp_price > p.selling_price).sort((a, b) => ((b.mrp_price - b.selling_price)/b.mrp_price) - ((a.mrp_price - a.selling_price)/a.mrp_price)).slice(0, limit);
+
+                    if (maxWeight > 0) {
+                        interactedGroup.push({ product: p, weight: maxWeight });
                     } else {
-                        items = this.getMixedProducts(active, limit, keyword);
+                        unInteractedGroup.push(p);
                     }
-                    
-                    if (items.length < 2) items = this.getMixedProducts(active, limit); 
-                    if (items.length > 0) sections.push({ id: `inf-${startIndex + i}`, title, type: layoutType, products: items });
+                });
+
+                // Step 2: Sort interacted products by weight, with built-in random tie-breaking so they shuffle too!
+                interactedGroup.sort((a, b) => {
+                    if (b.weight !== a.weight) {
+                        return b.weight - a.weight; // Highest weight first
+                    }
+                    return Math.random() - 0.5; // Randomize ties on every refresh
+                });
+                const sortedInteracted = interactedGroup.map(item => item.product);
+
+                // Step 3: True Fisher-Yates Random Shuffle for the un-interacted catalog on every single refresh
+                for (let i = unInteractedGroup.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [unInteractedGroup[i], unInteractedGroup[j]] = [unInteractedGroup[j], unInteractedGroup[i]];
                 }
-                return sections;
+
+                // Step 4: Return combined feed
+                return [...sortedInteracted, ...unInteractedGroup];
             },
 
-            composeStorefront: function(products, categories) {
-                return this.generateInfiniteSections(products, categories, 0, 4);
-            },
-            
-            composeSearchResults: function(matches, categories) {
-                return this.generateInfiniteSections(matches, categories, 0, Math.max(4, Math.ceil(matches.length / 4))); 
-            },
-            
             composePDPSections: function(currentProduct, allProducts) {
                 const active = allProducts.filter(p => p.is_active !== false && p.id !== currentProduct.id);
                 const sections = [];
                 
-                // Matches the exact Grid -> Shelf -> Grid -> Shelf flow of the homepage
+                // PHASE 2: "Complete the Set" Grid instead of a horizontal shelf
                 const catMatches = active.filter(p => p.category_id === currentProduct.category_id);
-                if (catMatches.length >= 2) sections.push({ id: 'pdp-1', type: 'grid', title: 'Similar Products', products: catMatches.slice(0, 8) });
+                if (catMatches.length >= 2) sections.push({ id: 'pdp-1', type: 'grid', title: 'Complete the Set (Similar Picks)', products: catMatches.slice(0, 8) });
                 
                 const random = [...active].sort(() => 0.5 - Math.random());
-                sections.push({ id: 'pdp-2', type: 'shelf-standard', title: 'More to Explore', products: random.slice(0, 8) });
-                sections.push({ id: 'pdp-3', type: 'grid', title: 'You May Also Like', products: random.slice(8, 16) });
-                sections.push({ id: 'pdp-4', type: 'shelf-small', title: 'Top Picks', products: random.slice(16, 24) });
+                sections.push({ id: 'pdp-2', type: 'grid', title: 'More to Explore', products: random.slice(0, 8) });
                 
                 return sections.filter(s => s.products.length > 0);
             }
@@ -557,58 +546,21 @@
 
         fetchData: async function() {
             try {
-                // BIG TECH ARCHITECTURE: Background Hydration
-                // 1. Identify critical products needed instantly (Direct URL or Cart items)
-                const criticalIds = new Set(this.state.cart.map(item => item.id));
-                if (window.location.hash.startsWith('#product-')) {
-                    criticalIds.add(window.location.hash.replace('#product-', ''));
-                }
-
-                // 2. Fetch configs, categories, and ONLY the first 24 products (for instant paint)
+                // Fetch ALL products immediately so the master feed shuffles the entire database on every refresh
                 const queries = [
-                    supabase.from('products').select('*, categories(name)').order('created_at', { ascending: false }).limit(24),
+                    supabase.from('products').select('*, categories(name)').order('created_at', { ascending: false }),
                     supabase.from('categories').select('*').order('name'),
                     supabase.from('store_configurations').select('*'),
                     supabase.from('vip_tiers').select('*').eq('is_active', true).order('min_spend', { ascending: false })
                 ];
-                
-                if (criticalIds.size > 0) {
-                    queries.push(supabase.from('products').select('*, categories(name)').in('id', Array.from(criticalIds)));
-                }
 
                 const results = await Promise.all(queries);
                 if (results[0].error) throw results[0].error;
-                
-                // Combine the first 24 products with any critical cart/URL products required to paint the screen
-                let initialProducts = results[0].data || [];
-                if (results[4] && results[4].data) {
-                    const existingIds = new Set(initialProducts.map(p => p.id));
-                    const missingProducts = results[4].data.filter(p => !existingIds.has(p.id));
-                    initialProducts = [...initialProducts, ...missingProducts];
-                }
-                
-                this.state.products = initialProducts;
+
+                this.state.products = results[0].data || [];
                 this.state.categories = results[1].data || [];
                 this.state.vipTiers = results[3].data || [];
-                const confRes = { data: results[2].data }; // Mapped securely for the coupon engine below
-                
-                // 3. TRIGGER BACKGROUND HYDRATION
-                // Quietly download the rest of the catalog in the background so Search, Cart, & Categories stay instant
-                setTimeout(async () => {
-                    const { data } = await supabase.from('products')
-                        .select('*, categories(name)')
-                        .order('created_at', { ascending: false })
-                        .range(24, 5000);
-                        
-                    if (data && data.length > 0) {
-                        const currentIds = new Set(this.state.products.map(p => p.id));
-                        const newProducts = data.filter(p => !currentIds.has(p.id));
-                        this.state.products = [...this.state.products, ...newProducts];
-                        
-                        // Silently refresh the top category scroller to include newly discovered categories
-                        if (this.state.activeRouteKey === 'home') this.renderHeroCategories();
-                    }
-                }, 800);
+                const confRes = { data: results[2].data };
                 this.state.coupons = [];
                 
                 // Validate any saved coupon completely via the secure Server-Side Edge Function
@@ -800,7 +752,7 @@
 
         // --- RENDERERS ---
 
-        generateProductCardHTML: function(p, size = 'standard', layout = 'grid', isPriority = false) {
+        generateProductCardHTML: function(p, size = 'standard', layout = 'grid', isPriority = false, showButton = false) {
             const isAvailable = p.is_active !== false;
             const img = p.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
             const loadingAttr = isPriority ? 'loading="eager" fetchpriority="high"' : 'loading="lazy" decoding="async"';
@@ -808,52 +760,42 @@
             const offPercentage = (p.mrp_price && p.mrp_price > p.selling_price) ? Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100) : 0;
             const hasDiscount = offPercentage > 0;
 
-            // HIERARCHY: Small cards use the variant-style 2-line layout; standard/large cards use side-by-side
-            let pricingHtml = '';
-            if (size === 'small') {
-                pricingHtml = `
-                    <div class="price-top-row">
-                        <span class="selling-price">₹${p.selling_price}</span>
-                        <span class="mrp-strike" ${!hasDiscount ? 'style="visibility:hidden"' : ''}>₹${p.mrp_price || 0}</span>
-                    </div>
-                    <div class="discount-bottom-row" ${!hasDiscount ? 'style="visibility:hidden"' : ''}>
-                        <span class="inline-discount-badge">${offPercentage}% OFF</span>
-                    </div>
-                `;
-            } else {
-                pricingHtml = `
-                    <div class="price-stack">
-                        <div class="selling-price">₹${p.selling_price}</div>
-                        <div class="mrp-strike" ${!hasDiscount ? 'style="visibility:hidden"' : ''}>₹${p.mrp_price || 0}</div>
-                    </div>
-                    ${hasDiscount ? `<div class="inline-discount-badge">${offPercentage}% OFF</div>` : ''}
-                `;
-            }
-            
-            let statusHtml = '';
-            if (!isAvailable) {
-                statusHtml = `<span class="status-unavailable">SOLD OUT</span>`;
+            const discountBadgeHtml = hasDiscount ? `<div class="premium-discount-badge">${offPercentage}% OFF</div>` : '';
+            const statusHtml = !isAvailable ? `<div class="premium-status-unavailable">SOLD OUT</div>` : '';
+
+            // PREMIUM QUICK ADD BUTTON (Distinct Pill Design)
+            let btnHtml = '';
+            if (showButton) {
+                btnHtml = isAvailable 
+                    ? `<div class="quick-add-wrapper">
+                           <button type="button" class="btn-quick-add" onclick="event.preventDefault(); event.stopPropagation(); Store.addToCart('${p.id}')">
+                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                               <span>Quick Add</span>
+                           </button>
+                       </div>` 
+                    : `<div class="quick-add-wrapper">
+                           <button type="button" class="btn-quick-add disabled-add" disabled>
+                               <span>Sold Out</span>
+                           </button>
+                       </div>`;
             }
 
-            const btnHtml = isAvailable 
-                ? `<button type="button" class="btn-add-standard" onclick="event.preventDefault(); event.stopPropagation(); Store.addToCart('${p.id}')" aria-label="Add to Bag"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg> <span class="btn-text-content">Add to Bag</span></button>` 
-                : `<button type="button" class="btn-add-standard disabled-add" disabled><span class="btn-text-content">Sold Out</span></button>`;
-
+            // Pure 2-Zone Layout: No buttons normally, strictly visual discovery
             return `
                 <a href="javascript:void(0)" onclick="Store.navigate('product', '${p.id}')" class="store-product-card size-${size} layout-${layout} ${!isAvailable ? 'is-unavailable' : ''}">
                     <div class="img-wrapper">
                         ${statusHtml}
+                        ${discountBadgeHtml}
                         <img src="${img}" alt="${p.name}" ${loadingAttr}>
                     </div>
                     <div class="store-product-card-details">
                         <h3 class="store-product-card-title">${p.name}</h3>
-                        <div class="store-product-card-price-row">
-                            ${pricingHtml}
-                        </div>
-                        <div class="store-product-card-action">
-                            ${btnHtml}
+                        <div class="premium-price-lockup">
+                            <span class="premium-selling-price">₹${p.selling_price}</span>
+                            ${hasDiscount ? `<span class="premium-mrp-price">₹${p.mrp_price}</span>` : ''}
                         </div>
                     </div>
+                    ${btnHtml}
                 </a>
             `;
         },
@@ -995,33 +937,54 @@
             const gridContainer = document.getElementById('home-products-grid');
             const loadMoreContainer = document.getElementById('home-load-more-container');
             
-            let displayList = this.state.products;
-            if (this.state.homeCurrentSort !== 'recommended') {
-                displayList = this.sortArray(displayList, this.state.homeCurrentSort);
-            }
-
             if (!isAppend) {
-                this.state.homeRenderedSections = 0; 
-                gridContainer.className = 'storefront-sections-wrapper';
+                this.state.homeFeedIndex = 0; 
+                // PHASE 1 & 2: Apply the unified "Bento Box" continuous grid class, destroying the group/section layout
+                gridContainer.className = 'products-grid bento-grid'; 
                 gridContainer.innerHTML = '';
+                
+                let displayList = this.state.products;
+                if (this.state.homeCurrentSort !== 'recommended') {
+                    this.state.masterFeed = this.sortArray(displayList, this.state.homeCurrentSort);
+                } else {
+                    // Generate personalized deduplicated feed
+                    this.state.masterFeed = this.SmartComposer.buildMasterFeed(displayList);
+                }
             }
 
-            let newSections = [];
-            if (this.state.homeCurrentSort !== 'recommended') {
-                 const chunkProducts = displayList.slice(this.state.homeRenderedSections * 12, (this.state.homeRenderedSections + 1) * 12);
-                 if (chunkProducts.length > 0) newSections.push({ id: `sort-${this.state.homeRenderedSections}`, type: 'grid', title: this.state.homeRenderedSections === 0 ? 'Sorted Products' : '', products: chunkProducts });
-            } else {
-                 // Fetch next 3 infinite sections on every single scroll cycle
-                 newSections = this.SmartComposer.generateInfiniteSections(displayList, this.state.categories, this.state.homeRenderedSections, 3);
+            const chunkSize = 12;
+            const chunkProducts = this.state.masterFeed.slice(this.state.homeFeedIndex, this.state.homeFeedIndex + chunkSize);
+
+            if (chunkProducts.length > 0) {
+                 let html = '';
+                 chunkProducts.forEach((p, i) => {
+                     const globalIndex = this.state.homeFeedIndex + i;
+                     let cardSize = 'standard';
+                     
+                     // PHASE 2 BENTO LOGIC: Every 5th product becomes a large feature card on the recommended feed
+                     if (this.state.homeCurrentSort === 'recommended' && globalIndex % 5 === 4) {
+                         cardSize = 'bento-large';
+                     }
+                     
+                     html += this.generateProductCardHTML(p, cardSize, 'grid', !isAppend && i < 4, false);
+                 });
+                 gridContainer.insertAdjacentHTML('beforeend', html);
+                 this.state.homeFeedIndex += chunkSize;
             }
             
-            if (newSections.length > 0) {
-                gridContainer.insertAdjacentHTML('beforeend', newSections.map((sec, idx) => this.renderSingleSectionHTML(sec, !isAppend && idx === 0)).join(''));
-                this.state.homeRenderedSections += newSections.length;
-                loadMoreContainer.classList.remove('hidden');
-            } else {
-                if (!isAppend) gridContainer.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-muted);">No products found.</div>';
+            // Handle End of Catalog Seamlessly
+            if (this.state.homeFeedIndex >= this.state.masterFeed.length) {
                 loadMoreContainer.classList.add('hidden');
+                if (this.state.masterFeed.length > 0 && !document.getElementById('end-of-catalog')) {
+                    // Append end message safely outside the grid layout so it spans full width
+                    gridContainer.insertAdjacentHTML('afterend', '<div id="end-of-catalog" style="grid-column: 1/-1; text-align: center; padding: 40px 16px; color: var(--text-muted); font-size: 14px; font-weight: 500; width: 100%;">You have reached the end of the catalog!</div>');
+                }
+            } else {
+                loadMoreContainer.classList.remove('hidden');
+            }
+
+            if (this.state.masterFeed.length === 0) {
+                gridContainer.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px 0; color: var(--text-muted);">No products found.</div>';
             }
         },
 
@@ -1075,8 +1038,8 @@
             document.getElementById('search-page-title').textContent = `Results for "${query}"`;
             const q = query.toLowerCase();
             
-            // Save last search to personalize 'recommended' sorting
-            localStorage.setItem('rr_last_search', q);
+            // Track user intent for the Smart Feed
+            this.SmartComposer.logIntent(query, 3); // High weight for explicit searches
             
             const matches = this.performSearch(query);
             const gridContainer = document.getElementById('search-grid');
@@ -1102,15 +1065,17 @@
                 return;
             }
             
-            // Engage Smart Search Composition natively via the Master Layout Engine
-            const searchSections = this.SmartComposer.composeSearchResults(matches, this.state.categories);
-            gridContainer.innerHTML = searchSections.map((sec, idx) => this.renderSingleSectionHTML(sec, idx === 0)).join('');
+            // PHASE 2: Search uses a strict, uniform Precision Grid (no bento resizing)
+            gridContainer.className = 'products-grid';
+            gridContainer.innerHTML = matches.map((p, idx) => this.generateProductCardHTML(p, 'standard', 'grid', idx < 4, false)).join('');
         },
 
         renderCategory: function(catId) {
             this.state.currentCategoryParam = catId;
             const catObj = this.state.categories.find(c => c.id === catId);
             document.getElementById('category-page-title').textContent = catObj ? catObj.name : 'Category';
+            
+            if (catObj) this.SmartComposer.logIntent(catObj.name, 2); // Medium weight for category clicks
             
             // Ensure sort dropdown matches state
             const sortSelect = document.getElementById('category-sort');
@@ -1158,6 +1123,9 @@
                 container.innerHTML = '<div style="padding:40px 16px; text-align:center;">Product not found.</div>';
                 return;
             }
+
+            // Track category view intent (Only broad categories, never full product titles)
+            if (p.categories?.name) this.SmartComposer.logIntent(p.categories.name, 1);
 
             document.title = `RR ELECTRRIC — ${p.name}`;
 
@@ -1507,12 +1475,12 @@
                 const recs = data.map(d => this.state.products.find(p => p.id === d.rec_id)).filter(Boolean);
                 
                 if (recs.length > 0) {
-                    // Uses the unified scaling system (size-small layout-grid) to ensure flawless image rendering
+                    // Restored: Horizontal Small Card Shelf for FBT
                     const html = `
                         <div class="cross-sell-container">
-                            <div class="cross-sell-title">Frequently Bought Together</div>
-                            <div class="shelf-track" style="margin-top: 8px;">
-                                ${recs.map(acc => this.generateProductCardHTML(acc, 'small', 'grid', false)).join('')}
+                            <div class="cross-sell-title" style="margin-bottom: 8px;">Frequently Bought Together</div>
+                            <div class="shelf-track" style="margin-top: 8px; padding-bottom: 16px;">
+                                ${recs.map(acc => this.generateProductCardHTML(acc, 'small', 'grid', false, true)).join('')}
                             </div>
                         </div>
                     `;
@@ -1727,6 +1695,9 @@
         addToCart: function(productId, packData = null, selectedOptions = null) {
             const p = this.state.products.find(x => x.id === productId);
             if (!p || p.is_active === false) return;
+
+            // Track category intent on bag add (Ignoring full product titles)
+            if (p.categories?.name) this.SmartComposer.logIntent(p.categories.name, 3);
             
             const isPack = !!(packData && packData.isPack && packData.qty > 1);
             const packQty = isPack ? packData.qty : 1;
@@ -2185,24 +2156,22 @@
             displayCats.sort(() => Math.random() - 0.5);
             displayCats = displayCats.slice(0, 4);
 
-            if (displayCats.length > 0) {
+            // PHASE 4: The Cart "Impulse" Optimizer (Micro-Shelf)
+            // Fetch low-cost, high-margin consumables that act as "Free Shipping Unlockers" or impulse buys
+            let impulseProducts = this.state.products.filter(p => p.is_active !== false && p.selling_price < 250);
+            impulseProducts.sort(() => 0.5 - Math.random());
+            impulseProducts = impulseProducts.slice(0, 8);
+
+            if (impulseProducts.length > 0) {
+                let titleMsg = "Forgot Something?";
+                if (!totals.isFreeDelivery && totals.remainingForFreeDelivery > 0) {
+                    titleMsg = `Add ₹${totals.remainingForFreeDelivery.toFixed(2)} more for FREE delivery!`;
+                }
+                
                 recSection.innerHTML = `
-                    <h2 style="font-size: 18px; margin-bottom: 16px; font-weight: 800;">Explore Categories</h2>
-                    <div style="display: flex; flex-direction: column; gap: 16px;">
-                        ${displayCats.map(c => {
-                            const catProducts = this.state.products.filter(prod => prod.category_id === c.id).slice(0, 4);
-                            return `
-                                <div class="category-discovery-section" style="margin-bottom: 0;">
-                                    <div class="category-discovery-header">
-                                        <h2>${c.name}</h2>
-                                        <a href="javascript:void(0)" onclick="Store.navigate('category', '${c.id}')">See more →</a>
-                                    </div>
-                                    <div class="category-discovery-row">
-                                        ${catProducts.map(prod => this.generateCategoryThumbnailHTML(prod)).join('')}
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
+                    <h2 style="font-size: 16px; margin-bottom: 12px; font-weight: 800; color: var(--slate-900);">${titleMsg}</h2>
+                    <div class="shelf-track" style="margin-top: 8px;">
+                        ${impulseProducts.map(p => this.generateProductCardHTML(p, 'small', 'grid', false, true)).join('')}
                     </div>
                 `;
                 recSection.dataset.rendered = 'true';
