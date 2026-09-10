@@ -1075,7 +1075,7 @@
                     <div class="category-discovery-section">
                         <div class="category-discovery-header">
                             <h2>${c.name}</h2>
-                            <a href="javascript:void(0)" onclick="Store.navigate('category', '${c.id}')">See more →</a>
+                            <a href="javascript:void(0)" onclick="Store.navigate('category', '${c.id}')">See more</a>
                         </div>
                         <div class="category-discovery-row">
                             ${catProducts.map(p => this.generateCategoryThumbnailHTML(p)).join('')}
@@ -1083,6 +1083,15 @@
                     </div>
                 `;
             }).join('');
+
+            document.querySelectorAll('.category-discovery-row').forEach(row => {
+                row.addEventListener('wheel', e => {
+                    if (row.scrollWidth > row.clientWidth) {
+                        row.scrollLeft += e.deltaY;
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+            });
         },
 
         renderSearch: function(query) {
@@ -1529,9 +1538,20 @@
                     // Restored: Horizontal Small Card Shelf for FBT
                     const html = `
                         <div class="cross-sell-container">
-                            <div class="cross-sell-title" style="margin-bottom: 8px;">Frequently Bought Together</div>
-                            <div class="shelf-track" style="margin-top: 8px; padding-bottom: 16px;">
-                                ${recs.map(acc => this.generateProductCardHTML(acc, 'small', 'grid', false, true)).join('')}
+                            <div class="cross-sell-title" style="margin-bottom: 8px;">
+                                Frequently Bought Together
+                            </div>
+
+                            <div class="fbt-product-track">
+                                ${recs.map(acc =>
+                                    this.generateProductCardHTML(
+                                        acc,
+                                        'small',
+                                        'grid',
+                                        false,
+                                        true
+                                    )
+                                ).join('')}
                             </div>
                         </div>
                     `;

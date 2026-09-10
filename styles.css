@@ -1287,30 +1287,104 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
    CATEGORIES PAGE 3D COMPACT REDESIGN
    ============================================================ */
 .categories-page-header {
-    padding: 10px 0 6px 0;
+    padding: 14px 0 12px 0;
+
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
+}
+
+.categories-page-header .page-title {
+    font-size: clamp(22px, 3vw, 28px);
+    line-height: 1.1;
+    font-weight: 850;
+    letter-spacing: -0.035em;
+    color: var(--slate-900);
+    margin: 0;
 }
 
 .categories-subtitle {
-    color: var(--text-muted);
+    color: var(--slate-500);
     font-size: 12px;
+    line-height: 1.45;
     font-weight: 500;
+    margin: 0;
 }
 
-/* OPTIMIZED CATEGORY SECTIONS WITH RENDER SKIPPING */
+.categories-page-header {
+    position: relative;
+}
+
+.categories-page-header::after {
+    content: "";
+    width: 42px;
+    height: 3px;
+
+    margin-top: 4px;
+
+    border-radius: 999px;
+
+    background: linear-gradient(
+        90deg,
+        #0284c7,
+        #38bdf8
+    );
+}
+
+/* ============================================================
+   CATEGORY BROWSER — PROFESSIONAL RESPONSIVE SECTIONS
+   ============================================================ */
+
 .category-discovery-section {
     content-visibility: auto;
-    contain-intrinsic-size: auto 150px; /* Reserves layout space to prevent scroll jumps */
+    contain-intrinsic-size: auto 150px;
+
+    width: 100%;
+    min-width: 0;
+
     background: #ffffff;
-    border: 1px solid rgba(226, 232, 240, 0.9);
+
+    border: 1px solid rgba(226, 232, 240, 0.95);
     border-radius: 18px;
+
     padding: 12px 14px;
     margin-bottom: 10px;
-    box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.06); /* Simplified shadow to stop mobile paint lag */
-    transform: translateZ(0);
-    will-change: transform;
+
+    box-shadow:
+        0 3px 10px rgba(15, 23, 42, 0.035);
+
+    /*
+     * IMPORTANT:
+     * Do not force every category section onto its own
+     * compositor layer. These sections are primarily static.
+     */
+    transform: none;
+    will-change: auto;
+
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* Last section inside a single-column layout */
+.category-discovery-section:last-child {
+    margin-bottom: 0;
+}
+
+/* Desktop hover — only when hover actually exists */
+@media (hover: hover) and (pointer: fine) {
+
+    .category-discovery-section {
+        transition:
+            box-shadow 0.18s ease,
+            border-color 0.18s ease;
+    }
+
+    .category-discovery-section:hover {
+        box-shadow:
+            0 8px 20px rgba(15, 23, 42, 0.055);
+
+        border-color: rgba(2, 132, 199, 0.18);
+    }
 }
 
 .category-discovery-section:last-child {
@@ -1340,20 +1414,184 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     letter-spacing: -0.02em;
 }
 
-/* Compact 3D Tactile "See More" Button */
+/* ============================================================
+   CATEGORY INDEX RESPONSIVE MATRIX
+   ============================================================ */
+
+/*
+ * The actual category sections are generated inside:
+ *
+ * #categories-index-container
+ *
+ * Mobile:
+ *     1 column
+ *
+ * Tablet:
+ *     1 column until the layout has enough room
+ *
+ * Desktop:
+ *     2 columns
+ *
+ * Very wide displays:
+ *     3 columns
+ */
+
+#categories-index-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+
+    width: 100%;
+}
+
+/*
+ * At this point each section is already a complete visual card,
+ * so the parent grid controls the page-level arrangement.
+ */
+#categories-index-container > .category-discovery-section {
+    margin-bottom: 0;
+}
+
+/* Tablet landscape / smaller laptops */
+@media (min-width: 900px) {
+
+    #categories-index-container {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 14px;
+    }
+
+    .category-discovery-section {
+        padding: 14px;
+        border-radius: 18px;
+    }
+
+    .category-discovery-header h2 {
+        font-size: 15px;
+    }
+}
+
+/* Wide desktop */
+@media (min-width: 1500px) {
+
+    #categories-index-container {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+
+        gap: 16px;
+    }
+}
+
+/* ============================================================
+   PREMIUM 3D "SEE MORE" BUTTON
+   ============================================================ */
+
 .category-discovery-header a {
+    position: relative;
+
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    background: rgba(2, 132, 199, 0.08);
-    color: var(--primary);
-    border: 1px solid rgba(2, 132, 199, 0.2);
-    padding: 3px 10px;
-    border-radius: 9999px;
-    font-size: 10.5px;
-    font-weight: 700;
+    justify-content: center;
+    gap: 5px;
+
+    min-height: 30px;
+    padding: 0 11px;
+
+    background: linear-gradient(
+        180deg,
+        #e0f2fe 0%,
+        #bae6fd 48%,
+        #7dd3fc 100%
+    );
+
+    color: #0369a1;
+
+    border: 1px solid rgba(2, 132, 199, 0.28);
+    border-radius: 10px;
+
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1px;
+
     text-decoration: none;
-    transition: all 0.2s ease;
+    white-space: nowrap;
+
+    /*
+     * Physical depth:
+     * top highlight + lower contact shadow.
+     */
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.95),
+        inset 0 -2px 3px rgba(2, 132, 199, 0.10),
+        0 2px 0 rgba(2, 132, 199, 0.20),
+        0 4px 8px rgba(2, 132, 199, 0.14);
+
+    transform: translateY(0);
+
+    transition:
+        transform 0.16s ease,
+        box-shadow 0.16s ease,
+        background 0.16s ease,
+        color 0.16s ease;
+
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Small arrow movement without creating a heavy animation */
+.category-discovery-header a::after {
+    content: "→";
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1;
+
+    transition: transform 0.16s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+
+    .category-discovery-header a:hover {
+        color: #075985;
+
+        background: linear-gradient(
+            180deg,
+            #e0f2fe 0%,
+            #7dd3fc 100%
+        );
+
+        transform: translateY(-1px);
+
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 1),
+            inset 0 -2px 3px rgba(2, 132, 199, 0.08),
+            0 3px 0 rgba(2, 132, 199, 0.20),
+            0 7px 14px rgba(2, 132, 199, 0.18);
+    }
+
+    .category-discovery-header a:hover::after {
+        transform: translateX(2px);
+    }
+
+    .category-discovery-header a:active {
+        transform: translateY(2px);
+
+        box-shadow:
+            inset 0 2px 4px rgba(2, 132, 199, 0.16),
+            0 1px 0 rgba(2, 132, 199, 0.18),
+            0 2px 4px rgba(2, 132, 199, 0.10);
+    }
+}
+
+/* Touch devices */
+@media (hover: none) {
+
+    .category-discovery-header a:active {
+        transform: translateY(1px);
+
+        box-shadow:
+            inset 0 2px 4px rgba(2, 132, 199, 0.14),
+            0 2px 4px rgba(2, 132, 199, 0.10);
+    }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1366,30 +1604,89 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 .category-discovery-row {
     display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+
     gap: 8px;
+
+    width: 100%;
+    max-width: 100%;
+
     overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: none; 
+    overflow-y: hidden;
+
+    padding: 2px 2px 6px 2px;
+
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
     -webkit-overflow-scrolling: touch;
+
+    touch-action: pan-x;
+
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: none;
+
+    scroll-snap-type: none;
+
+    /*
+     * Prevent flex children from ever shrinking into the rail.
+     */
+    isolation: isolate;
+}
+
+.category-discovery-row::-webkit-scrollbar {
+    display: none;
+}
+
+.category-discovery-row > * {
+    flex: 0 0 auto;
 }
 .category-discovery-row::-webkit-scrollbar { display: none; }
 
 .category-thumb-card {
     display: block;
     position: relative;
+
     background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 14px;
+
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    border-radius: 13px;
+
     overflow: hidden;
+
     min-width: 70px;
     max-width: 70px;
     height: 70px;
-    flex-shrink: 0;
+
+    flex: 0 0 70px;
+
     text-decoration: none;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06); /* Clean, lightweight shadow */
+
+    box-shadow:
+        0 2px 7px rgba(15, 23, 42, 0.055);
+
     -webkit-tap-highlight-color: transparent;
-    transform: translateZ(0);
-    backface-visibility: hidden;
+
+    /*
+     * No permanent GPU layer.
+     */
+    transform: none;
+    backface-visibility: visible;
+
+    transition:
+        border-color 0.16s ease,
+        box-shadow 0.16s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+
+    .category-thumb-card:hover {
+        border-color: rgba(2, 132, 199, 0.28);
+
+        box-shadow:
+            0 5px 12px rgba(15, 23, 42, 0.08);
+    }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1400,19 +1697,55 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 .category-thumb-card img {
+    display: block;
+
     width: 100%;
     height: 100%;
-    object-fit: contain; /* Changed from cover to contain to prevent heavy cropping */
-    padding: 4px;
+
+    object-fit: contain;
+
+    padding: 3px;
+
     background: #ffffff;
-    /* Removed mix-blend-mode: multiply to eliminate GPU blending lag */
-    z-index: 2;
+
+    border-radius: inherit;
+
+    transition: transform 0.18s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .category-thumb-card:hover img {
+        transform: scale(1.04);
+    }
 }
 
 @media (min-width: 768px) {
-    .category-discovery-section { margin-bottom: 14px; padding: 16px; }
-    .category-discovery-header h2 { font-size: 15px; }
-    .category-thumb-card { min-width: 90px; max-width: 90px; height: 90px; border-radius: 20px; }
+
+    .category-discovery-section {
+        padding: 14px;
+    }
+
+    .category-discovery-header h2 {
+        font-size: 15px;
+    }
+
+    .category-thumb-card {
+        min-width: 76px;
+        max-width: 76px;
+        height: 76px;
+        flex-basis: 76px;
+        border-radius: 14px;
+    }
+}
+
+@media (min-width: 1200px) {
+
+    .category-thumb-card {
+        min-width: 82px;
+        max-width: 82px;
+        height: 82px;
+        flex-basis: 82px;
+    }
 }
 
 /* ============================================================
@@ -3134,11 +3467,263 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 /* ============================================================
    CROSS-SELLING ENGINE (FREQUENTLY BOUGHT TOGETHER)
    ============================================================ */
+/* ============================================================
+   FREQUENTLY BOUGHT TOGETHER
+   Dedicated compact horizontal product rail
+   ============================================================ */
+
 .cross-sell-container {
     margin-top: 20px;
     margin-bottom: 20px;
     border-top: 1px dashed var(--border-subtle);
     padding-top: 16px;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* Heading */
+.cross-sell-title {
+    font-size: 11px;
+    line-height: 1.2;
+    font-weight: 800;
+    color: var(--slate-700);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/*
+ * Dedicated horizontal scrolling rail.
+ *
+ * No wrapping.
+ * No grid.
+ * Cards retain their fixed compact width.
+ */
+.fbt-product-track {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+
+    width: 100%;
+    max-width: 100%;
+
+    gap: 8px;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    padding: 4px 2px 10px 2px;
+
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    -webkit-overflow-scrolling: touch;
+
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: none;
+
+    /*
+     * Explicitly allow horizontal touch dragging.
+     * This is intentionally dedicated to FBT instead of
+     * changing the behavior of every horizontal component.
+     */
+    touch-action: pan-x;
+
+    scroll-snap-type: none;
+    cursor: grab;
+}
+
+.fbt-product-track::-webkit-scrollbar {
+    display: none;
+}
+
+.fbt-product-track:active {
+    cursor: grabbing;
+}
+
+/*
+ * Compact FBT cards.
+ *
+ * This is the rule that prevents the desktop screenshot
+ * problem where the card expands to the whole column.
+ */
+.fbt-product-track .store-product-card {
+    width: 118px !important;
+    min-width: 118px !important;
+    max-width: 118px !important;
+
+    flex: 0 0 118px !important;
+
+    height: auto !important;
+    min-height: 0 !important;
+
+    align-self: flex-start;
+}
+
+/*
+ * Smaller image area suitable for a recommendation rail.
+ */
+.fbt-product-track .store-product-card .img-wrapper {
+    width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+
+    padding: 0 !important;
+}
+
+/*
+ * Image goes edge-to-edge inside the invisible image wrapper.
+ */
+.fbt-product-track .store-product-card .img-wrapper img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/*
+ * Compact product information.
+ */
+.fbt-product-track .store-product-card .store-product-card-details {
+    padding: 6px 2px 2px 2px !important;
+    gap: 3px !important;
+}
+
+.fbt-product-track .store-product-card .store-product-card-title {
+    font-size: 9.5px !important;
+    line-height: 1.3 !important;
+
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    min-height: 24px;
+}
+
+.fbt-product-track .store-product-card .premium-price-lockup {
+    gap: 3px;
+}
+
+.fbt-product-track .store-product-card .premium-selling-price {
+    font-size: 11px !important;
+}
+
+.fbt-product-track .store-product-card .premium-mrp-price {
+    font-size: 8px !important;
+}
+
+/*
+ * Compact discount label for recommendation cards.
+ */
+.fbt-product-track .store-product-card .premium-discount-badge {
+    top: 4px !important;
+    left: 4px !important;
+
+    min-height: 17px !important;
+    padding: 0 5px !important;
+
+    font-size: 7px !important;
+    border-radius: 5px !important;
+}
+
+/*
+ * Prevent the Quick Add button from making recommendation
+ * cards taller than necessary.
+ */
+.fbt-product-track .quick-add-wrapper {
+    padding: 4px 2px 2px 2px !important;
+}
+
+.fbt-product-track .btn-quick-add {
+    height: 25px !important;
+    font-size: 8px !important;
+    padding: 0 7px !important;
+    gap: 3px !important;
+}
+
+.fbt-product-track .btn-quick-add svg {
+    width: 9px !important;
+    height: 9px !important;
+}
+
+/* ============================================================
+   FBT DESKTOP
+   ============================================================ */
+
+@media (min-width: 768px) {
+
+    .fbt-product-track {
+        gap: 10px;
+        padding-bottom: 10px;
+    }
+
+    .fbt-product-track .store-product-card {
+        width: 118px !important;
+        min-width: 118px !important;
+        max-width: 118px !important;
+        flex: 0 0 118px !important;
+    }
+
+    /*
+     * Preserve the compact recommendation-card proportions
+     * even though the general desktop stylesheet makes product
+     * cards width: 100%.
+     */
+    .fbt-product-track .store-product-card .img-wrapper {
+        aspect-ratio: 1 / 1 !important;
+    }
+}
+
+/* ============================================================
+   FBT MOBILE
+   ============================================================ */
+
+@media (max-width: 767px) {
+
+    .fbt-product-track {
+        gap: 8px;
+
+        /*
+         * Strong native horizontal gesture handling.
+         */
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        touch-action: pan-x !important;
+        -webkit-overflow-scrolling: touch !important;
+
+        padding-left: 2px;
+        padding-right: 2px;
+    }
+
+    .fbt-product-track .store-product-card {
+        width: 118px !important;
+        min-width: 118px !important;
+        max-width: 118px !important;
+        flex: 0 0 118px !important;
+    }
+}
+
+@media (max-width: 400px) {
+
+    .fbt-product-track .store-product-card {
+        width: 108px !important;
+        min-width: 108px !important;
+        max-width: 108px !important;
+        flex-basis: 108px !important;
+    }
+
+    .fbt-product-track .store-product-card-title {
+        font-size: 9px !important;
+    }
+
+    .fbt-product-track .store-product-card .premium-selling-price {
+        font-size: 10.5px !important;
+    }
 }
 
 .cross-sell-title {
