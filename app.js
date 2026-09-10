@@ -1208,16 +1208,22 @@
                             let pricingHtml = `<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 5px; margin-bottom: 2px; padding-bottom: 2px; border-bottom: 1px solid var(--slate-200);">`;
 
                             // Left side: Price & MRP
-                            pricingHtml += `<div style="display: flex; flex-direction: column; gap: 8px;">`;
+                            pricingHtml += `<div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;">`;
                             pricingHtml += `<div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">`;
                             pricingHtml += `<span style="font-size: 32px; font-weight: 800; color: var(--slate-900); line-height: 1;">₹${p.selling_price}</span>`;
                             
                             if (p.mrp_price && p.mrp_price > p.selling_price) {
-                                const off = Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100);
-                                pricingHtml += `<span style="font-size: 16px; color: var(--slate-400); text-decoration: line-through; font-weight: 500;">₹${p.mrp_price}</span>`;
-                                pricingHtml += `<span style="color: var(--success); font-weight: 700; font-size: 14px;">${off}% OFF</span>`;
+                                pricingHtml += `<span style="font-size: 16px; color: var(--slate-400); text-decoration: line-through; font-weight: 600;">₹${p.mrp_price}</span>`;
                             }
                             pricingHtml += `</div>`;
+                            
+                            if (p.mrp_price && p.mrp_price > p.selling_price) {
+                                const off = Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100);
+                                pricingHtml += `<div class="pdp-premium-discount">
+                                    <span class="pct">${off}%</span>
+                                    <span class="off-text">OFF</span>
+                                </div>`;
+                            }
                             pricingHtml += `</div>`;
 
                             // Right side: Warranty Badge

@@ -2773,6 +2773,39 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     padding-bottom: 24px;
     border-bottom: 1px solid var(--border);
 }
+
+/* Premium 3D Discount Badge for Product Detail Page */
+.pdp-premium-discount {
+    display: inline-flex;
+    align-items: baseline;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #ffffff;
+    border-radius: 50px; /* Transforms it into a sleek, premium pill */
+    padding: 6px 14px;
+    gap: 6px;
+    box-shadow: 
+        0 6px 14px -4px rgba(220, 38, 38, 0.4), 
+        inset 0 2px 4px rgba(255, 255, 255, 0.4), 
+        inset 0 -3px 4px rgba(153, 27, 27, 0.4); /* High-end 3D glossy bevel */
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.pdp-premium-discount .pct {
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    line-height: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.pdp-premium-discount .off-text {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    line-height: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
 .pdp-desc {
     color: var(--text-muted);
     font-size: 15px;
@@ -3602,8 +3635,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
  * Compact discount circle for FBT track
  */
 .fbt-product-track .store-product-card .premium-discount-badge {
-    width: 34px !important;
-    height: 34px !important;
+    width: 36px !important;
+    height: 36px !important;
     top: 6px !important;
     left: 6px !important;
     border-radius: 50% !important;
@@ -3614,14 +3647,17 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     top: 0 !important; left: 0 !important; border-radius: 8px 0 8px 0 !important;
 }
 .fbt-product-track .store-product-card .premium-discount-badge .pct {
-    font-size: 10px !important;
+    font-size: 12px !important;
+    line-height: 0.9 !important;
     letter-spacing: -0.5px !important;
     text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
     margin-top: 1px !important;
+    margin-bottom: 0px !important;
 }
 .fbt-product-track .store-product-card .premium-discount-badge .off-text {
-    font-size: 6px !important;
-    letter-spacing: 0.5px !important;
+    font-size: 5.5px !important;
+    line-height: 0.9 !important;
+    letter-spacing: 0.2px !important;
     text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
 }
 
@@ -4035,34 +4071,84 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 /* ============================================================
-   RESTORED: UPGRADED PRODUCT CARD VISUALS
+   PREMIUM 3D DISCOUNT LABEL (RESTORED)
    ============================================================ */
 
-/* Sleek Edge-Aligned Discount Badge */
-.product-discount-badge {
-    position: absolute;
-    top: 0; 
-    left: 0; 
-    background: linear-gradient(135deg, #ef4444, #dc2626); /* Vibrant 3D red gradient */
-    color: #ffffff;
-    font-weight: 800;
-    font-size: 8.5px; /* Squeezed down for perfect proportion */
-    padding: 2px 6px; /* Minimal padding */
-    border-radius: var(--radius-sm) 0 4px 0; /* Sharper curved corner to match wrapper */
-    letter-spacing: 0.2px;
-    box-shadow: 2px 3px 6px rgba(220, 38, 38, 0.3);
-    z-index: 10;
-    text-transform: uppercase;
+.premium-discount-badge {
+    position: absolute !important;
+    top: 8px !important;
+    left: 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 46px !important; /* Increased to stop clipping */
+    height: 46px !important; /* Increased to stop clipping */
+    min-height: auto !important;
+    padding: 0 !important;
+    background: linear-gradient(135deg, #ff5252 0%, #dc2626 100%) !important;
+    color: #ffffff !important;
+    border: 2px solid #ffffff !important;
+    border-radius: 50% !important;
+    box-shadow:
+        0 6px 12px -2px rgba(220, 38, 38, 0.4),
+        inset 0 3px 4px rgba(255, 255, 255, 0.4),
+        inset 0 -3px 4px rgba(153, 27, 27, 0.4) !important;
+    z-index: 20 !important;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease !important;
 }
 
-/* Ultra-Compact Badge Variant for Smaller Grids */
-.product-discount-badge.compact,
-.cross-sell-grid .product-discount-badge,
-#cart-recs-grid .product-discount-badge,
-.product-detail-layout .products-grid .product-discount-badge {
-    font-size: 7.5px; 
-    padding: 1.5px 4px; 
-    border-radius: var(--radius-sm) 0 4px 0; /* Matches sharper corners */
+.premium-discount-badge .pct {
+    font-size: 15.5px !important;
+    font-weight: 900 !important;
+    line-height: 0.85 !important;
+    letter-spacing: -0.8px !important;
+    margin-bottom: 0px !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.15) !important;
+}
+
+.premium-discount-badge .off-text {
+    font-size: 7.5px !important;
+    font-weight: 800 !important;
+    line-height: 0.85 !important;
+    letter-spacing: 0.2px !important;
+    margin-top: 3px !important; /* Perfect spacing gap */
+    text-shadow: 0 1px 2px rgba(0,0,0,0.15) !important;
+}
+
+/* Compact screens */
+@media (max-width: 480px) {
+    .premium-discount-badge {
+        width: 40px !important;
+        height: 40px !important;
+        top: 6px !important;
+        left: 6px !important;
+        border-width: 1.5px !important;
+    }
+    .premium-discount-badge .pct { font-size: 13.5px !important; line-height: 0.85 !important; letter-spacing: -0.6px !important; margin-bottom: 0px !important; }
+    .premium-discount-badge .off-text { font-size: 6.5px !important; line-height: 0.85 !important; letter-spacing: 0.2px !important; margin-top: 3px !important; }
+}
+
+/* Very narrow phones */
+@media (max-width: 375px) {
+    .premium-discount-badge {
+        width: 36px !important;
+        height: 36px !important;
+        top: 5px !important;
+        left: 5px !important;
+    }
+    .premium-discount-badge .pct { font-size: 12.5px !important; line-height: 0.85 !important; letter-spacing: -0.5px !important; margin-bottom: 0px !important; }
+    .premium-discount-badge .off-text { font-size: 6px !important; line-height: 0.85 !important; letter-spacing: 0.2px !important; margin-top: 3px !important; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .store-product-card:hover .premium-discount-badge {
+        transform: translateY(-2px);
+        box-shadow:
+            0 8px 16px -2px rgba(220, 38, 38, 0.5),
+            inset 0 3px 4px rgba(255, 255, 255, 0.5),
+            inset 0 -3px 4px rgba(153, 27, 27, 0.4) !important;
+    }
 }
 
 /* ============================================================
@@ -4847,99 +4933,27 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ============================================================
-   PREMIUM DISCOUNT LABEL
-   HIGH-CONTRAST • COMPACT • PROFESSIONAL
-   ============================================================ */
-
-.premium-discount-badge {
-    position: absolute !important;
-    top: 8px !important; /* Floating safely inside the container */
-    left: 8px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 42px !important;
-    height: 42px !important;
-    min-height: auto !important;
-    padding: 0 !important;
-    background: linear-gradient(135deg, #ff5252 0%, #dc2626 100%) !important;
-    color: #ffffff !important;
-    border: 2px solid #ffffff !important;
-    border-radius: 50% !important; /* PERFECT CIRCLE */
-    box-shadow:
-        0 6px 12px -2px rgba(220, 38, 38, 0.4), /* Deep outer shadow */
-        inset 0 3px 4px rgba(255, 255, 255, 0.4), /* 3D top highlight */
-        inset 0 -3px 4px rgba(153, 27, 27, 0.4) !important; /* 3D bottom shading */
-    z-index: 20 !important;
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease !important;
+/* Scale badges down for small cards but keep the 3D circle */
+.size-small .premium-discount-badge { 
+    width: 38px !important; height: 38px !important; top: 6px !important; left: 6px !important; border-radius: 50% !important; border-width: 1.5px !important;
+    box-shadow: 0 4px 8px -2px rgba(220, 38, 38, 0.6), inset 0 2px 3px rgba(255, 255, 255, 0.4), inset 0 -2px 3px rgba(153, 27, 27, 0.5) !important;
 }
-
-.premium-discount-badge .pct {
+.size-small .premium-status-unavailable {
+    top: 0 !important; left: 0 !important; border-radius: 8px 0 8px 0 !important;
+}
+.size-small .premium-discount-badge .pct {
     font-size: 13px !important;
-    font-weight: 900 !important;
-    line-height: 1 !important;
-    letter-spacing: -0.5px;
-    border: none !important;
-    padding: 0 !important;
+    line-height: 0.85 !important;
+    letter-spacing: -0.5px !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
     margin-bottom: 0px !important;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.15);
 }
-
-.premium-discount-badge .off-text {
-    font-size: 9px !important;
-    font-weight: 800 !important;
-    line-height: 1 !important;
-    letter-spacing: 0.5px;
-    writing-mode: horizontal-tb !important;
-    transform: none !important;
-    padding: 0 !important;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.15);
-}
-
-/*
- * Slightly stronger presentation on real desktop hover.
- */
-@media (hover: hover) and (pointer: fine) {
-    .store-product-card:hover .premium-discount-badge {
-        transform: translateY(-1px);
-        box-shadow:
-            0 4px 9px rgba(5, 150, 105, 0.32),
-            inset 0 1px 0 rgba(255, 255, 255, 0.35);
-    }
-}
-
-/* Compact screens */
-@media (max-width: 480px) {
-    .premium-discount-badge {
-        width: 36px !important;
-        height: 36px !important;
-        top: 6px !important;
-        left: 6px !important;
-        border-width: 1.5px !important;
-    }
-    .premium-discount-badge .pct { font-size: 11px !important; }
-    .premium-discount-badge .off-text { font-size: 7.5px !important; }
-}
-
-/* Very narrow phones */
-@media (max-width: 375px) {
-    .premium-discount-badge {
-        width: 32px !important;
-        height: 32px !important;
-        top: 5px !important;
-        left: 5px !important;
-    }
-    .premium-discount-badge .pct { font-size: 10px !important; }
-    .premium-discount-badge .off-text { font-size: 7px !important; }
-}
-
-.premium-discount-badge {
-    background: #10b981; 
-    color: #ffffff;
-    z-index: 10;
-    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+.size-small .premium-discount-badge .off-text {
+    font-size: 6.5px !important;
+    line-height: 0.85 !important;
+    letter-spacing: 0.2px !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
+    margin-top: 3px !important;
 }
 
 .premium-status-unavailable {
@@ -5016,14 +5030,14 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     top: 0 !important; left: 0 !important; border-radius: 8px 0 8px 0 !important;
 }
 .size-small .premium-discount-badge .pct {
-    font-size: 10px !important;
+    font-size: 13px !important;
     letter-spacing: -0.5px !important;
     text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
-    margin-top: 1px !important;
+    margin-top: 0px !important;
 }
 .size-small .premium-discount-badge .off-text {
     font-size: 6px !important;
-    letter-spacing: 0.5px !important;
+    letter-spacing: 0.2px !important;
     text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
 }
 
@@ -5049,35 +5063,34 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     -webkit-line-clamp: 3;
 }
 .size-bento-large .premium-selling-price { font-size: 20px; }
-.size-bento-large .premium-discount-badge { 
-    width: 48px !important; height: 48px !important; top: 10px !important; left: 10px !important; border-radius: 50% !important; border-width: 2px !important; 
+/*
+ * Compact discount circle for FBT track
+ */
+.fbt-product-track .store-product-card .premium-discount-badge {
+    width: 38px !important;
+    height: 38px !important;
+    top: 6px !important;
+    left: 6px !important;
+    border-radius: 50% !important;
+    border-width: 1.5px !important;
+    box-shadow: 0 4px 8px -2px rgba(220, 38, 38, 0.6), inset 0 2px 3px rgba(255, 255, 255, 0.4), inset 0 -2px 3px rgba(153, 27, 27, 0.5) !important;
 }
-.size-bento-large .premium-status-unavailable {
+.fbt-product-track .store-product-card .premium-status-unavailable {
     top: 0 !important; left: 0 !important; border-radius: 8px 0 8px 0 !important;
 }
-.size-bento-large .premium-discount-badge .pct {
-    font-size: 14px !important;
+.fbt-product-track .store-product-card .premium-discount-badge .pct {
+    font-size: 13px !important;
+    line-height: 0.85 !important;
+    letter-spacing: -0.5px !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
+    margin-bottom: 0px !important;
 }
-.size-bento-large .premium-discount-badge .off-text {
-    font-size: 10px !important;
-}
-.list-track { display: flex; flex-direction: column; gap: 12px; width: 100%; }
-.layout-list { flex-direction: row; align-items: center; gap: 12px; }
-.layout-list .img-wrapper { width: 110px !important; aspect-ratio: 1/1 !important; flex-shrink: 0; padding: 8px !important; }
-.layout-list .store-product-card-details { padding: 8px 0; justify-content: center; }
-.layout-list .store-product-card-title { font-size: 14px !important; margin-bottom: 6px !important; }
-/* Flawlessly scaled micro-badges for tiny list images */
-.layout-list .premium-discount-badge { 
-    width: 28px !important; height: 28px !important; top: 4px !important; left: 4px !important; border-radius: 50% !important; border-width: 1px !important;
-}
-.layout-list .premium-status-unavailable {
-    top: 4px !important; left: 4px !important; border-radius: 4px !important;
-}
-.layout-list .premium-discount-badge .pct {
-    font-size: 8.5px !important; border: none !important;
-}
-.layout-list .premium-discount-badge .off-text {
-    font-size: 6px !important;
+.fbt-product-track .store-product-card .premium-discount-badge .off-text {
+    font-size: 6.5px !important;
+    line-height: 0.85 !important;
+    letter-spacing: 0.2px !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
+    margin-top: 3px !important;
 }
 
 /* Responsive Adjustments (Phones) */
@@ -5090,10 +5103,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
         width: 26px !important; height: 26px !important; top: 3px !important; left: 3px !important;
     }
     .layout-list .premium-discount-badge .pct {
-        font-size: 8px !important;
+        font-size: 9.5px !important; letter-spacing: -0.5px !important;
     }
     .layout-list .premium-discount-badge .off-text {
-        font-size: 5.5px !important;
+        font-size: 4.5px !important; letter-spacing: 0.2px !important;
     }
 }
 
