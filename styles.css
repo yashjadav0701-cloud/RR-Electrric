@@ -520,24 +520,25 @@ button:disabled, .btn-primary:disabled {
    PREMIUM 3D FLOATING BUTTONS (MOBILE NAVIGATION)
    ============================================================ */
 .mobile-bottom-nav {
-    display: flex;
-    flex-direction: row;
-    align-items: center; 
-    position: fixed;
-    bottom: 8px;
-    left: 8px;
-    right: 8px;
-    /* Removed expensive background blur. Replaced with 98% opaque solid color for flawless 60fps scrolling */
-    background: rgba(252, 253, 255, 0.98);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    border: 1px solid rgba(226, 232, 240, 0.9);
-    border-radius: 20px; /* RECTANGULAR SHAPE: Matches internal active pill radius */
-    z-index: 1000;
-    padding: 6px; /* Symmetrical padding for perfect concentric corners */
-    min-height: 60px; /* Guarantees a consistent, premium bar height */
-    margin-bottom: env(safe-area-inset-bottom, 0px);
-    box-shadow: 
+        display: flex;
+        flex-direction: row;
+        align-items: center; 
+        position: fixed;
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+        /* Removed expensive background blur. Replaced with 98% opaque solid color for flawless 60fps scrolling */
+        background: rgba(252, 253, 255, 0.98);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        border-radius: 999px; /* PERFECT FULL PILL */
+        z-index: 1000;
+        padding: 6px; /* Symmetrical padding for perfect concentric corners */
+        gap: 6px; /* Uniform gap matching the visual blueprint structure */
+        min-height: 64px; /* Guarantees a consistent, premium bar height */
+        margin-bottom: env(safe-area-inset-bottom, 0px);
+        box-shadow: 
         0 24px 48px -12px rgba(15, 23, 42, 0.35),
         0 8px 16px -4px rgba(15, 23, 42, 0.15),
         0 0 0 1px rgba(255, 255, 255, 0.8),
@@ -576,18 +577,18 @@ button:disabled, .btn-primary:disabled {
 .bottom-nav-item::before {
     content: '';
     position: absolute;
-    top: 2px;      
-    bottom: 2px;   
-    left: 4px;     
-    right: 4px;
+    top: 0;      
+    bottom: 0;   
+    left: 0;     
+    right: 0;
     /* PREMIUM COLORFUL PILL: Vivid glass blue gradient with sharp borders */
-    background: linear-gradient(135deg, #e0f2fe 0%, #cffafe 100%);
-    border-radius: 14px; /* MATEMATICALLY PERFECT CORNERS (20px outer - 6px gap = ~14px inner) */
-    border: 1px solid rgba(125, 211, 252, 0.6);
+    background: linear-gradient(135deg, #dbeafe 0%, #bae6fd 100%);
+    border-radius: 999px; /* MATEMATICALLY PERFECT CORNERS */
+    border: 1px solid rgba(56, 189, 248, 0.5);
     box-shadow: 
-        inset 0 2px 4px rgba(255, 255, 255, 0.9), /* Bright top inner rim */
-        inset 0 -2px 4px rgba(2, 132, 199, 0.05),
-        0 4px 8px -2px rgba(2, 132, 199, 0.15); /* Soft outer glowing shadow */
+        inset 0 2px 4px rgba(255, 255, 255, 0.95), /* Bright top inner rim */
+        inset 0 -2px 4px rgba(2, 132, 199, 0.08),
+        0 4px 10px -2px rgba(2, 132, 199, 0.25); /* Soft outer glowing shadow */
     z-index: -1; 
     opacity: 0;
     transform: scale(0.85); 
@@ -886,12 +887,12 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 .store-product-card-details {
-    padding: 8px 2px 2px 2px;
+    padding: 12px 10px 10px 10px;
     display: flex;
     flex-direction: column;
-    gap: 4px; 
+    gap: 6px; 
     flex: 1;
-    background: transparent; 
+    background: #ffffff; 
 }
 
 .store-product-card-price-row {
@@ -2590,10 +2591,11 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     
     /* Mobile Touch Target Guarantees & Safe Area Handling */
         .mobile-bottom-nav {
-            height: calc(56px + env(safe-area-inset-bottom));
+            height: auto;
+            min-height: auto;
         }
         .bottom-nav-item {
-            height: 56px;
+            height: 52px;
             justify-content: center;
             padding: 0;
         }
@@ -3504,7 +3506,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     -webkit-overflow-scrolling: touch;
 
     overscroll-behavior-x: contain;
-    overscroll-behavior-y: none;
+    overscroll-behavior-y: auto; /* FIXED: Prevents vertical scroll locking */
 
     /* Let browser natively handle vertical scrolling */
     touch-action: pan-x pan-y;
@@ -3541,93 +3543,107 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 /*
- * Smaller image area suitable for a recommendation rail.
+ * Smaller image area suitable for a recommendation rail, respecting the new 8px curve.
  */
 .fbt-product-track .store-product-card .img-wrapper {
     width: 100% !important;
     aspect-ratio: 1 / 1 !important;
-
     padding: 0 !important;
+    border-radius: 8px 8px 0 0 !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
 }
 
 /*
- * Image goes edge-to-edge inside the invisible image wrapper.
+ * Image fits inside perfectly and matches the top curves.
  */
 .fbt-product-track .store-product-card .img-wrapper img {
     width: 100% !important;
     height: 100% !important;
     object-fit: contain !important;
-
     padding: 0 !important;
     margin: 0 !important;
+    border-radius: 8px 8px 0 0 !important;
+    background: transparent !important;
 }
 
 /*
- * Compact product information.
+ * Compact product information matching main page proportions
  */
 .fbt-product-track .store-product-card .store-product-card-details {
-    padding: 6px 2px 2px 2px !important;
-    gap: 3px !important;
+    padding: 8px 6px 6px 6px !important;
+    gap: 4px !important;
 }
 
 .fbt-product-track .store-product-card .store-product-card-title {
-    font-size: 9.5px !important;
-    line-height: 1.3 !important;
-
+    font-size: 10.5px !important;
+    line-height: 1.35 !important;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-
     overflow: hidden;
     text-overflow: ellipsis;
-
-    min-height: 24px;
+    min-height: 28px;
+    margin-bottom: 2px !important;
 }
 
 .fbt-product-track .store-product-card .premium-price-lockup {
-    gap: 3px;
+    gap: 4px;
 }
 
 .fbt-product-track .store-product-card .premium-selling-price {
-    font-size: 11px !important;
+    font-size: 13px !important;
 }
 
 .fbt-product-track .store-product-card .premium-mrp-price {
-    font-size: 8px !important;
+    font-size: 9.5px !important;
 }
 
 /*
- * Compact discount label for recommendation cards.
+ * Compact discount circle for FBT track
  */
 .fbt-product-track .store-product-card .premium-discount-badge {
-    top: 4px !important;
-    left: 4px !important;
-
-    min-height: 17px !important;
-    padding: 0 5px !important;
-
-    font-size: 7px !important;
-    border-radius: 5px !important;
+    width: 34px !important;
+    height: 34px !important;
+    top: 6px !important;
+    left: 6px !important;
+    border-radius: 50% !important;
+    border-width: 1.5px !important;
+    box-shadow: 0 4px 8px -2px rgba(220, 38, 38, 0.6), inset 0 2px 3px rgba(255, 255, 255, 0.4), inset 0 -2px 3px rgba(153, 27, 27, 0.5) !important;
+}
+.fbt-product-track .store-product-card .premium-status-unavailable {
+    top: 0 !important; left: 0 !important; border-radius: 8px 0 8px 0 !important;
+}
+.fbt-product-track .store-product-card .premium-discount-badge .pct {
+    font-size: 10px !important;
+    letter-spacing: -0.5px !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
+    margin-top: 1px !important;
+}
+.fbt-product-track .store-product-card .premium-discount-badge .off-text {
+    font-size: 6px !important;
+    letter-spacing: 0.5px !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
 }
 
 /*
- * Prevent the Quick Add button from making recommendation
- * cards taller than necessary.
+ * Quick Add button proportionally scaled
  */
 .fbt-product-track .quick-add-wrapper {
-    padding: 4px 2px 2px 2px !important;
+    padding: 4px 6px 8px 6px !important;
+    margin-top: auto;
 }
 
 .fbt-product-track .btn-quick-add {
-    height: 25px !important;
-    font-size: 8px !important;
-    padding: 0 7px !important;
-    gap: 3px !important;
+    height: 26px !important;
+    font-size: 9px !important;
+    padding: 0 8px !important;
+    gap: 4px !important;
+    border-radius: 4px !important; 
 }
 
 .fbt-product-track .btn-quick-add svg {
-    width: 9px !important;
-    height: 9px !important;
+    width: 10px !important;
+    height: 10px !important;
 }
 
 /* ============================================================
@@ -3637,8 +3653,12 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 @media (min-width: 768px) {
 
     .fbt-product-track {
-        gap: 10px;
-        padding-bottom: 10px;
+        gap: 12px;
+        padding-bottom: 16px;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        scrollbar-width: thin !important;
+        touch-action: pan-x !important;
     }
 
     .fbt-product-track .store-product-card {
@@ -3672,7 +3692,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
          */
         overflow-x: auto !important;
         overflow-y: hidden !important;
-        touch-action: pan-x !important;
+        touch-action: pan-x pan-y !important; /* FIXED: Allows vertical page scrolling */
         -webkit-overflow-scrolling: touch !important;
 
         padding-left: 2px;
@@ -3865,14 +3885,20 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 .variant-card .mrp-strike {
-    font-size: 9px;
-    min-height: 9px;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-decoration: line-through;
+    font-weight: 600;
+    min-height: 10px;
 }
 
-.variant-card .inline-discount-badge {
-    font-size: 7.5px; /* Shrunk as requested */
-    padding: 2px 3px;
-    letter-spacing: 0; /* Removes extra spacing inside the badge */
+.variant-simple-discount {
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #ef4444; /* Pure, stark red */
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    display: inline-block;
 }
 
 /* ============================================================
@@ -4759,11 +4785,11 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
    UNIVERSAL PRODUCT CARD (PREMIUM BUTTONLESS REDESIGN)
    ============================================================ */
 .store-product-card {
-    background: transparent; 
-    border: none; 
-    border-radius: 16px; 
-    overflow: visible; 
-    box-shadow: none;
+    background: #ffffff; 
+    border: 1px solid rgba(226, 232, 240, 0.9); 
+    border-radius: 8px; /* Lower, tighter curve */
+    overflow: hidden; 
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
     display: flex; 
     flex-direction: column; 
     height: 100%; 
@@ -4794,26 +4820,30 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .store-product-card .img-wrapper {
     width: 100% !important; 
     aspect-ratio: 1 / 1 !important;
-    background: #f8fafc !important; /* Soft, faint gray canvas */
-    border: 1px solid rgba(226, 232, 240, 0.9) !important;
+    background: #ffffff !important; 
+    border: none !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
     display: flex !important; 
     align-items: center !important; 
     justify-content: center !important; 
     position: relative !important; 
     flex: none !important;
     overflow: hidden !important; 
-    padding: 12px !important; /* Extra padding keeps the image breathing */
-    border-radius: 16px !important;
+    padding: 0 !important; /* Zero padding to fit perfectly edge-to-edge */
+    border-radius: 8px 8px 0 0 !important; /* Match container top curve */
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .store-product-card .img-wrapper img {
     width: 100% !important; 
     height: 100% !important; 
-    object-fit: contain !important; 
+    object-fit: contain !important; /* Fit properly without filling/stretching */
     position: static !important;
     transform: translateZ(0); 
     backface-visibility: hidden;
-    border-radius: 8px !important; 
+    border-radius: 8px 8px 0 0 !important; /* Forces the image itself to curve */
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -4824,47 +4854,48 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 .premium-discount-badge {
     position: absolute !important;
-
-    top: 8px !important;
+    top: 8px !important; /* Floating safely inside the container */
     left: 8px !important;
-
-    display: inline-flex !important;
+    display: flex !important;
+    flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
-
-    min-height: 24px !important;
-    padding: 0 9px !important;
-
-    background: linear-gradient(
-        135deg,
-        #059669 0%,
-        #10b981 55%,
-        #34d399 100%
-    ) !important;
-
+    width: 42px !important;
+    height: 42px !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    background: linear-gradient(135deg, #ff5252 0%, #dc2626 100%) !important;
     color: #ffffff !important;
-
-    border: 1px solid rgba(255, 255, 255, 0.75) !important;
-
-    border-radius: 7px !important;
-
-    font-size: 10px !important;
-    line-height: 1 !important;
-    font-weight: 900 !important;
-
-    letter-spacing: 0.3px !important;
-    text-transform: uppercase !important;
-    white-space: nowrap !important;
-
+    border: 2px solid #ffffff !important;
+    border-radius: 50% !important; /* PERFECT CIRCLE */
     box-shadow:
-        0 2px 5px rgba(5, 150, 105, 0.26),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-
+        0 6px 12px -2px rgba(220, 38, 38, 0.4), /* Deep outer shadow */
+        inset 0 3px 4px rgba(255, 255, 255, 0.4), /* 3D top highlight */
+        inset 0 -3px 4px rgba(153, 27, 27, 0.4) !important; /* 3D bottom shading */
     z-index: 20 !important;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease !important;
+}
 
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease !important;
+.premium-discount-badge .pct {
+    font-size: 13px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    letter-spacing: -0.5px;
+    border: none !important;
+    padding: 0 !important;
+    margin-bottom: 0px !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
+.premium-discount-badge .off-text {
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    letter-spacing: 0.5px;
+    writing-mode: horizontal-tb !important;
+    transform: none !important;
+    padding: 0 !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.15);
 }
 
 /*
@@ -4882,28 +4913,26 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 /* Compact screens */
 @media (max-width: 480px) {
     .premium-discount-badge {
-        top: 7px !important;
-        left: 7px !important;
-
-        min-height: 22px !important;
-        padding: 0 8px !important;
-
-        font-size: 9px !important;
-        border-radius: 6px !important;
+        width: 36px !important;
+        height: 36px !important;
+        top: 6px !important;
+        left: 6px !important;
+        border-width: 1.5px !important;
     }
+    .premium-discount-badge .pct { font-size: 11px !important; }
+    .premium-discount-badge .off-text { font-size: 7.5px !important; }
 }
 
 /* Very narrow phones */
 @media (max-width: 375px) {
     .premium-discount-badge {
-        top: 6px !important;
-        left: 6px !important;
-
-        min-height: 21px !important;
-        padding: 0 7px !important;
-
-        font-size: 8.5px !important;
+        width: 32px !important;
+        height: 32px !important;
+        top: 5px !important;
+        left: 5px !important;
     }
+    .premium-discount-badge .pct { font-size: 10px !important; }
+    .premium-discount-badge .off-text { font-size: 7px !important; }
 }
 
 .premium-discount-badge {
@@ -4926,9 +4955,9 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     display: flex; 
     flex-direction: column; 
     flex: 1; 
-    background: transparent; 
-    padding: 12px 4px 4px 4px; 
-    gap: 4px; 
+    background: #ffffff; 
+    padding: 12px 10px 10px 10px; 
+    gap: 6px; 
 }
 
 .store-product-card-title {
@@ -4974,13 +5003,28 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 /* Compact Overrides */
 .size-small { width: 100%; }
 .shelf-track .size-small { width: 130px; }
-.size-small .store-product-card-details { padding: 8px 4px 4px 4px; }
+.size-small .store-product-card-details { padding: 8px 8px 8px 8px; }
 .size-small .store-product-card-title { font-size: 11.5px !important; }
 .size-small .premium-selling-price { font-size: 14px; }
 .size-small .premium-mrp-price { font-size: 10.5px; }
-/* Scale badges down for small cards */
-.size-small .premium-discount-badge, .size-small .premium-status-unavailable { 
-    font-size: 8.5px; padding: 3px 6px; top: 6px; left: 6px; border-radius: 4px; 
+/* Scale badges down for small cards but keep the 3D circle */
+.size-small .premium-discount-badge { 
+    width: 34px !important; height: 34px !important; top: 6px !important; left: 6px !important; border-radius: 50% !important; border-width: 1.5px !important;
+    box-shadow: 0 4px 8px -2px rgba(220, 38, 38, 0.6), inset 0 2px 3px rgba(255, 255, 255, 0.4), inset 0 -2px 3px rgba(153, 27, 27, 0.5) !important;
+}
+.size-small .premium-status-unavailable {
+    top: 0 !important; left: 0 !important; border-radius: 8px 0 8px 0 !important;
+}
+.size-small .premium-discount-badge .pct {
+    font-size: 10px !important;
+    letter-spacing: -0.5px !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
+    margin-top: 1px !important;
+}
+.size-small .premium-discount-badge .off-text {
+    font-size: 6px !important;
+    letter-spacing: 0.5px !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
 }
 
 /* ============================================================
@@ -5005,8 +5049,17 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     -webkit-line-clamp: 3;
 }
 .size-bento-large .premium-selling-price { font-size: 20px; }
-.size-bento-large .premium-discount-badge, .size-bento-large .premium-status-unavailable { 
-    font-size: 12px; padding: 5px 10px; top: 12px; left: 12px; border-radius: 8px; 
+.size-bento-large .premium-discount-badge { 
+    width: 48px !important; height: 48px !important; top: 10px !important; left: 10px !important; border-radius: 50% !important; border-width: 2px !important; 
+}
+.size-bento-large .premium-status-unavailable {
+    top: 0 !important; left: 0 !important; border-radius: 8px 0 8px 0 !important;
+}
+.size-bento-large .premium-discount-badge .pct {
+    font-size: 14px !important;
+}
+.size-bento-large .premium-discount-badge .off-text {
+    font-size: 10px !important;
 }
 .list-track { display: flex; flex-direction: column; gap: 12px; width: 100%; }
 .layout-list { flex-direction: row; align-items: center; gap: 12px; }
@@ -5014,8 +5067,17 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .layout-list .store-product-card-details { padding: 8px 0; justify-content: center; }
 .layout-list .store-product-card-title { font-size: 14px !important; margin-bottom: 6px !important; }
 /* Flawlessly scaled micro-badges for tiny list images */
-.layout-list .premium-discount-badge, .layout-list .premium-status-unavailable { 
-    font-size: 8px; padding: 2.5px 5px; top: 4px; left: 4px; border-radius: 4px; letter-spacing: 0.2px; 
+.layout-list .premium-discount-badge { 
+    width: 28px !important; height: 28px !important; top: 4px !important; left: 4px !important; border-radius: 50% !important; border-width: 1px !important;
+}
+.layout-list .premium-status-unavailable {
+    top: 4px !important; left: 4px !important; border-radius: 4px !important;
+}
+.layout-list .premium-discount-badge .pct {
+    font-size: 8.5px !important; border: none !important;
+}
+.layout-list .premium-discount-badge .off-text {
+    font-size: 6px !important;
 }
 
 /* Responsive Adjustments (Phones) */
@@ -5024,8 +5086,14 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     .shelf-track .size-standard { width: 140px; }
     .layout-list .img-wrapper { width: 90px !important; }
     /* Even smaller list badges for tight phone screens */
-    .layout-list .premium-discount-badge, .layout-list .premium-status-unavailable { 
-        font-size: 7.5px; padding: 2px 4px; top: 4px; left: 4px; 
+    .layout-list .premium-discount-badge { 
+        width: 26px !important; height: 26px !important; top: 3px !important; left: 3px !important;
+    }
+    .layout-list .premium-discount-badge .pct {
+        font-size: 8px !important;
+    }
+    .layout-list .premium-discount-badge .off-text {
+        font-size: 5.5px !important;
     }
 }
 
@@ -5222,48 +5290,36 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
    ============================================================ */
 
 /*
- * Keep .img-wrapper structurally because:
- * 1. The discount badge is positioned relative to it.
- * 2. It reserves a predictable image area.
- *
- * Visually, however, the wrapper disappears completely.
+ * Ensure wrapper respects the new 8px curve and bottom border.
  */
 .store-product-card .img-wrapper {
     width: 100% !important;
     aspect-ratio: 1 / 1 !important;
-
-    background: transparent !important;
+    background: #ffffff !important;
     border: none !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
     box-shadow: none !important;
-
     padding: 0 !important;
-    border-radius: 0 !important;
-
-    display: block !important;
+    border-radius: 8px 8px 0 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     position: relative !important;
     overflow: hidden !important;
-
-    align-items: initial !important;
-    justify-content: initial !important;
 }
 
 /*
- * The actual product image now reaches the wrapper edges.
- * No inner white card, no inset padding, no visible frame.
+ * Image fits inside perfectly and matches the top curves without stretching/filling.
  */
 .store-product-card .img-wrapper img {
     width: 100% !important;
     height: 100% !important;
-
     display: block !important;
     object-fit: contain !important;
-
     position: static !important;
-
     margin: 0 !important;
     padding: 0 !important;
-
-    border-radius: 0 !important;
+    border-radius: 8px 8px 0 0 !important;
     background: transparent !important;
 }
 

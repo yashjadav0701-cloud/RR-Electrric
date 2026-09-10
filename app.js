@@ -163,36 +163,27 @@
             },
 
             buildMasterFeed: function(allProducts) {
-                this.initIntentTracker();
                 let activeProducts = allProducts.filter(p => p.is_active !== false);
 
-                // Create a scored map with a true static random seed for flawless V8 tie-breaking
-                let scoredProducts = activeProducts.map(p => {
-                    let maxWeight = 0;
-                    const pName = p.name.toLowerCase();
-                    const pCat = (p.categories?.name || '').toLowerCase();
-
-                    for (const [intentToken, weight] of Object.entries(this.userIntentScores)) {
-                        // Strict validation: >2 chars to prevent matching 'a', <25 to prevent long titles
-                        if (intentToken.length > 2 && intentToken.length < 25 && (pName.includes(intentToken) || pCat.includes(intentToken))) {
-                            if (weight > maxWeight) maxWeight = weight;
-                        }
-                    }
-
-                    return { 
-                        product: p, 
-                        weight: maxWeight,
-                        tieBreaker: Math.random() // This guarantees true mathematical shuffling for un-interacted products
-                    };
+                // Group products strictly by category to keep them together
+                const categoryGroups = {};
+                activeProducts.forEach(p => {
+                    const catId = p.category_id || 'uncategorized';
+                    if (!categoryGroups[catId]) categoryGroups[catId] = [];
+                    categoryGroups[catId].push(p);
                 });
 
-                // Perfect Sort: Prioritize Intent Weight -> Break ties with Random Seed
-                scoredProducts.sort((a, b) => {
-                    if (b.weight !== a.weight) return b.weight - a.weight;
-                    return b.tieBreaker - a.tieBreaker;
+                // Shuffle the categories entirely on page refresh
+                const shuffledCategoryKeys = Object.keys(categoryGroups).sort(() => Math.random() - 0.5);
+
+                let masterFeed = [];
+                shuffledCategoryKeys.forEach(catId => {
+                    // Shuffle the products within their unified category block
+                    const shuffledProducts = categoryGroups[catId].sort(() => Math.random() - 0.5);
+                    masterFeed.push(...shuffledProducts);
                 });
 
-                return scoredProducts.map(s => s.product);
+                return masterFeed;
             },
             composePDPSections: function(currentProduct, allProducts) {
                 const active = allProducts.filter(p => p.is_active !== false && p.id !== currentProduct.id);
@@ -747,7 +738,7 @@
             const offPercentage = (p.mrp_price && p.mrp_price > p.selling_price) ? Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100) : 0;
             const hasDiscount = offPercentage > 0;
 
-            const discountBadgeHtml = hasDiscount ? `<div class="premium-discount-badge">${offPercentage}% OFF</div>` : '';
+            const discountBadgeHtml = hasDiscount ? `<div class="premium-discount-badge"><span class="pct">${offPercentage}%</span><span class="off-text">OFF</span></div>` : '';
             const statusHtml = !isAvailable ? `<div class="premium-status-unavailable">SOLD OUT</div>` : '';
 
             // PREMIUM QUICK ADD BUTTON (Distinct Pill Design)
@@ -976,10 +967,8 @@
                     const globalIndex = this.state.homeFeedIndex + i;
                     let cardSize = 'standard';
                     
-                    // Perfect Mobile Bento Pattern: 4 small -> 1 large square
-                    if (this.state.homeCurrentSort === 'recommended' && globalIndex % 5 === 4) {
-                        cardSize = 'bento-large';
-                    }
+                    // Enforce strictly uniform grid pattern matching the layout requirements
+                    cardSize = 'standard';
 
                     html += this.generateProductCardHTML(p, cardSize, 'grid', !isAppend && i < 4, false);
                 });
@@ -1332,12 +1321,12 @@
                                                         
                                                         // Using the exact master pricing layout (Side-by-side top, centered bottom)
                                                         let pricingHtml = `
-                                                            <div class="price-top-row">
+                                                            <div class="price-top-row" style="display: flex; align-items: baseline; gap: 6px; width: 100%;">
                                                                 <span class="selling-price">₹${lp.selling_price}</span>
-                                                                <span class="mrp-strike" ${!hasVariantDiscount ? 'style="visibility:hidden"' : ''}>₹${lp.mrp_price || 0}</span>
-                                                        </div>
-                                                            <div class="discount-bottom-row" ${!hasVariantDiscount ? 'style="visibility:hidden"' : ''}>
-                                                                <span class="inline-discount-badge">${variantOffPercentage}% OFF</span>
+                                                                <span class="mrp-strike" ${!hasVariantDiscount ? 'style="display:none"' : ''}>₹${lp.mrp_price || 0}</span>
+                                                            </div>
+                                                            <div class="discount-bottom-row" style="width: 100%; text-align: center; margin-top: 4px;" ${!hasVariantDiscount ? 'style="display:none"' : ''}>
+                                                                <span class="variant-simple-discount">${variantOffPercentage}% OFF</span>
                                                             </div>
                                                         `;
                                                         
