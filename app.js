@@ -166,47 +166,34 @@
                 this.initIntentTracker();
                 let activeProducts = allProducts.filter(p => p.is_active !== false);
 
-                let interactedGroup = [];
-                let unInteractedGroup = [];
-
-                // Step 1: Separate products into Interacted vs Un-interacted
-                activeProducts.forEach(p => {
+                // Create a scored map with a true static random seed for flawless V8 tie-breaking
+                let scoredProducts = activeProducts.map(p => {
                     let maxWeight = 0;
                     const pName = p.name.toLowerCase();
                     const pCat = (p.categories?.name || '').toLowerCase();
 
                     for (const [intentToken, weight] of Object.entries(this.userIntentScores)) {
-                        if (intentToken.length < 25 && (pName.includes(intentToken) || pCat.includes(intentToken))) {
+                        // Strict validation: >2 chars to prevent matching 'a', <25 to prevent long titles
+                        if (intentToken.length > 2 && intentToken.length < 25 && (pName.includes(intentToken) || pCat.includes(intentToken))) {
                             if (weight > maxWeight) maxWeight = weight;
                         }
                     }
 
-                    if (maxWeight > 0) {
-                        interactedGroup.push({ product: p, weight: maxWeight });
-                    } else {
-                        unInteractedGroup.push(p);
-                    }
+                    return { 
+                        product: p, 
+                        weight: maxWeight,
+                        tieBreaker: Math.random() // This guarantees true mathematical shuffling for un-interacted products
+                    };
                 });
 
-                // Step 2: Sort interacted products by weight, with built-in random tie-breaking so they shuffle too!
-                interactedGroup.sort((a, b) => {
-                    if (b.weight !== a.weight) {
-                        return b.weight - a.weight; // Highest weight first
-                    }
-                    return Math.random() - 0.5; // Randomize ties on every refresh
+                // Perfect Sort: Prioritize Intent Weight -> Break ties with Random Seed
+                scoredProducts.sort((a, b) => {
+                    if (b.weight !== a.weight) return b.weight - a.weight;
+                    return b.tieBreaker - a.tieBreaker;
                 });
-                const sortedInteracted = interactedGroup.map(item => item.product);
 
-                // Step 3: True Fisher-Yates Random Shuffle for the un-interacted catalog on every single refresh
-                for (let i = unInteractedGroup.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [unInteractedGroup[i], unInteractedGroup[j]] = [unInteractedGroup[j], unInteractedGroup[i]];
-                }
-
-                // Step 4: Return combined feed
-                return [...sortedInteracted, ...unInteractedGroup];
+                return scoredProducts.map(s => s.product);
             },
-
             composePDPSections: function(currentProduct, allProducts) {
                 const active = allProducts.filter(p => p.is_active !== false && p.id !== currentProduct.id);
                 const sections = [];
@@ -936,48 +923,89 @@
         updateHomeGrid: function(isAppend = false) {
             const gridContainer = document.getElementById('home-products-grid');
             const loadMoreContainer = document.getElementById('home-load-more-container');
-            
+
             if (!isAppend) {
-                this.state.homeFeedIndex = 0; 
-                // PHASE 1 & 2: Apply the unified "Bento Box" continuous grid class, destroying the group/section layout
-                gridContainer.className = 'products-grid bento-grid'; 
+                this.state.homeFeedIndex = 0;
+
+                // Home storefront uses one continuous responsive staggered grid.
+                // Product order remains untouched; only visual height alternates.
+                gridContainer.className = 'products-grid home-stagger-grid';
                 gridContainer.innerHTML = '';
-                
+
+                // Remove any previous catalog-end marker before rebuilding.
+                document.getElementById('end-of-catalog')?.remove();
+
                 let displayList = this.state.products;
+
                 if (this.state.homeCurrentSort !== 'recommended') {
-                    this.state.masterFeed = this.sortArray(displayList, this.state.homeCurrentSort);
+                    this.state.masterFeed = this.sortArray(
+                        displayList,
+                        this.state.homeCurrentSort
+                    );
                 } else {
-                    // Generate personalized deduplicated feed
                     this.state.masterFeed = this.SmartComposer.buildMasterFeed(displayList);
                 }
             }
 
+            // Keep pagination independent from the visual pattern.
+            // A 12-item batch is used here so the infinite loader remains lightweight.
             const chunkSize = 12;
-            const chunkProducts = this.state.masterFeed.slice(this.state.homeFeedIndex, this.state.homeFeedIndex + chunkSize);
+            const chunkProducts = this.state.masterFeed.slice(
+                this.state.homeFeedIndex,
+                this.state.homeFeedIndex + chunkSize
+            );
 
             if (chunkProducts.length > 0) {
-                 let html = '';
-                 chunkProducts.forEach((p, i) => {
-                     const globalIndex = this.state.homeFeedIndex + i;
-                     let cardSize = 'standard';
-                     
-                     // PHASE 2 BENTO LOGIC: Every 5th product becomes a large feature card on the recommended feed
-                     if (this.state.homeCurrentSort === 'recommended' && globalIndex % 5 === 4) {
-                         cardSize = 'bento-large';
-                     }
-                     
-                     html += this.generateProductCardHTML(p, cardSize, 'grid', !isAppend && i < 4, false);
-                 });
-                 gridContainer.insertAdjacentHTML('beforeend', html);
-                 this.state.homeFeedIndex += chunkSize;
+                let html = '';
+
+                chunkProducts.forEach((p, i) => {
+                    const globalIndex = this.state.homeFeedIndex + i;
+
+                    /*
+                     * Desktop pattern:
+                     *
+                     * Row 0: N T N T N T
+                     * Row 1: T N T N T N
+                     * Row 2: N T N T N T
+                     * Row 3: T N T N T N
+                     *
+                     * With 6 desktop columns, the parity is calculated from
+                     * row + column. This keeps the pattern correct even when
+                     * products are appended by infinite scrolling.
+                     */
+                    const desktopColumn = globalIndex % 6;
+                    const desktopRow = Math.floor(globalIndex / 6);
+                    const isTall = (desktopRow + desktopColumn) % 2 === 1;
+
+                    const cardSize = isTall
+                        ? 'stagger-tall'
+                        : 'stagger-normal';
+
+                    html += this.generateProductCardHTML(
+                        p,
+                        cardSize,
+                        'grid',
+                        !isAppend && i < 4,
+                        false
+                    );
+                });
+
+                gridContainer.insertAdjacentHTML('beforeend', html);
+                this.state.homeFeedIndex += chunkProducts.length;
             }
-            
+
             // Handle End of Catalog Seamlessly
             if (this.state.homeFeedIndex >= this.state.masterFeed.length) {
                 loadMoreContainer.classList.add('hidden');
-                if (this.state.masterFeed.length > 0 && !document.getElementById('end-of-catalog')) {
-                    // Append end message safely outside the grid layout so it spans full width
-                    gridContainer.insertAdjacentHTML('afterend', '<div id="end-of-catalog" style="grid-column: 1/-1; text-align: center; padding: 40px 16px; color: var(--text-muted); font-size: 14px; font-weight: 500; width: 100%;">You have reached the end of the catalog!</div>');
+
+                if (
+                    this.state.masterFeed.length > 0 &&
+                    !document.getElementById('end-of-catalog')
+                ) {
+                    gridContainer.insertAdjacentHTML(
+                        'afterend',
+                        '<div id="end-of-catalog" style="grid-column: 1/-1; text-align: center; padding: 40px 16px; color: var(--text-muted); font-size: 14px; font-weight: 500; width: 100%;">You have reached the end of the catalog!</div>'
+                    );
                 }
             } else {
                 loadMoreContainer.classList.remove('hidden');

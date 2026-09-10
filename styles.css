@@ -815,15 +815,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
    ============================================================ */
 .products-grid {
     display: grid;
-    /* minmax(0, 1fr) is the golden rule to mathematically prevent CSS grids from blowing out */
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px; 
+    gap: 12px;
     width: 100%;
     max-width: 100%;
-}
-
-@media (min-width: 768px) {
-    .products-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; }
 }
 
 /* 3D Floating Product Cards */
@@ -4211,18 +4206,93 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* PREMIUM FLOATING BADGES (Responsive Base) */
-.premium-discount-badge,
-.premium-status-unavailable {
-    position: absolute; 
-    top: 8px; 
-    left: 8px;
-    font-weight: 800; 
-    font-size: 10px; 
-    padding: 4px 8px;
-    border-radius: 6px; 
-    letter-spacing: 0.5px;
-    line-height: 1;
+/* ============================================================
+   PREMIUM DISCOUNT LABEL
+   HIGH-CONTRAST • COMPACT • PROFESSIONAL
+   ============================================================ */
+
+.premium-discount-badge {
+    position: absolute !important;
+
+    top: 8px !important;
+    left: 8px !important;
+
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    min-height: 24px !important;
+    padding: 0 9px !important;
+
+    background: linear-gradient(
+        135deg,
+        #059669 0%,
+        #10b981 55%,
+        #34d399 100%
+    ) !important;
+
+    color: #ffffff !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.75) !important;
+
+    border-radius: 7px !important;
+
+    font-size: 10px !important;
+    line-height: 1 !important;
+    font-weight: 900 !important;
+
+    letter-spacing: 0.3px !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+
+    box-shadow:
+        0 2px 5px rgba(5, 150, 105, 0.26),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+
+    z-index: 20 !important;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease !important;
+}
+
+/*
+ * Slightly stronger presentation on real desktop hover.
+ */
+@media (hover: hover) and (pointer: fine) {
+    .store-product-card:hover .premium-discount-badge {
+        transform: translateY(-1px);
+        box-shadow:
+            0 4px 9px rgba(5, 150, 105, 0.32),
+            inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+}
+
+/* Compact screens */
+@media (max-width: 480px) {
+    .premium-discount-badge {
+        top: 7px !important;
+        left: 7px !important;
+
+        min-height: 22px !important;
+        padding: 0 8px !important;
+
+        font-size: 9px !important;
+        border-radius: 6px !important;
+    }
+}
+
+/* Very narrow phones */
+@media (max-width: 375px) {
+    .premium-discount-badge {
+        top: 6px !important;
+        left: 6px !important;
+
+        min-height: 21px !important;
+        padding: 0 7px !important;
+
+        font-size: 8.5px !important;
+    }
 }
 
 .premium-discount-badge {
@@ -4302,33 +4372,125 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     font-size: 8.5px; padding: 3px 6px; top: 6px; left: 6px; border-radius: 4px; 
 }
 
-/* PHASE 2: BENTO BOX GRID ARCHITECTURE */
-.products-grid.bento-grid {
-    grid-auto-flow: dense; /* Fills gaps naturally */
+/* ============================================================
+   HOME PRODUCT GRID — STAGGERED PC ARCHITECTURE
+   ============================================================ */
+
+/*
+ * The home grid is intentionally NOT a masonry layout.
+ *
+ * Every row shares one common top baseline.
+ * Alternating cards are simply taller.
+ *
+ * Desktop pattern:
+ *   N T N T N T
+ *   T N T N T N
+ *   N T N T N T
+ *   T N T N T N
+ *
+ * The JavaScript assigns .stagger-normal / .stagger-tall
+ * according to the product's 6-column row + column position.
+ */
+
+.home-stagger-grid {
+    align-items: start;
+    grid-auto-flow: row;
 }
 
-.size-bento-large {
-    grid-column: span 2; /* 2-columns wide on mobile */
-}
-.size-bento-large .img-wrapper {
-    padding: 24px !important; /* Larger canvas */
-}
-.size-bento-large .store-product-card-title { 
-    font-size: 15px !important; 
-    -webkit-line-clamp: 3;
-}
-.size-bento-large .premium-selling-price { font-size: 20px; }
-.size-bento-large .premium-discount-badge, .size-bento-large .premium-status-unavailable { 
-    font-size: 12px; padding: 5px 10px; top: 12px; left: 12px; border-radius: 8px; 
+/* Base home-card sizing */
+.home-stagger-grid .store-product-card {
+    width: 100%;
+    min-width: 0;
+    align-self: start;
 }
 
-@media (min-width: 768px) {
-    .size-bento-large {
-        grid-column: span 2;
-        grid-row: span 2; /* Becomes a massive 2x2 square on PC */
+/*
+ * The image canvas is the visual height driver.
+ * Details remain underneath the image exactly as in the
+ * existing product-card architecture.
+ */
+.home-stagger-grid .stagger-normal .img-wrapper,
+.home-stagger-grid .stagger-tall .img-wrapper {
+    width: 100% !important;
+    height: auto;
+    aspect-ratio: 1 / 1 !important;
+}
+
+/* Slightly taller card — matches the reference image's proportion */
+.home-stagger-grid .stagger-tall .img-wrapper {
+    aspect-ratio: 1 / 1.11 !important;
+}
+
+/* Keep product content comfortably readable on both variants */
+.home-stagger-grid .stagger-normal .store-product-card-details,
+.home-stagger-grid .stagger-tall .store-product-card-details {
+    min-height: 0;
+}
+
+/* ============================================================
+   PC — EXACT 6-COLUMN STAGGERED PATTERN
+   ============================================================ */
+@media (min-width: 1024px) {
+    #home-products-grid.home-stagger-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+        column-gap: 10px;
+        row-gap: 10px;
+        align-items: start;
     }
-    .size-bento-large .store-product-card-title { font-size: 18px !important; }
-    .size-bento-large .premium-selling-price { font-size: 24px; }
+
+    /*
+     * All six cards in a row share the same row top.
+     * The tallest card therefore establishes the row's height,
+     * producing the staggered appearance seen in the reference.
+     */
+    #home-products-grid.home-stagger-grid .store-product-card {
+        align-self: start;
+    }
+
+    #home-products-grid.home-stagger-grid .stagger-normal .img-wrapper,
+    #home-products-grid.home-stagger-grid .stagger-tall .img-wrapper {
+        width: 100% !important;
+        padding: 8px !important;
+    }
+
+    #home-products-grid.home-stagger-grid .stagger-normal .img-wrapper {
+        aspect-ratio: 1 / 1 !important;
+    }
+
+    #home-products-grid.home-stagger-grid .stagger-tall .img-wrapper {
+        aspect-ratio: 1 / 1.11 !important;
+    }
+
+    /*
+     * Slightly tighter typography at six columns so long product
+     * names do not disturb the overall rhythm.
+     */
+    #home-products-grid.home-stagger-grid .store-product-card-title {
+        font-size: 12.5px !important;
+        line-height: 1.35 !important;
+    }
+
+    #home-products-grid.home-stagger-grid .premium-selling-price {
+        font-size: 15px;
+    }
+
+    #home-products-grid.home-stagger-grid .premium-mrp-price {
+        font-size: 11px;
+    }
+}
+
+/* ============================================================
+   WIDE DESKTOP — MORE BREATHING ROOM
+   ============================================================ */
+@media (min-width: 1400px) {
+    #home-products-grid.home-stagger-grid {
+        column-gap: 12px;
+        row-gap: 12px;
+    }
+
+    #home-products-grid.home-stagger-grid .stagger-tall .img-wrapper {
+        aspect-ratio: 1 / 1.115 !important;
+    }
 }
 
 /* List Track Override */
@@ -4440,37 +4602,30 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
         margin-bottom: 0 !important;
     }
 
-    /* Fallback for general grids outside storefront sections */
-    .products-grid:not(.storefront-section *),
+    /*
+     * Keep generic non-storefront grids at four columns,
+     * but let the home staggered grid own its six-column layout.
+     */
+    .products-grid:not(.storefront-section *):not(#home-products-grid),
     .products-grid-2col:not(.storefront-section *) {
         display: grid !important;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        gap: 24px !important;
+    }
+
+    #home-products-grid.home-stagger-grid {
+        display: grid !important;
         grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-        gap: 16px !important;
     }
 
     /* Reset mobile-specific flex constraints for cards on PC */
     .shelf-track > *,
-    .list-track > *,
     .cross-sell-grid > *,
     .store-product-card {
         width: 100% !important;
         max-width: none !important;
         min-width: 0 !important;
         flex: none !important;
-    }
-
-    /* Force list-style cards to stack vertically inside the PC grid */
-    .layout-list {
-        flex-direction: column !important;
-        align-items: stretch !important;
-    }
-    .layout-list .img-wrapper {
-        width: 100% !important;
-        aspect-ratio: 1 / 1 !important;
-        padding: 0 !important;
-    }
-    .layout-list .store-product-card-details {
-        padding: 8px 2px 2px 2px !important;
     }
 }
 
@@ -4536,4 +4691,153 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     box-shadow: none;
     cursor: not-allowed;
     transform: none;
+}
+
+
+/* ============================================================
+   FINAL PRODUCT VISUAL REFINEMENT
+   IMAGE-ONLY CANVAS + CONTINUOUS COLUMN DIVIDER
+   ============================================================ */
+
+/*
+ * Keep .img-wrapper structurally because:
+ * 1. The discount badge is positioned relative to it.
+ * 2. It reserves a predictable image area.
+ *
+ * Visually, however, the wrapper disappears completely.
+ */
+.store-product-card .img-wrapper {
+    width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+
+    padding: 0 !important;
+    border-radius: 0 !important;
+
+    display: block !important;
+    position: relative !important;
+    overflow: hidden !important;
+
+    align-items: initial !important;
+    justify-content: initial !important;
+}
+
+/*
+ * The actual product image now reaches the wrapper edges.
+ * No inner white card, no inset padding, no visible frame.
+ */
+.store-product-card .img-wrapper img {
+    width: 100% !important;
+    height: 100% !important;
+
+    display: block !important;
+    object-fit: contain !important;
+
+    position: static !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    border-radius: 0 !important;
+    background: transparent !important;
+}
+
+/*
+ * Keep the image clean during hover.
+ * The existing product-card hover animation remains active.
+ */
+@media (hover: hover) and (pointer: fine) {
+    .store-product-card:hover .img-wrapper {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .store-product-card:hover .img-wrapper img {
+        transform: scale(1.04);
+    }
+}
+
+
+/* ============================================================
+   CONTINUOUS VERTICAL COLUMN DIVIDER
+   ============================================================ */
+
+/*
+ * IMPORTANT:
+ * This is attached to the GRID, not individual cards.
+ *
+ * Therefore the line continues through:
+ * product → gap → product → gap → product
+ * all the way to the final product.
+ */
+
+/* Home product listing */
+#home-products-grid {
+    position: relative;
+}
+
+/* Mobile: one clean divider between the two product columns */
+@media (max-width: 767px) {
+    #home-products-grid::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+
+        left: 50%;
+        width: 1px;
+
+        transform: translateX(-50%);
+
+        background: rgba(100, 116, 139, 0.22);
+
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    /*
+     * Keep cards above the divider so the divider visually
+     * lives in the central gutter.
+     */
+    #home-products-grid > .store-product-card {
+        position: relative;
+        z-index: 1;
+    }
+}
+
+/*
+ * Desktop currently uses the professional multi-column
+ * arrangement already established in your stylesheet.
+ *
+ * The divider system below creates a clean line between
+ * each desktop product column without changing card sizing.
+ */
+@media (min-width: 768px) {
+
+    #home-products-grid {
+        background-image:
+            linear-gradient(
+                to right,
+                transparent 0,
+                transparent calc(25% - 0.5px),
+                rgba(100, 116, 139, 0.16) calc(25% - 0.5px),
+                rgba(100, 116, 139, 0.16) calc(25% + 0.5px),
+                transparent calc(25% + 0.5px),
+                transparent calc(50% - 0.5px),
+                rgba(100, 116, 139, 0.16) calc(50% - 0.5px),
+                rgba(100, 116, 139, 0.16) calc(50% + 0.5px),
+                transparent calc(50% + 0.5px),
+                transparent calc(75% - 0.5px),
+                rgba(100, 116, 139, 0.16) calc(75% - 0.5px),
+                rgba(100, 116, 139, 0.16) calc(75% + 0.5px),
+                transparent calc(75% + 0.5px)
+            );
+
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+    }
 }
