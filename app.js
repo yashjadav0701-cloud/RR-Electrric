@@ -949,30 +949,21 @@
 
             if (!isAppend) {
                 this.state.homeFeedIndex = 0;
-
-                // Home storefront uses one continuous responsive staggered grid.
-                // Product order remains untouched; only visual height alternates.
-                gridContainer.className = 'products-grid home-stagger-grid';
+                gridContainer.className = 'products-grid bento-grid';
                 gridContainer.innerHTML = '';
-
-                // Remove any previous catalog-end marker before rebuilding.
                 document.getElementById('end-of-catalog')?.remove();
 
                 let displayList = this.state.products;
 
                 if (this.state.homeCurrentSort !== 'recommended') {
-                    this.state.masterFeed = this.sortArray(
-                        displayList,
-                        this.state.homeCurrentSort
-                    );
+                    this.state.masterFeed = this.sortArray(displayList, this.state.homeCurrentSort);
                 } else {
                     this.state.masterFeed = this.SmartComposer.buildMasterFeed(displayList);
                 }
             }
 
-            // Keep pagination independent from the visual pattern.
-            // A 12-item batch is used here so the infinite loader remains lightweight.
-            const chunkSize = 12;
+            // Use chunk size of 10 to ensure complete blocks of 5 are loaded
+            const chunkSize = 10;
             const chunkProducts = this.state.masterFeed.slice(
                 this.state.homeFeedIndex,
                 this.state.homeFeedIndex + chunkSize
@@ -983,34 +974,14 @@
 
                 chunkProducts.forEach((p, i) => {
                     const globalIndex = this.state.homeFeedIndex + i;
+                    let cardSize = 'standard';
+                    
+                    // Perfect Mobile Bento Pattern: 4 small -> 1 large square
+                    if (this.state.homeCurrentSort === 'recommended' && globalIndex % 5 === 4) {
+                        cardSize = 'bento-large';
+                    }
 
-                    /*
-                     * Desktop pattern:
-                     *
-                     * Row 0: N T N T N T
-                     * Row 1: T N T N T N
-                     * Row 2: N T N T N T
-                     * Row 3: T N T N T N
-                     *
-                     * With 6 desktop columns, the parity is calculated from
-                     * row + column. This keeps the pattern correct even when
-                     * products are appended by infinite scrolling.
-                     */
-                    const desktopColumn = globalIndex % 6;
-                    const desktopRow = Math.floor(globalIndex / 6);
-                    const isTall = (desktopRow + desktopColumn) % 2 === 1;
-
-                    const cardSize = isTall
-                        ? 'stagger-tall'
-                        : 'stagger-normal';
-
-                    html += this.generateProductCardHTML(
-                        p,
-                        cardSize,
-                        'grid',
-                        !isAppend && i < 4,
-                        false
-                    );
+                    html += this.generateProductCardHTML(p, cardSize, 'grid', !isAppend && i < 4, false);
                 });
 
                 gridContainer.insertAdjacentHTML('beforeend', html);
@@ -1084,15 +1055,7 @@
                 `;
             }).join('');
 
-            document.querySelectorAll('.category-discovery-row').forEach(row => {
-                row.addEventListener('wheel', e => {
-                    if (row.scrollWidth > row.clientWidth) {
-                        row.scrollLeft += e.deltaY;
-                        e.preventDefault();
-                    }
-                }, { passive: false });
-            });
-        },
+            },
 
         renderSearch: function(query) {
             document.getElementById('search-page-title').textContent = `Results for "${query}"`;
@@ -1528,11 +1491,15 @@
             if (!container) return;
             
             try {
-                const { data, error } = await supabase.rpc('get_fbt_products', { p_id: productId, c_id: categoryId });
-                if (error || !data || data.length === 0) return;
+                // Client-side FBT Logic: Guarantees a rich, shuffled 8-item array every time
+                let pool = this.state.products.filter(p => p.is_active !== false && p.id !== productId);
                 
-                // Map the returned secure IDs back to our pre-loaded safe frontend product details
-                const recs = data.map(d => this.state.products.find(p => p.id === d.rec_id)).filter(Boolean);
+                let categoryMatches = pool.filter(p => p.category_id === categoryId).sort(() => 0.5 - Math.random());
+                let otherMatches = pool.filter(p => p.category_id !== categoryId).sort(() => 0.5 - Math.random());
+                
+                // Combine: Try to get at least 4 from same category, fill rest with random up to 8 total
+                let recs = [...categoryMatches.slice(0, 4), ...otherMatches].slice(0, 8);
+                recs.sort(() => 0.5 - Math.random()); // Final shuffle
                 
                 if (recs.length > 0) {
                     // Restored: Horizontal Small Card Shelf for FBT
