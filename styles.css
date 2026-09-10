@@ -543,7 +543,7 @@ button:disabled, .btn-primary:disabled {
         0 0 0 1px rgba(255, 255, 255, 0.8),
         inset 0 2px 4px rgba(255, 255, 255, 1),
         inset 0 -2px 4px rgba(15, 23, 42, 0.04);
-    transform: translateZ(0); 
+    transform: none;
     pointer-events: auto;
 }
 
@@ -3949,45 +3949,66 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
    We reduce it to 8px-12px on mobile screens. It looks exactly the same 
    but runs 3x faster on mobile GPUs. */
 @media (max-width: 768px) {
-    .mobile-bottom-nav {
-        backdrop-filter: blur(12px) saturate(180%);
-        -webkit-backdrop-filter: blur(12px) saturate(180%);
-    }
-    .hero-section,
-    .top-categories-wrapper {
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-    }
-    
-    /* Disables heavy hover shadows on touch devices where hover doesn't exist anyway */
-    .store-product-card:hover {
-        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05); /* Keeps the base shadow */
-        transform: none; /* Stops the physical lift on mobile */
-    }
-}
 
-/* 6. IMAGE LAYOUT SHIFT PREVENTION */
-/* Ensures images immediately reserve their space before they even load, 
-   preventing the page from stuttering and jumping while scrolling down. */
-.store-product-card .img-wrapper img,
-.category-discovery-section img {
-    will-change: opacity;
-    /* If you haven't explicitly set width/height on the img tags, this helps */
-    height: 100%;
-    width: 100%;
-    object-fit: contain;
+    /*
+     * Keep mobile surfaces opaque/solid so scrolling only moves
+     * normal pixels instead of repeatedly recomputing blur.
+     */
+    .mobile-bottom-nav,
+    .hero-section,
+    .top-categories-wrapper,
+    .hero-store-card {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    .store-product-card:hover {
+        box-shadow: none !important;
+        transform: none !important;
+    }
 }
 
 /* ============================================================
-   144HZ HARDWARE LAYER ISOLATION PATCH
+   IMAGE DIMENSIONS — WITHOUT FORCED COMPOSITOR PROMOTION
    ============================================================ */
+
+.store-product-card .img-wrapper img,
+.category-discovery-section img {
+    height: 100%;
+    width: 100%;
+    object-fit: contain;
+    will-change: auto !important;
+}
+
+/* ============================================================
+   STATIC CONTENT COMPOSITING
+   ============================================================ */
+
+/*
+ * Product cards are ordinary scrolling content.
+ * Do not create a compositor layer for every card.
+ *
+ * Keeping these elements in the normal document flow is
+ * considerably cheaper when dozens of products are present.
+ */
 .store-product-card,
 .category-thumb-card,
 .hero-3d-cat-item,
 .bottom-nav-item {
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    perspective: 1000px;
+    transform: none !important;
+    backface-visibility: visible;
+    perspective: none;
+}
+
+/*
+ * Only elements that are genuinely being animated should
+ * receive compositor promotion.
+ */
+@media (hover: hover) and (pointer: fine) {
+    .store-product-card:hover .img-wrapper,
+    .store-product-card:hover img {
+        will-change: transform;
+    }
 }
 
 /* Prevent layout thrashing during image zoom and modal popups */
@@ -4021,29 +4042,42 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
    so the browser can scroll them natively without memory exhaustion. */
 
 @media (max-width: 767px) {
-    /* Completely remove heavy repeating background grid and radial glow on mobile to eliminate paint lag */
+
     .hero-bg-grid,
     .hero-bg-glow {
         display: none !important;
     }
-    
-    /* Simplify hero section background on mobile to a clean solid surface */
+
     .hero-section {
-        background: rgba(248, 250, 252, 0.95);
-        box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.06);
+        background: #f8fafc;
+        box-shadow: 0 2px 8px -4px rgba(15, 23, 42, 0.05);
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
     }
-    
+
     .top-categories-wrapper {
-        background: rgba(248, 250, 252, 0.95);
+        background: #f8fafc;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
     }
 
     .hero-store-card {
+        background: #ffffff;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
+    }
+
+    /*
+     * Sticky header:
+     * keep the premium appearance, but remove continuous
+     * backdrop filtering during document scrolling.
+     */
+    .site-header {
+        background: rgba(255, 255, 255, 0.98) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        box-shadow:
+            0 2px 8px -4px rgba(15, 23, 42, 0.10);
     }
 }
 
@@ -4063,20 +4097,33 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     backface-visibility: hidden;
 }
 
-/* Smooth GPU Fade-In Effect when images finish decoding (Eliminates pop-in jank) */
+/* ============================================================
+   FINAL IMAGE RENDERING PERFORMANCE
+   No per-image entrance animation.
+   Native image decode + paint is cheaper and smoother on mobile.
+   ============================================================ */
+
 .store-product-card img,
 .category-thumb-card img,
 .hero-3d-cat-box img,
 .search-suggestion-img,
 .cart-item-img,
 .vc-img-wrapper img {
-    opacity: 0;
-    animation: fadeInImage 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 1 !important;
+    animation: none !important;
 }
 
-@keyframes fadeInImage {
-    from { opacity: 0; transform: scale(0.97); }
-    to { opacity: 1; transform: scale(1); }
+/*
+ * Do not reserve compositor resources for every image.
+ * These images are static during normal page scrolling.
+ */
+.store-product-card .img-wrapper img,
+.category-thumb-card img,
+.hero-3d-cat-box img,
+.search-suggestion-img,
+.cart-item-img,
+.vc-img-wrapper img {
+    will-change: auto !important;
 }
 
 /* ============================================================
@@ -4839,5 +4886,73 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
         background-repeat: no-repeat;
         background-size: 100% 100%;
+    }
+}
+
+/* ============================================================
+   FINAL MOBILE SCROLL PERFORMANCE PASS
+   ============================================================ */
+
+@media (max-width: 767px) {
+
+    html {
+        overflow-x: hidden;
+    }
+
+    body {
+        overflow-x: hidden;
+        overscroll-behavior-x: none;
+    }
+
+    /*
+     * Product cards are static content while the document scrolls.
+     * Avoid unnecessary containment/compositor work.
+     */
+    .store-product-card,
+    .store-product-card .img-wrapper,
+    .store-product-card img {
+        transform: none !important;
+        will-change: auto !important;
+        backface-visibility: visible !important;
+        perspective: none !important;
+    }
+
+    /*
+     * Keep touch scrolling native.
+     */
+    .products-grid,
+    .store-product-card {
+        touch-action: pan-y;
+    }
+
+    /*
+     * Avoid expensive transitions on scrolling content.
+     * Hover rules are already desktop-only.
+     */
+    .store-product-card .img-wrapper,
+    .store-product-card img,
+    .store-product-card-details {
+        transition: none !important;
+    }
+
+    /*
+     * Let the browser prioritize visible content naturally.
+     */
+    .store-product-card img {
+        content-visibility: visible;
+    }
+}
+
+/*
+ * Accessibility and battery-friendly behavior.
+ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
 }

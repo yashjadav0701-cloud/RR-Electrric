@@ -860,16 +860,39 @@
 
             const options = {
                 root: null,
-                // BIG TECH SECRET: Triggers the load 800px BEFORE the user hits the bottom
-                rootMargin: '800px', 
+
+                /*
+                 * Load shortly before the user reaches the end.
+                 * 220px is enough for normal mobile scrolling while
+                 * avoiding unnecessary DOM/image work far in advance.
+                 */
+                rootMargin: '220px 0px',
                 threshold: 0
             };
 
             this._infiniteObserver = new IntersectionObserver((entries) => {
                 const entry = entries[0];
-                // Only trigger if sentinel is active and grid hasn't ended
-                if (entry.isIntersecting && !sentinel.classList.contains('hidden')) {
+
+                if (
+                    entry.isIntersecting &&
+                    !sentinel.classList.contains('hidden') &&
+                    sentinel.dataset.loading !== 'true'
+                ) {
+                    /*
+                     * Prevent repeated IntersectionObserver callbacks
+                     * from starting multiple catalogue renders.
+                     */
+                    sentinel.dataset.loading = 'true';
+
                     Store.loadMoreHomeProducts();
+
+                    /*
+                     * Release the guard after the browser has had a frame
+                     * to process the newly inserted DOM.
+                     */
+                    requestAnimationFrame(() => {
+                        sentinel.dataset.loading = 'false';
+                    });
                 }
             }, options);
 
