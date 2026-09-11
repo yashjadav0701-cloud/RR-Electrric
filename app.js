@@ -185,6 +185,62 @@
 
                 return masterFeed;
             },
+
+            generateDynamicShelf: function(allProducts, categories) {
+                const active = allProducts.filter(p => p.is_active !== false);
+                if (active.length < 5) return null;
+
+                const themes = ['discount', 'budget', 'category', 'random'];
+                const type = themes[Math.floor(Math.random() * themes.length)];
+                
+                let title = '';
+                let shelfProducts = [];
+
+                if (type === 'discount') {
+                    const discounted = active.filter(p => p.mrp_price && p.mrp_price > p.selling_price)
+                        .sort((a, b) => ((b.mrp_price - b.selling_price) / b.mrp_price) - ((a.mrp_price - a.selling_price) / a.mrp_price));
+                    if (discounted.length >= 4) {
+                        title = 'Steal the Deal (Highest Drops) ⚡';
+                        shelfProducts = discounted.slice(0, 8);
+                    }
+                } 
+                
+                if (type === 'budget' && shelfProducts.length === 0) {
+                    const budget = active.filter(p => p.selling_price <= 199).sort(() => 0.5 - Math.random());
+                    if (budget.length >= 4) {
+                        title = 'Quick Grabs Under ₹199 🛒';
+                        shelfProducts = budget.slice(0, 8);
+                    }
+                } 
+                
+                if (type === 'category' && shelfProducts.length === 0) {
+                    const activeCatIds = [...new Set(active.map(p => p.category_id))].filter(id => id);
+                    if (activeCatIds.length > 0) {
+                        const randomCatId = activeCatIds[Math.floor(Math.random() * activeCatIds.length)];
+                        const catMatches = active.filter(p => p.category_id === randomCatId);
+                        if (catMatches.length >= 4) {
+                            const catObj = categories.find(c => c.id === randomCatId);
+                            title = `Spotlight on: ${catObj ? catObj.name : 'Essentials'} ✨`;
+                            shelfProducts = catMatches.sort(() => 0.5 - Math.random()).slice(0, 8);
+                        }
+                    }
+                } 
+                
+                if (shelfProducts.length === 0) {
+                    title = "Electrician's Top Picks 🔥";
+                    shelfProducts = [...active].sort(() => 0.5 - Math.random()).slice(0, 8);
+                }
+
+                // Final shuffle to keep the shelf feeling fresh
+                shelfProducts.sort(() => 0.5 - Math.random());
+
+                return {
+                    id: 'dyn-shelf-' + Math.floor(Math.random() * 100000),
+                    type: 'shelf-small',
+                    title: title,
+                    products: shelfProducts
+                };
+            },
             composePDPSections: function(currentProduct, allProducts) {
                 const active = allProducts.filter(p => p.is_active !== false && p.id !== currentProduct.id);
                 const sections = [];
@@ -738,8 +794,8 @@
             const offPercentage = (p.mrp_price && p.mrp_price > p.selling_price) ? Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100) : 0;
             const hasDiscount = offPercentage > 0;
 
-            const discountBadgeHtml = hasDiscount ? `<div class="premium-discount-badge"><span class="pct">${offPercentage}%</span><span class="off-text">OFF</span></div>` : '';
             const statusHtml = !isAvailable ? `<div class="premium-status-unavailable">SOLD OUT</div>` : '';
+            const inlineDiscountHtml = hasDiscount ? `<div class="premium-inline-discount"><span class="pct">${offPercentage}%</span><span class="off-text">OFF</span></div>` : '';
 
             // PREMIUM QUICK ADD BUTTON (Distinct Pill Design)
             let btnHtml = '';
@@ -758,20 +814,35 @@
                        </div>`;
             }
 
+            let priceAreaHtml = '';
+            if (size === 'small' && layout === 'grid') { // FBT specifically: Drops to next line
+                priceAreaHtml = `
+                    <div class="premium-price-lockup">
+                        <span class="premium-selling-price">₹${p.selling_price}</span>
+                        ${hasDiscount ? `<span class="premium-mrp-price">₹${p.mrp_price}</span>` : ''}
+                    </div>
+                    ${hasDiscount ? `<div class="fbt-discount-row">${inlineDiscountHtml}</div>` : ''}
+                `;
+            } else { // Standard & Home List: Keeps it inline next to MRP
+                priceAreaHtml = `
+                    <div class="premium-price-lockup" style="display: flex; align-items: center; flex-wrap: wrap;">
+                        <span class="premium-selling-price">₹${p.selling_price}</span>
+                        ${hasDiscount ? `<span class="premium-mrp-price">₹${p.mrp_price}</span>` : ''}
+                        ${hasDiscount ? inlineDiscountHtml : ''}
+                    </div>
+                `;
+            }
+
             // Pure 2-Zone Layout: No buttons normally, strictly visual discovery
             return `
                 <a href="javascript:void(0)" onclick="Store.navigate('product', '${p.id}')" class="store-product-card size-${size} layout-${layout} ${!isAvailable ? 'is-unavailable' : ''}">
                     <div class="img-wrapper">
                         ${statusHtml}
-                        ${discountBadgeHtml}
                         <img src="${img}" alt="${p.name}" ${loadingAttr}>
                     </div>
                     <div class="store-product-card-details">
                         <h3 class="store-product-card-title">${p.name}</h3>
-                        <div class="premium-price-lockup">
-                            <span class="premium-selling-price">₹${p.selling_price}</span>
-                            ${hasDiscount ? `<span class="premium-mrp-price">₹${p.mrp_price}</span>` : ''}
-                        </div>
+                        ${priceAreaHtml}
                     </div>
                     ${btnHtml}
                 </a>
@@ -928,7 +999,7 @@
                 <div class="storefront-section" id="section-${sec.id}" data-pc-cols="${randomCols}">
                     ${headerHtml}
                     <div class="${wrapperClass}">
-                        ${sec.products.map((p, i) => this.generateProductCardHTML(p, cardSize, cardLayout, isPriority && i < 4)).join('')}
+                        ${sec.products.map((p, i) => this.generateProductCardHTML(p, cardSize, cardLayout, isPriority && i < 4, true)).join('')}
                     </div>
                 </div>
             `;
@@ -940,7 +1011,8 @@
 
             if (!isAppend) {
                 this.state.homeFeedIndex = 0;
-                gridContainer.className = 'products-grid bento-grid';
+                // Switch exclusively to the new Amazon-style horizontal list feed
+                gridContainer.className = 'home-list-feed';
                 gridContainer.innerHTML = '';
                 document.getElementById('end-of-catalog')?.remove();
 
@@ -953,8 +1025,8 @@
                 }
             }
 
-            // Use chunk size of 10 to ensure complete blocks of 5 are loaded
-            const chunkSize = 10;
+            // Use chunk size of 6 to interleave horizontal lists more frequently
+            const chunkSize = 6;
             const chunkProducts = this.state.masterFeed.slice(
                 this.state.homeFeedIndex,
                 this.state.homeFeedIndex + chunkSize
@@ -964,14 +1036,24 @@
                 let html = '';
 
                 chunkProducts.forEach((p, i) => {
-                    const globalIndex = this.state.homeFeedIndex + i;
-                    let cardSize = 'standard';
-                    
-                    // Enforce strictly uniform grid pattern matching the layout requirements
-                    cardSize = 'standard';
-
-                    html += this.generateProductCardHTML(p, cardSize, 'grid', !isAppend && i < 4, false);
+                    // Generate Amazon-style horizontal card (layout = 'home-list', showButton = true)
+                    html += this.generateProductCardHTML(p, 'standard', 'home-list', !isAppend && i < 4, true);
                 });
+
+                // --- DYNAMIC SHELF INJECTION ---
+                // Continuously inject a smart horizontal shelf in between the main vertical list chunks
+                if (this.state.homeCurrentSort === 'recommended') {
+                    const shelfConfig = this.SmartComposer.generateDynamicShelf(this.state.products, this.state.categories);
+                    if (shelfConfig) {
+                        const shelfHtml = this.renderSingleSectionHTML(shelfConfig, false);
+                        // Wrap it in a full grid column span so it breaks out of the grid properly
+                        html += `
+                            <div class="dynamic-shelf-wrapper">
+                                ${shelfHtml}
+                            </div>
+                        `;
+                    }
+                }
 
                 gridContainer.insertAdjacentHTML('beforeend', html);
                 this.state.homeFeedIndex += chunkProducts.length;
@@ -1171,7 +1253,7 @@
             if (pdpSections.length > 0) {
                 // Rendered inside .container to match main page margin exactly
                 relatedHtml = `
-                    <div class="container" style="margin: 32px auto 0 auto; padding-top: 32px; border-top: 1px dashed var(--border-subtle); padding-bottom: 40px;">
+                    <div class="container" style="margin: 8px auto 0 auto; padding-top: 20px; border-top: 1px dashed var(--border-subtle); padding-bottom: 40px;">
                         <div class="storefront-sections-wrapper">
                             ${pdpSections.map(sec => this.renderSingleSectionHTML(sec, false)).join('')}
                         </div>
@@ -1364,22 +1446,24 @@
                         
                         ${p.description ? `<div class="pdp-desc" style="margin-top: 16px;">${p.description.replace(/\n/g, '<br>')}</div>` : ''}
                         
-                        <div id="pdp-cross-sell-container"></div>
-
+                        <div style="margin-top: 24px; margin-bottom: 28px;">
                         ${p.is_active !== false ? `
                         <button class="btn-add-cart-large" onclick="Store.handlePDPAddToCart('${p.id}')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-                            Add to Bag
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                            <span>Add to Bag</span>
                         </button>
                         ` : `
                         <div class="pdp-availability-notice">
                             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                             <span>Currently Unavailable</span>
                         </div>
-                        <button class="btn-add-cart-large" disabled style="background: var(--slate-100); color: var(--slate-400); border-color: var(--border); box-shadow: none; cursor: not-allowed; transform: none;">
+                        <button class="btn-add-cart-large disabled-add" disabled>
                             Out of Stock
                         </button>
                         `}
+                        </div>
+
+                        <div id="pdp-cross-sell-container"></div>
                     </div>
                 </div>
                 ${relatedHtml}
@@ -1486,15 +1570,22 @@
             if (!container) return;
             
             try {
-                // Client-side FBT Logic: Guarantees a rich, shuffled 8-item array every time
+                // Deterministic seed based on productId to ensure consistency across devices/refreshes
+                let seed = 0;
+                for (let i = 0; i < productId.length; i++) seed += productId.charCodeAt(i);
+                const pseudoRandom = () => {
+                    let x = Math.sin(seed++) * 10000;
+                    return x - Math.floor(x);
+                };
+
                 let pool = this.state.products.filter(p => p.is_active !== false && p.id !== productId);
                 
-                let categoryMatches = pool.filter(p => p.category_id === categoryId).sort(() => 0.5 - Math.random());
-                let otherMatches = pool.filter(p => p.category_id !== categoryId).sort(() => 0.5 - Math.random());
+                let categoryMatches = pool.filter(p => p.category_id === categoryId).sort(() => 0.5 - pseudoRandom());
+                let otherMatches = pool.filter(p => p.category_id !== categoryId).sort(() => 0.5 - pseudoRandom());
                 
-                // Combine: Try to get at least 4 from same category, fill rest with random up to 8 total
+                // Combine: Try to get at least 4 from same category, fill rest up to 8 total
                 let recs = [...categoryMatches.slice(0, 4), ...otherMatches].slice(0, 8);
-                recs.sort(() => 0.5 - Math.random()); // Final shuffle
+                recs.sort(() => 0.5 - pseudoRandom()); // Final deterministic shuffle
                 
                 if (recs.length > 0) {
                     // Restored: Horizontal Small Card Shelf for FBT

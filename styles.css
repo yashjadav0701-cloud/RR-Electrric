@@ -81,6 +81,7 @@ html {
     -webkit-text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    touch-action: manipulation; /* Eliminates 300ms tap delay for instant responsiveness */
 }
 
 body {
@@ -91,6 +92,7 @@ body {
     color: var(--text-main);
     line-height: 1.5;
     -webkit-tap-highlight-color: transparent;
+    -webkit-overflow-scrolling: touch; /* Forces hardware-accelerated momentum scrolling on iOS */
 }
 
 /* Re-enable fixed desktop background where GPU acceleration is robust */
@@ -115,7 +117,7 @@ h1, h2, h3, h4, h5, h6, .page-title, .hero-title, .pdp-title {
 /* ============================================================
    THE ELECTRICAL CONTROL BUTTON SYSTEM (TACTILE & INTENTIONAL)
    ============================================================ */
-button, .btn-primary, .btn-secondary, .btn-danger, .btn-checkout, .btn-add-cart-large {
+button, .btn-primary, .btn-secondary, .btn-danger, .btn-checkout {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -148,7 +150,7 @@ button:disabled, .btn-primary:disabled {
     box-shadow: none !important;
 }
 
-.btn-primary, .btn-checkout, .btn-add-cart-large {
+.btn-primary, .btn-checkout {
     background: linear-gradient(135deg, #0284c7, #0369a1);
     color: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -166,7 +168,7 @@ button:disabled, .btn-primary:disabled {
 
 /* Mouse Hover (Desktops Only) */
 @media (hover: hover) and (pointer: fine) {
-    .btn-primary:hover, .btn-checkout:hover, .btn-add-cart-large:hover {
+    .btn-primary:hover, .btn-checkout:hover {
         background: linear-gradient(135deg, #0369a1, #0284c7);
         transform: translateY(-2px);
         box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.5),
@@ -176,7 +178,7 @@ button:disabled, .btn-primary:disabled {
 }
 
 /* Tactile Mobile & Desktop Active Press */
-.btn-primary:active, .btn-checkout:active, .btn-add-cart-large:active {
+.btn-primary:active, .btn-checkout:active {
     transform: translateY(4px) !important;
     box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.2),
                 0 0 0 #075985,
@@ -1041,6 +1043,30 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .sk-circle { border-radius: 50%; }
 .sk-row { display: flex; gap: 8px; }
 .sk-flex-between { display: flex; justify-content: space-between; align-items: center; }
+
+/* Responsive Skeleton Home Feed */
+.sk-home-feed {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 32px;
+    width: 100%;
+}
+.sk-home-card {
+    width: 100%;
+    height: 126px; /* Mimics mobile horizontal card height */
+    border-radius: 10px;
+}
+@media (min-width: 768px) {
+    .sk-home-feed { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .sk-home-card { height: auto; aspect-ratio: 1 / 1.4; border-radius: 8px; } /* Mimics PC vertical card height */
+}
+@media (min-width: 1024px) {
+    .sk-home-feed { grid-template-columns: repeat(4, 1fr); gap: 20px; }
+}
+@media (min-width: 1200px) {
+    .sk-home-feed { grid-template-columns: repeat(5, 1fr); }
+}
 
 /* ============================================================
    ADMIN DATA TABLES & MODALS
@@ -2878,7 +2904,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 /* ============================================================
-   FULL-WIDTH CENTERED ADD TO BAG BUTTON FIX
+   PREMIUM FULL-WIDTH ADD TO BAG BUTTON (PILL DESIGN)
    ============================================================ */
 .btn-add-cart-large {
     display: flex !important;
@@ -2886,8 +2912,74 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     max-width: 100% !important;
     justify-content: center !important;
     align-items: center !important;
+    gap: 10px;
+    padding: 16px 24px;
     margin-left: auto !important;
     margin-right: auto !important;
+    
+    /* Circular ends (Perfect Pill shape) */
+    border-radius: 999px !important;
+    
+    /* Premium Electric Blue Gradient */
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+    user-select: none;
+    
+    /* High-end 3D Bevel and Glow */
+    box-shadow: 
+        inset 0 2px 2px rgba(255, 255, 255, 0.25), /* Top inner highlight */
+        inset 0 -4px 4px rgba(0, 0, 0, 0.15),      /* Bottom inner shading */
+        0 8px 16px -4px rgba(2, 132, 199, 0.4),    /* Soft blue glow */
+        0 4px 6px -2px rgba(15, 23, 42, 0.1);      /* Hard base shadow */
+        
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: translateZ(0);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-add-cart-large svg {
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .btn-add-cart-large:hover {
+        background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+        transform: translateY(-3px);
+        box-shadow: 
+            inset 0 2px 2px rgba(255, 255, 255, 0.3),
+            inset 0 -4px 4px rgba(0, 0, 0, 0.2),
+            0 12px 24px -6px rgba(2, 132, 199, 0.5),
+            0 6px 8px -2px rgba(15, 23, 42, 0.15);
+    }
+    .btn-add-cart-large:hover svg {
+        transform: scale(1.15) rotate(-5deg);
+    }
+}
+
+.btn-add-cart-large:active {
+    transform: translateY(2px) scale(0.98) !important;
+    background: #075985 !important;
+    box-shadow: 
+        inset 0 4px 8px rgba(0, 0, 0, 0.3),
+        inset 0 0 0 1px rgba(0,0,0,0.5) !important;
+    transition-duration: 50ms;
+}
+
+.btn-add-cart-large.disabled-add {
+    background: var(--slate-100) !important;
+    color: var(--slate-400) !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05) !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    border: 1px solid var(--border) !important;
 }
 
 /* ============================================================
@@ -3483,8 +3575,53 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 /* ============================================================
-   CROSS-SELLING ENGINE (FREQUENTLY BOUGHT TOGETHER)
+   PREMIUM INLINE DISCOUNT LABEL (NEW)
    ============================================================ */
+.premium-inline-discount {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #ffffff;
+    border-radius: 4px;
+    padding: 2px 4px; /* Narrower padding */
+    margin-left: 6px;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+    white-space: nowrap;
+    vertical-align: middle;
+}
+.premium-inline-discount .pct {
+    font-size: 10px; /* Smaller font */
+    font-weight: 800;
+    margin-right: 2px; /* Tighter gap between number and text */
+    line-height: 1;
+    letter-spacing: -0.2px;
+}
+.premium-inline-discount .off-text {
+    font-size: 7.5px; /* Smaller font */
+    font-weight: 700;
+    opacity: 0.95;
+    line-height: 1;
+    letter-spacing: 0.1px; /* Less letter spacing keeps it narrower */
+}
+
+.fbt-discount-row {
+    margin-top: 5px;
+    width: 100%;
+}
+.fbt-discount-row .premium-inline-discount {
+    margin-left: 0;
+    padding: 1.5px 3.5px; /* Narrower padding */
+    border-radius: 3px;
+}
+.fbt-discount-row .premium-inline-discount .pct {
+    font-size: 9px; /* Smaller font */
+    margin-right: 2px; /* Tighter gap */
+}
+.fbt-discount-row .premium-inline-discount .off-text {
+    font-size: 6px; /* Smaller font */
+    letter-spacing: 0px;
+}
+
 /* ============================================================
    FREQUENTLY BOUGHT TOGETHER
    Dedicated compact horizontal product rail
@@ -3492,7 +3629,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 .cross-sell-container {
     margin-top: 20px;
-    margin-bottom: 20px;
+    margin-bottom: 0px; /* Removed extra bottom margin */
     border-top: 1px dashed var(--border-subtle);
     padding-top: 16px;
     width: 100%;
@@ -3522,30 +3659,20 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-
     width: 100%;
     max-width: 100%;
-
     gap: 8px;
-
-    overflow-x: auto;
-    overflow-y: hidden;
-
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
     padding: 4px 2px 10px 2px;
-
     scrollbar-width: none;
     -ms-overflow-style: none;
-
     -webkit-overflow-scrolling: touch;
-
-    overscroll-behavior-x: contain;
-    overscroll-behavior-y: auto; /* FIXED: Prevents vertical scroll locking */
-
-    /* Let browser natively handle vertical scrolling */
-    touch-action: pan-x pan-y;
-
+    overscroll-behavior-x: auto;
+    overscroll-behavior-y: auto;
+    /* Restored to auto to let the browser natively handle vertical/horizontal gesture detection */
+    touch-action: auto !important;
     scroll-snap-type: none;
-    cursor: grab;
 }
 
 .fbt-product-track::-webkit-scrollbar {
@@ -3662,7 +3789,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 /*
- * Quick Add button proportionally scaled
+ * Quick Add button proportionally scaled for FBT
  */
 .fbt-product-track .quick-add-wrapper {
     padding: 4px 6px 8px 6px !important;
@@ -3670,16 +3797,22 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 .fbt-product-track .btn-quick-add {
-    height: 26px !important;
-    font-size: 9px !important;
+    height: 28px !important; /* Taller for 3D effect */
+    font-size: 10px !important;
     padding: 0 8px !important;
     gap: 4px !important;
-    border-radius: 4px !important; 
+    border-radius: 6px !important; 
+    box-shadow: 0 2px 4px -1px rgba(15, 23, 42, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15), inset 0 -1.5px 2px rgba(0, 0, 0, 0.4) !important;
 }
 
 .fbt-product-track .btn-quick-add svg {
-    width: 10px !important;
-    height: 10px !important;
+    width: 11px !important;
+    height: 11px !important;
+}
+
+.fbt-product-track .btn-quick-add:active {
+    transform: translateY(1.5px) scale(0.97) !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(0,0,0,0.3) !important;
 }
 
 /* ============================================================
@@ -3722,15 +3855,11 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
     .fbt-product-track {
         gap: 8px;
-
-        /*
-         * Strong native horizontal gesture handling.
-         */
         overflow-x: auto !important;
         overflow-y: hidden !important;
-        touch-action: pan-x pan-y !important; /* FIXED: Allows vertical page scrolling */
+        /* Restoring default touch-action lets the mobile OS naturally detect horizontal swipes vs vertical page scrolls */
+        touch-action: auto !important; 
         -webkit-overflow-scrolling: touch !important;
-
         padding-left: 2px;
         padding-right: 2px;
     }
@@ -4851,8 +4980,16 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 /* ============================================================
    MASTER FINAL STOREFRONT ARCHITECTURE
    ============================================================ */
+/* MASTER FINAL STOREFRONT ARCHITECTURE */
 .storefront-sections-wrapper { display: flex; flex-direction: column; gap: 32px; width: 100%; }
-.storefront-section { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.storefront-section { 
+    width: 100%; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    content-visibility: auto; /* Ultimate FPS Hack: Skips rendering off-screen sections */
+    contain-intrinsic-size: 0 400px; /* Gives the scrollbar a rough height estimate to prevent jumping */
+}
 .section-header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 8px; border-bottom: 2px solid rgba(226, 232, 240, 0.6); margin-bottom: 4px; }
 .section-title { font-size: 18px; font-weight: 800; color: var(--slate-900); margin: 0; letter-spacing: -0.02em; }
 .section-header-link { font-size: 12px; font-weight: 700; color: var(--primary); text-decoration: none; padding: 4px 10px; border-radius: 999px; background: rgba(2, 132, 199, 0.08); transition: all 0.2s ease; margin-bottom: 2px; }
@@ -4862,10 +4999,39 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .products-grid-2col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; }
 @media (min-width: 768px) { .products-grid-2col { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; } }
 
-/* Horizontal Shelves (Pure Natural Momentum) */
-.shelf-track { display: flex; flex-wrap: nowrap; gap: 12px; overflow-x: auto; padding-bottom: 16px; margin-bottom: -16px; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x; overscroll-behavior-x: auto; }
+/* Horizontal Shelves (Pure Natural Momentum & Flawless Touch Physics) */
+.shelf-track { 
+    display: flex; 
+    flex-wrap: nowrap; 
+    gap: 12px; 
+    overflow-x: auto; 
+    padding-bottom: 16px; 
+    margin-bottom: -16px; 
+    scrollbar-width: none; 
+    -webkit-overflow-scrolling: touch; 
+    /* The Magic Trick: pan-y forces vertical swipes to scroll the page, horizontal handles the track naturally */
+    touch-action: pan-y; 
+    overscroll-behavior-x: auto; 
+}
 .shelf-track::-webkit-scrollbar { display: none; }
 .shelf-track > * { flex-shrink: 0; }
+
+/* Dynamic Discovery Engine Wrapper */
+.dynamic-shelf-wrapper {
+    grid-column: 1 / -1; /* Forces it to span entirely across the grid */
+    width: 100%;
+    overflow: hidden;
+    margin: 4px 0 8px 0; /* Tighter margins */
+    padding: 12px 0 0 0; /* Tighter padding */
+    border-top: 1px dashed var(--border-subtle);
+}
+
+.dynamic-shelf-wrapper .storefront-section {
+    margin-bottom: 0;
+}
+.dynamic-shelf-wrapper .section-title {
+    font-size: 15px; /* Slightly smaller for inline shelves */
+}
 
 /* ============================================================
    UNIVERSAL PRODUCT CARD (PREMIUM BUTTONLESS REDESIGN)
@@ -4885,6 +5051,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     transform: translateZ(0);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    content-visibility: auto; /* Unloads the card from GPU memory when scrolled past */
+    contain-intrinsic-size: 0 126px; /* Prevents scrollbar layout thrashing */
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -5041,56 +5209,223 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
 }
 
-/* ============================================================
-   PERFECT BENTO BOX MOBILE & UNIFORM 6-COLUMN PC GRID
-   ============================================================ */
-.products-grid.bento-grid {
-    grid-auto-flow: dense;
+/* Quick Add sizing for small horizontal cards */
+.size-small .quick-add-wrapper {
+    padding: 6px 8px 8px 8px !important;
+    margin-top: auto;
+}
+.size-small .btn-quick-add {
+    height: 28px !important;
+    font-size: 10.5px !important;
+    padding: 0 8px !important;
+    border-radius: 6px !important;
+}
+.size-small .btn-quick-add svg {
+    width: 12px !important;
+    height: 12px !important;
 }
 
-/* On mobile, every 5th item spans full width and forms a large square */
-.size-bento-large {
-    grid-column: span 2;
+/* ============================================================
+   AMAZON-STYLE HORIZONTAL HOME FEED (1 ROW = 1 PRODUCT)
+   ============================================================ */
+.home-list-feed {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    width: 100%;
+    padding-bottom: 24px;
+}
+
+@media (min-width: 768px) {
+    .home-list-feed { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+}
+
+@media (min-width: 1024px) {
+    .home-list-feed { grid-template-columns: repeat(4, 1fr); gap: 20px; }
+}
+
+@media (min-width: 1200px) {
+    .home-list-feed { grid-template-columns: repeat(5, 1fr); }
+}
+
+.store-product-card.layout-home-list {
+    display: grid !important;
+    grid-template-columns: 110px 1fr;
+    grid-template-rows: 1fr auto;
+    background: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 10px;
+    padding: 8px;
+    gap: 0 12px;
+    align-items: stretch;
+}
+
+.store-product-card.layout-home-list .img-wrapper {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 100% !important;
+    height: 110px !important;
+    aspect-ratio: 1 / 1 !important;
+    border: none !important; 
+    border-radius: 6px !important; /* Adds a clean, slight curve */
+    padding: 0 !important; 
+    margin: 0 !important;
+    align-self: center;
+    background: transparent !important; 
+    overflow: hidden !important; /* Ensures the image clips to the curve */
+}
+
+.store-product-card.layout-home-list .img-wrapper img {
+    border-radius: 6px !important; /* Curves the image directly */
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    background: transparent !important;
+    mix-blend-mode: multiply !important; 
+}
+
+.store-product-card.layout-home-list .store-product-card-details {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0 !important;
     display: flex;
     flex-direction: column;
+    justify-content: flex-start;
+    gap: 4px;
 }
-.size-bento-large .img-wrapper {
-    padding: 24px !important;
-    aspect-ratio: 1 / 1 !important; /* Perfect square as per wireframe */
+
+.store-product-card.layout-home-list .quick-add-wrapper {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 4px 0 0 0 !important;
+    margin-top: auto;
+    align-self: end;
 }
-.size-bento-large .store-product-card-title { 
-    font-size: 15px !important; 
-    -webkit-line-clamp: 3;
+
+.store-product-card.layout-home-list .store-product-card-title {
+    font-size: 13.5px !important;
+    line-height: 1.35 !important;
+    -webkit-line-clamp: 2 !important;
+    margin-bottom: 4px !important;
+    color: var(--slate-900) !important;
+    margin-top: 2px !important;
 }
-.size-bento-large .premium-selling-price { font-size: 20px; }
-/*
- * Compact discount circle for FBT track
- */
-.fbt-product-track .store-product-card .premium-discount-badge {
+
+.store-product-card.layout-home-list .premium-price-lockup {
+    margin-top: 0;
+    gap: 8px;
+}
+
+.store-product-card.layout-home-list .premium-selling-price {
+    font-size: 20px !important;
+}
+
+.store-product-card.layout-home-list .premium-mrp-price {
+    font-size: 13px !important;
+}
+
+/* Unified 3D Quick Add Button Overrides Handled Globally */
+
+.store-product-card.layout-home-list .premium-discount-badge {
     width: 38px !important;
     height: 38px !important;
     top: 6px !important;
     left: 6px !important;
-    border-radius: 50% !important;
     border-width: 1.5px !important;
-    box-shadow: 0 4px 8px -2px rgba(220, 38, 38, 0.6), inset 0 2px 3px rgba(255, 255, 255, 0.4), inset 0 -2px 3px rgba(153, 27, 27, 0.5) !important;
 }
-.fbt-product-track .store-product-card .premium-status-unavailable {
-    top: 0 !important; left: 0 !important; border-radius: 8px 0 8px 0 !important;
-}
-.fbt-product-track .store-product-card .premium-discount-badge .pct {
-    font-size: 13px !important;
-    line-height: 0.85 !important;
+.store-product-card.layout-home-list .premium-discount-badge .pct {
+    font-size: 12.5px !important;
+    line-height: 0.9 !important;
     letter-spacing: -0.5px !important;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
     margin-bottom: 0px !important;
 }
-.fbt-product-track .store-product-card .premium-discount-badge .off-text {
-    font-size: 6.5px !important;
-    line-height: 0.85 !important;
+.store-product-card.layout-home-list .premium-discount-badge .off-text {
+    font-size: 6px !important;
+    line-height: 0.9 !important;
     letter-spacing: 0.2px !important;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
-    margin-top: 3px !important;
+}
+
+@media (max-width: 400px) {
+    .store-product-card.layout-home-list {
+        grid-template-columns: 96px 1fr;
+        padding: 8px;
+        gap: 0 10px;
+    }
+    .store-product-card.layout-home-list .img-wrapper {
+        height: 96px !important;
+    }
+    .store-product-card.layout-home-list .premium-selling-price {
+        font-size: 18px !important;
+    }
+    .store-product-card.layout-home-list .store-product-card-title {
+        font-size: 13px !important;
+    }
+    .store-product-card.layout-home-list .premium-discount-badge {
+        width: 32px !important;
+        height: 32px !important;
+        top: 4px !important;
+        left: 4px !important;
+    }
+    .store-product-card.layout-home-list .premium-discount-badge .pct {
+        font-size: 11px !important;
+    }
+    .store-product-card.layout-home-list .premium-discount-badge .off-text {
+        font-size: 5.5px !important;
+    }
+}
+
+/* PC OVERRIDE: MORPH INTO VERTICAL CARD */
+@media (min-width: 768px) {
+    .store-product-card.layout-home-list {
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 0 !important;
+        gap: 0 !important;
+    }
+    .store-product-card.layout-home-list .img-wrapper {
+        width: 100% !important;
+        height: auto !important;
+        aspect-ratio: 1 / 1 !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
+        border-radius: 8px 8px 0 0 !important;
+        overflow: hidden !important;
+    }
+    .store-product-card.layout-home-list .img-wrapper img {
+        border-radius: 8px 8px 0 0 !important;
+    }
+    .store-product-card.layout-home-list .store-product-card-details {
+        padding: 12px 10px 10px 10px !important;
+    }
+    .store-product-card.layout-home-list .quick-add-wrapper {
+        padding: 8px 10px 10px 10px !important;
+        margin-top: auto !important;
+    }
+    .store-product-card.layout-home-list .store-product-card-title {
+        font-size: 13.5px !important;
+        -webkit-line-clamp: 2 !important;
+        margin: 0 !important;
+    }
+    .store-product-card.layout-home-list .premium-selling-price {
+        font-size: 16px !important;
+    }
+    .store-product-card.layout-home-list .premium-mrp-price {
+        font-size: 12px !important;
+    }
+    .store-product-card.layout-home-list .premium-discount-badge {
+        width: 46px !important;
+        height: 46px !important;
+        top: 8px !important;
+        left: 8px !important;
+    }
+    .store-product-card.layout-home-list .premium-discount-badge .pct {
+        font-size: 15.5px !important;
+        margin-bottom: 0px !important;
+    }
+    .store-product-card.layout-home-list .premium-discount-badge .off-text {
+        font-size: 7.5px !important;
+        margin-top: 3px !important;
+    }
 }
 
 /* Responsive Adjustments (Phones) */
@@ -5204,22 +5539,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
         gap: 16px !important;
     }
 
-    /* Reset the Mobile Bento-Large card on PC so it matches standard cards exactly */
-    .size-bento-large {
-        grid-column: span 1 !important; /* Forces 1-column uniform width */
-    }
-    .size-bento-large .img-wrapper {
-        padding: 8px !important; /* Reset to standard padding */
-        aspect-ratio: 1 / 1 !important;
-    }
-    .size-bento-large .store-product-card-title { 
-        font-size: 13.5px !important; 
-        -webkit-line-clamp: 2 !important;
-    }
-    .size-bento-large .premium-selling-price { font-size: 16px !important; }
-    .size-bento-large .premium-discount-badge, .size-bento-large .premium-status-unavailable { 
-        font-size: 10px !important; padding: 4px 8px !important; top: 8px !important; left: 8px !important; border-radius: 6px !important; 
-    }
+    /* PC Grid Rules applied successfully to legacy product-grids */
 
     /* Reset mobile-specific flex constraints for cards on PC */
     .shelf-track > *,
@@ -5233,10 +5553,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 /* ============================================================
-   PREMIUM QUICK ADD BUTTON (Distinct from Main Add Button)
+   PREMIUM QUICK ADD BUTTON (Unified 3D Design)
    ============================================================ */
 .quick-add-wrapper {
-    padding: 6px 10px 10px 10px;
+    padding: 8px 10px 10px 10px;
     margin-top: auto;
     width: 100%;
 }
@@ -5247,53 +5567,63 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     justify-content: center;
     gap: 6px;
     width: 100%;
-    height: 32px;
-    background: var(--slate-900); /* Dark Midnight Color */
-    color: #ffffff;
-    border: 1px solid var(--slate-800);
-    border-radius: 50px; /* Perfect Sleek Pill */
-    font-size: 11.5px;
-    font-weight: 700;
+    height: 34px;
+    background: linear-gradient(180deg, var(--primary) 0%, var(--primary-hover) 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid var(--primary-active) !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
     -webkit-tap-highlight-color: transparent;
-    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.2);
+    box-shadow: 
+        0 4px 6px -1px rgba(2, 132, 199, 0.25), 
+        inset 0 1px 1px rgba(255, 255, 255, 0.2),
+        inset 0 -2px 2px rgba(0, 0, 0, 0.15) !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    transform: translateZ(0);
 }
 
 .btn-quick-add svg {
-    width: 12px;
-    height: 12px;
+    width: 14px !important;
+    height: 14px !important;
+    stroke-width: 2.5;
     transition: transform 0.2s ease;
 }
 
 /* Hover Physics */
 @media (hover: hover) and (pointer: fine) {
     .btn-quick-add:hover {
-        background: #000000;
+        background: linear-gradient(180deg, var(--primary-hover) 0%, var(--primary-active) 100%) !important;
         transform: translateY(-2px);
-        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.3);
-    }
-    .btn-quick-add:hover svg {
-        transform: rotate(90deg); /* Playful micro-interaction */
+        box-shadow: 
+            0 6px 10px -2px rgba(2, 132, 199, 0.35),
+            inset 0 1px 1px rgba(255, 255, 255, 0.2),
+            inset 0 -2px 2px rgba(0, 0, 0, 0.2) !important;
     }
 }
 
-/* Tactile Mobile Tap */
+/* Tactile Mobile Tap 3D Physics */
 .btn-quick-add:active {
-    transform: scale(0.96);
-    background: var(--slate-800);
-    box-shadow: none;
+    transform: translateY(2px) scale(0.98);
+    background: var(--primary-active) !important;
+    box-shadow: 
+        inset 0 3px 6px rgba(0, 0, 0, 0.2),
+        inset 0 0 0 1px rgba(0,0,0,0.3) !important;
+    border-color: transparent !important;
     transition-duration: 50ms;
 }
 
 /* Sold Out State */
 .btn-quick-add.disabled-add {
-    background: var(--slate-50);
-    color: var(--slate-400);
-    border-color: var(--slate-200);
-    box-shadow: none;
+    background: var(--slate-100) !important;
+    color: var(--slate-400) !important;
+    border-color: var(--border) !important;
+    box-shadow: none !important;
     cursor: not-allowed;
-    transform: none;
+    transform: none !important;
+    text-shadow: none !important;
 }
 
 
@@ -5353,85 +5683,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 
-/* ============================================================
-   CONTINUOUS VERTICAL COLUMN DIVIDER
-   ============================================================ */
-
-/*
- * IMPORTANT:
- * This is attached to the GRID, not individual cards.
- *
- * Therefore the line continues through:
- * product → gap → product → gap → product
- * all the way to the final product.
- */
-
-/* Home product listing */
-#home-products-grid {
-    position: relative;
-}
-
-/* Mobile: one clean divider between the two product columns */
-@media (max-width: 767px) {
-    #home-products-grid::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        bottom: 0;
-
-        left: 50%;
-        width: 1px;
-
-        transform: translateX(-50%);
-
-        background: rgba(100, 116, 139, 0.22);
-
-        pointer-events: none;
-        z-index: 0;
-    }
-
-    /*
-     * Keep cards above the divider so the divider visually
-     * lives in the central gutter.
-     */
-    #home-products-grid > .store-product-card {
-        position: relative;
-        z-index: 1;
-    }
-}
-
-/*
- * Desktop currently uses the professional multi-column
- * arrangement already established in your stylesheet.
- *
- * The divider system below creates a clean line between
- * each desktop product column without changing card sizing.
- */
-@media (min-width: 768px) {
-
-    #home-products-grid {
-        background-image:
-            linear-gradient(
-                to right,
-                transparent 0,
-                transparent calc(25% - 0.5px),
-                rgba(100, 116, 139, 0.16) calc(25% - 0.5px),
-                rgba(100, 116, 139, 0.16) calc(25% + 0.5px),
-                transparent calc(25% + 0.5px),
-                transparent calc(50% - 0.5px),
-                rgba(100, 116, 139, 0.16) calc(50% - 0.5px),
-                rgba(100, 116, 139, 0.16) calc(50% + 0.5px),
-                transparent calc(50% + 0.5px),
-                transparent calc(75% - 0.5px),
-                rgba(100, 116, 139, 0.16) calc(75% - 0.5px),
-                rgba(100, 116, 139, 0.16) calc(75% + 0.5px),
-                transparent calc(75% + 0.5px)
-            );
-
-        background-repeat: no-repeat;
-        background-size: 100% 100%;
-    }
-}
+/* Vertical dividers removed for cleaner grid/list integration */
 
 /* ============================================================
    FINAL MOBILE SCROLL PERFORMANCE PASS
@@ -5439,13 +5691,11 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 @media (max-width: 767px) {
 
-    html {
-        overflow-x: hidden;
-    }
-
-    body {
+    html, body {
         overflow-x: hidden;
         overscroll-behavior-x: none;
+        overscroll-behavior-y: auto !important; /* Ensures the native vertical pull-bounce works cleanly */
+        -webkit-overflow-scrolling: touch !important; /* strictly enforces momentum physics */
     }
 
     /*
