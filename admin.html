@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin — RR ELECTRRIC</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" href="styles.css?v=8.6">
-    <link rel="stylesheet" href="admin.css?v=8.6">
-    <link rel="icon" type="image/svg+xml" href="assets/logo-short.svg?v=8.6">
+    <link rel="stylesheet" href="styles.css?v=8.7">
+    <link rel="stylesheet" href="admin.css?v=8.7">
+    <link rel="icon" type="image/svg+xml" href="assets/logo-short.svg?v=8.7">
     
     <!-- Preconnect to Supabase for faster API handshakes -->
     <link rel="preconnect" href="https://ycckkswajajrqobrohcx.supabase.co" crossorigin>
@@ -17,12 +17,12 @@
 <body>
     <!-- Global Preloader -->
     <div id="global-preloader" class="global-preloader">
-        <img src="/assets/logo-full.svg?v=8.6" alt="RR" class="preloader-logo">
+        <img src="/assets/logo-full.svg?v=8.7" alt="RR" class="preloader-logo">
     </div>
 
     <div id="admin-auth" class="admin-auth-container">
         <div class="auth-card">
-            <img src="/assets/logo-full.svg?v=8.6" alt="RR ELECTRRIC" width="200" style="margin-bottom: 24px;">
+            <img src="/assets/logo-full.svg?v=8.7" alt="RR ELECTRRIC" width="200" style="margin-bottom: 24px;">
             <h2>Admin Gateway</h2>
             <p>Authentication required.</p>
             <div id="login-error" class="hidden" style="color: var(--danger); margin-bottom: 16px; font-size: 14px;"></div>
@@ -37,7 +37,7 @@
     <div id="admin-app" class="admin-layout hidden">
         <aside class="admin-sidebar">
             <div class="sidebar-brand">
-                <img src="/assets/logo-full.svg?v=8.6" alt="RR ELECTRRIC" class="admin-main-logo">
+                <img src="/assets/logo-full.svg?v=8.7" alt="RR ELECTRRIC" class="admin-main-logo">
             </div>
             <nav class="admin-nav">
                 <a href="#dashboard" class="active">
@@ -67,7 +67,7 @@
         
         <main class="admin-main">
             <header class="admin-topbar">
-                <img src="assets/logo-full.svg?v=8.6" alt="RR ELECTRRIC" class="mobile-topbar-logo mobile-only">
+                <img src="assets/logo-full.svg?v=8.7" alt="RR ELECTRRIC" class="mobile-topbar-logo mobile-only">
                 <h1 id="view-title">Dashboard</h1>
             </header>
             <div id="admin-content" class="admin-content-area">
@@ -109,14 +109,14 @@
                     </div>
 
                     <h3 style="margin-bottom: 16px; font-size: 18px;">Recent Orders</h3>
-                    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 40px;">
-                        <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 14px;">
+                    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 40px; max-height: 360px; overflow-y: auto; overflow-x: hidden;">
+                        <table class="dash-orders-table">
                             <thead>
-                                <tr style="background: var(--bg-main); border-bottom: 1px solid var(--border);">
-                                    <th style="padding: 12px 16px;">Order Ref</th>
-                                    <th style="padding: 12px 16px; text-align: center;">Date</th>
-                                    <th style="padding: 12px 16px; text-align: center;">Amount</th>
-                                    <th style="padding: 12px 16px; text-align: center;">Status</th>
+                                <tr>
+                                    <th>Order Ref</th>
+                                    <th style="text-align: center;">Date</th>
+                                    <th style="text-align: center;">Amount</th>
+                                    <th style="text-align: center;">Status</th>
                                 </tr>
                             </thead>
                             <tbody id="dash-recent-orders">
@@ -555,6 +555,6 @@
         </div>
     </div>
 
-    <script src="/admin.js?v=8.6"></script>
+    <script src="/admin.js?v=8.7"></script>
 </body>
 </html>

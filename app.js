@@ -814,14 +814,14 @@
                        </div>`;
             }
 
-            // Unifies layout for FBT, Standard Grids, and Horizontal Lists (Amazon Style: Badge -> Price -> MRP)
+            // Unifies layout for FBT, Standard Grids, and Horizontal Lists (Stacked Style)
             let priceAreaHtml = `
-                <div class="premium-price-lockup" style="display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 2px;">
-                    ${hasDiscount ? inlineDiscountHtml : ''}
-                    <div style="display: flex; align-items: baseline; gap: 4px;">
-                        <span class="premium-selling-price">₹${p.selling_price}</span>
-                        ${hasDiscount ? `<span class="premium-mrp-price">M.R.P: <span>₹${p.mrp_price}</span></span>` : ''}
+                <div class="premium-price-lockup" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin-top: 4px;">
+                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        ${hasDiscount ? inlineDiscountHtml : ''}
+                        <span class="premium-selling-price"><span class="currency-symbol">₹</span>${p.selling_price}</span>
                     </div>
+                    ${hasDiscount ? `<div class="premium-mrp-price">MRP: <span>₹${p.mrp_price}</span></div>` : ''}
                 </div>
             `;
 
@@ -1289,11 +1289,11 @@
                                 const off = Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100);
                                 pricingHtml += `<span style="font-size: 26px; font-weight: 300; color: #cc0c39; line-height: 1;">-${off}%</span>`;
                             }
-                            pricingHtml += `<span style="font-size: 32px; font-weight: 600; color: var(--slate-900); line-height: 1;">₹${p.selling_price}</span>`;
+                            pricingHtml += `<span class="premium-selling-price pdp-selling-price" style="font-size: 32px; line-height: 1;"><span class="currency-symbol" style="font-size: 16px; margin-top: 2px; margin-right: 2px;">₹</span>${p.selling_price}</span>`;
                             pricingHtml += `</div>`;
                             
                             if (p.mrp_price && p.mrp_price > p.selling_price) {
-                                pricingHtml += `<span style="font-size: 13px; color: var(--slate-500); font-weight: 500;">M.R.P.: <span style="text-decoration: line-through;">₹${p.mrp_price}</span></span>`;
+                                pricingHtml += `<span style="font-size: 13px; color: var(--slate-500); font-weight: 500;">MRP: <span style="text-decoration: line-through;">₹${p.mrp_price}</span></span>`;
                             }
                             pricingHtml += `</div>`;
 
@@ -1400,10 +1400,10 @@
                                                         let pricingHtml = `
                                                             <div class="price-top-row" style="display: flex; align-items: center; gap: 6px; width: 100%;">
                                                                 <span class="variant-simple-discount" ${!hasVariantDiscount ? 'style="display:none"' : ''}>-${variantOffPercentage}%</span>
-                                                                <span class="selling-price">₹${lp.selling_price}</span>
+                                                                <span class="premium-selling-price" style="font-size: 14px;"><span class="currency-symbol" style="font-size: 9px; margin-top: 1px;">₹</span>${lp.selling_price}</span>
                                                             </div>
                                                             <div class="discount-bottom-row" style="width: 100%; margin-top: 2px;" ${!hasVariantDiscount ? 'style="display:none"' : ''}>
-                                                                <span class="mrp-strike" style="font-size: 10px; color: var(--slate-500);">M.R.P: <span style="text-decoration: line-through;">₹${lp.mrp_price || 0}</span></span>
+                                                                <span class="mrp-strike" style="font-size: 10px; color: var(--slate-500);">MRP: <span style="text-decoration: line-through;">₹${lp.mrp_price || 0}</span></span>
                                                             </div>
                                                         `;
                                                         

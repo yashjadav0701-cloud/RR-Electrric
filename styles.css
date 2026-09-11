@@ -3430,13 +3430,16 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 .variant-pill-list {
     display: flex;
-    flex-wrap: nowrap; /* Forces horizontal layout */
-    overflow-x: auto; /* Enables scrolling */
+    flex-wrap: nowrap; 
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: auto !important; 
     gap: 8px;
-    padding: 6px 4px 16px 4px; /* Adds invisible space for the active box-shadow glow */
-    margin-left: -4px; /* Pulls it back to align perfectly with the title text */
-    scrollbar-width: none; /* Firefox */
-    -webkit-overflow-scrolling: touch; /* Smooth iOS swipe */
+    padding: 6px 4px 16px 4px; 
+    margin-left: -4px; 
+    scrollbar-width: none; 
+    -webkit-overflow-scrolling: touch !important; 
+    touch-action: auto !important;
 }
 
 .variant-pill-list::-webkit-scrollbar {
@@ -3610,32 +3613,21 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .premium-inline-discount {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     background: #cc0c39; /* Amazon solid red */
     color: #ffffff;
     border-radius: 4px; 
-    /* Offset padding: Less on top, more on bottom to counter font baselines */
-    padding: 2px 6px 4px 6px; 
+    /* Perfect optical centering padding */
+    padding: 3px 6px 4px 6px; 
     margin-left: 0; 
     white-space: nowrap;
-    vertical-align: middle;
 }
 .premium-inline-discount span {
-    font-size: 13px !important; 
+    font-size: 12.5px !important; 
     font-weight: 600 !important;
     line-height: 1 !important;
-    letter-spacing: 0px !important;
+    letter-spacing: 0.2px !important;
     margin: 0 !important;
-}
-
-.fbt-discount-row {
-    margin-top: 5px;
-    width: 100%;
-}
-.fbt-discount-row .premium-inline-discount {
-    margin-left: 0;
-    /* Offset padding for the tiny FBT labels */
-    padding: 1px 4px 3px 4px; 
-    border-radius: 3px;
 }
 .fbt-discount-row .premium-inline-discount span {
     font-size: 10px !important; 
@@ -3657,15 +3649,19 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     font-size: 10px;
 }
 .size-small .premium-selling-price {
-    font-size: 14px !important;
+    font-size: 16px !important;
+}
+.size-small .premium-selling-price .currency-symbol {
+    font-size: 10px;
+    margin-top: 1px;
 }
 .size-small .premium-inline-discount {
-    /* Offset padding to perfectly center the text vertically */
-    padding: 1px 4px 3px 4px; 
+    /* Optical centering for smaller badges */
+    padding: 2px 4px 3px 4px; 
     border-radius: 3px;
 }
 .size-small .premium-inline-discount span {
-    font-size: 11px !important; 
+    font-size: 10.5px !important; 
 }
 .size-small .premium-price-lockup {
     gap: 4px !important;
@@ -3710,18 +3706,17 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     flex-direction: row;
     flex-wrap: nowrap;
     width: 100%;
-    max-width: 100%;
+    max-width: 100vw; /* Hard-lock width to screen */
     gap: 8px;
     overflow-x: auto !important;
     overflow-y: hidden !important;
     padding: 4px 2px 10px 2px;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    -webkit-overflow-scrolling: touch;
+    -webkit-overflow-scrolling: touch !important;
     overscroll-behavior-x: auto;
     overscroll-behavior-y: auto;
-    /* FIX: Explicitly allows 2-way panning */
-    touch-action: pan-x pan-y !important;
+    touch-action: auto !important; /* Let the mobile OS natively handle touch based on overflow */
     scroll-snap-type: none;
 }
 
@@ -3756,7 +3751,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
         overflow-x: auto !important;
         overflow-y: hidden !important;
         -webkit-overflow-scrolling: touch !important;
-        touch-action: pan-x pan-y !important;
+        touch-action: auto !important; /* CRITICAL: Must be auto to allow both axes to process momentum natively */
+        padding-right: 24px !important; /* Ensures the last card isn't glued to the edge of the screen */
     }
 }
 
@@ -3767,11 +3763,12 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
  * problem where the card expands to the whole column.
  */
 .fbt-product-track .store-product-card {
-    width: 118px !important;
-    min-width: 118px !important;
-    max-width: 118px !important;
+    /* Base desktop/tablet size */
+    width: 138px !important;
+    min-width: 138px !important;
+    max-width: 138px !important;
 
-    flex: 0 0 118px !important;
+    flex: 0 0 138px !important;
 
     height: auto !important;
     min-height: 0 !important;
@@ -3908,19 +3905,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     }
 
     .fbt-product-track .store-product-card {
-        width: 118px !important;
-        min-width: 118px !important;
-        max-width: 118px !important;
-        flex: 0 0 118px !important;
-    }
-
-    /*
-     * Preserve the compact recommendation-card proportions
-     * even though the general desktop stylesheet makes product
-     * cards width: 100%.
-     */
-    .fbt-product-track .store-product-card .img-wrapper {
-        aspect-ratio: 1 / 1 !important;
+        width: 138px !important;
+        min-width: 138px !important;
+        max-width: 138px !important;
+        flex: 0 0 138px !important;
     }
 }
 
@@ -3931,31 +3919,31 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 @media (max-width: 767px) {
 
     .fbt-product-track {
-        gap: 8px;
+        gap: 12px !important; /* Slightly wider gap helps the peek effect */
         overflow-x: auto !important;
         overflow-y: hidden !important;
-        /* Restoring default touch-action lets the mobile OS naturally detect horizontal swipes vs vertical page scrolls */
         touch-action: auto !important; 
         -webkit-overflow-scrolling: touch !important;
-        padding-left: 2px;
-        padding-right: 2px;
+        padding-left: 4px !important;
+        padding-right: 24px !important; /* Allows breathing room at the end of the scroll */
     }
 
     .fbt-product-track .store-product-card {
-        width: 118px !important;
-        min-width: 118px !important;
-        max-width: 118px !important;
-        flex: 0 0 118px !important;
+        /* 38vw forces exactly 2 full cards and 1 clearly cut-off card on every mobile screen */
+        width: 38vw !important;
+        min-width: 124px !important;
+        max-width: 160px !important;
+        flex: 0 0 38vw !important;
     }
 }
 
 @media (max-width: 400px) {
 
     .fbt-product-track .store-product-card {
-        width: 108px !important;
-        min-width: 108px !important;
-        max-width: 108px !important;
-        flex-basis: 108px !important;
+        width: 38vw !important;
+        min-width: 118px !important;
+        max-width: 140px !important;
+        flex-basis: 38vw !important;
     }
 
     .fbt-product-track .store-product-card-title {
@@ -3989,10 +3977,12 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     display: none;
 }
 
-/* FIX: Lock the universal cards so they scroll instead of squishing */
+/* FIX: Mathematical 2.5 Card Peek for Mobile */
 .cross-sell-grid .store-product-card {
-    min-width: 150px;
-    max-width: 150px;
+    width: 38vw !important;
+    min-width: 124px !important;
+    max-width: 160px !important;
+    flex: 0 0 38vw !important;
     flex-shrink: 0;
 }
 
@@ -4001,15 +3991,16 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 /* ============================================================
    COMPACT VARIANT CARDS (PDP)
    ============================================================ */
-.variant-card-list {
+.cross-sell-grid {
     display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
     gap: 12px;
-    padding: 6px 4px 16px 4px; /* Padding accommodates box-shadow glows and scrollbar */
-    margin-left: -4px; /* Offsets the visual padding */
-    scrollbar-width: none; /* Firefox */
-    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: auto !important;
+    padding-bottom: 16px; 
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: auto !important;
 }
 
 .variant-card-list::-webkit-scrollbar {
@@ -5082,13 +5073,13 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     flex-wrap: nowrap; 
     gap: 12px; 
     width: 100%;
-    max-width: 100%;
-    overflow-x: auto; 
+    max-width: 100vw; /* Hard-lock width to screen */
+    overflow-x: auto !important; 
     padding-bottom: 16px; 
     margin-bottom: -16px; 
     scrollbar-width: none; 
-    -webkit-overflow-scrolling: touch; 
-    touch-action: pan-x pan-y; 
+    -webkit-overflow-scrolling: touch !important; 
+    touch-action: auto !important; /* Let the mobile OS natively handle touch based on overflow */
     overscroll-behavior-x: auto; 
 }
 .shelf-track::-webkit-scrollbar { display: none; }
@@ -5245,10 +5236,19 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 .premium-selling-price { 
-    font-size: 16px; 
-    font-weight: 800; 
+    font-size: 22px; /* Bigger Amazon-style font */
+    font-weight: 600; /* Cleaner typography */
     color: var(--slate-900); 
     letter-spacing: -0.5px; 
+    display: inline-flex;
+    align-items: flex-start; /* Pops the currency symbol to the top */
+    line-height: 1;
+}
+.premium-selling-price .currency-symbol {
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 2px;
+    margin-right: 1.5px;
 }
 
 .premium-mrp-price { 
@@ -5262,9 +5262,14 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .size-standard { width: 100%; }
 .shelf-track .size-standard { width: 155px; }
 
-/* Compact Overrides */
+/* Compact Overrides - Mathematical 2.5 Card Peek */
 .size-small { width: 100%; }
-.shelf-track .size-small { width: 130px; }
+.shelf-track .size-small { 
+    width: 38vw !important; 
+    min-width: 124px !important; 
+    max-width: 160px !important; 
+    flex: 0 0 38vw !important; 
+}
 .size-small .store-product-card-details { padding: 8px 8px 8px 8px; }
 .size-small .store-product-card-title { font-size: 11.5px !important; }
 .size-small .premium-selling-price { font-size: 14px; }
@@ -5401,13 +5406,16 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 .store-product-card.layout-home-list .premium-price-lockup {
     margin-top: 0;
-    gap: 8px;
+    gap: 2px !important;
 }
 
 .store-product-card.layout-home-list .premium-selling-price {
-    font-size: 20px !important;
+    font-size: 26px !important;
 }
-
+.store-product-card.layout-home-list .premium-selling-price .currency-symbol {
+    font-size: 14px !important;
+    margin-top: 3px;
+}
 .store-product-card.layout-home-list .premium-mrp-price {
     font-size: 13px !important;
 }
@@ -5444,7 +5452,11 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
         min-height: 104px !important;
     }
     .store-product-card.layout-home-list .premium-selling-price {
-        font-size: 18px !important;
+        font-size: 22px !important;
+    }
+    .store-product-card.layout-home-list .premium-selling-price .currency-symbol {
+        font-size: 12px !important;
+        margin-top: 2px;
     }
     .store-product-card.layout-home-list .store-product-card-title {
         font-size: 13px !important;
@@ -5500,7 +5512,11 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
         margin: 0 !important;
     }
     .store-product-card.layout-home-list .premium-selling-price {
-        font-size: 16px !important;
+        font-size: 22px !important;
+    }
+    .store-product-card.layout-home-list .premium-selling-price .currency-symbol {
+        font-size: 13px !important;
+        margin-top: 2px;
     }
     .store-product-card.layout-home-list .premium-mrp-price {
         font-size: 12px !important;
@@ -5523,7 +5539,12 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 /* Responsive Adjustments (Phones) */
 @media (max-width: 400px) {
-    .shelf-track .size-small { width: 120px; }
+    .shelf-track .size-small { 
+        width: 38vw !important; 
+        min-width: 118px !important; 
+        max-width: 140px !important; 
+        flex: 0 0 38vw !important; 
+    }
     .shelf-track .size-standard { width: 140px; }
     .layout-list .img-wrapper { width: 90px !important; }
     /* Even smaller list badges for tight phone screens */
@@ -5810,11 +5831,11 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     }
 
     /*
-     * Keep touch scrolling native.
+     * Restored native touch events for product cards
      */
     .products-grid,
     .store-product-card {
-        touch-action: pan-y;
+        touch-action: auto !important; /* CRITICAL FIX: Allows both horizontal and vertical swiping natively */
     }
 
     /*

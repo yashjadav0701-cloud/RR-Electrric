@@ -467,11 +467,11 @@
                        </div>`;
 
                 return `
-                    <tr style="border-bottom: 1px solid var(--border);">
-                        <td style="padding: 12px 16px; font-weight: 600;">${o.order_reference}</td>
-                        <td style="padding: 12px 16px; color: var(--text-muted); white-space: nowrap; text-align: center;">${date}</td>
-                        <td style="padding: 12px 16px; font-weight: 600; text-align: center;">₹${o.final_total}</td>
-                        <td style="padding: 12px 16px;">
+                    <tr>
+                        <td class="order-ref-cell" style="font-weight: 700; color: var(--slate-800);">${o.order_reference}</td>
+                        <td class="date-cell" style="color: var(--text-muted); text-align: center;">${date}</td>
+                        <td class="amount-cell" style="font-weight: 700; text-align: center; color: var(--text-main);">₹${o.final_total}</td>
+                        <td>
                             <div style="display: flex; justify-content: center;">
                                 ${statusIcon}
                             </div>
@@ -2376,12 +2376,12 @@
                                 <option value="price-desc" ${invState.sort === 'price-desc' ? 'selected' : ''}>Price High to Low</option>
                             </select>
                         </div>
-                        <div id="inventory-action-buttons" style="display: flex; gap: 8px;">
-                            <button onclick="AdminApp.toggleQuickEdit()" id="btn-quick-edit" class="btn-secondary" style="width: auto; padding: 10px 16px;">
+                        <div id="inventory-action-buttons" style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%;">
+                            <button onclick="AdminApp.toggleQuickEdit()" id="btn-quick-edit" class="btn-secondary" style="flex: 1; padding: 10px 16px; white-space: nowrap; justify-content: center;">
                                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><polygon points="16 3 21 8 8 21 3 21 3 16 16 3"></polygon></svg> Quick Edit
                             </button>
-                            <button onclick="AdminApp.openProductForm()" id="btn-add-product" class="btn-primary" style="width: auto; padding: 10px 16px;">+ Add Product</button>
-                            <button onclick="AdminApp.saveQuickEdit()" id="btn-save-quick-edit" class="btn-primary hidden" style="background: var(--success); border-color: var(--success); width: auto; padding: 10px 16px;">Save Prices</button>
+                            <button onclick="AdminApp.openProductForm()" id="btn-add-product" class="btn-primary" style="flex: 1; padding: 10px 16px; white-space: nowrap; justify-content: center;">+ Add Product</button>
+                            <button onclick="AdminApp.saveQuickEdit()" id="btn-save-quick-edit" class="btn-primary hidden" style="background: var(--success); border-color: var(--success); flex: 1; padding: 10px 16px; white-space: nowrap; justify-content: center;">Save Prices</button>
                         </div>
                     </div>
                     <div id="inventory-list-wrapper"></div>

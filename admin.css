@@ -542,13 +542,16 @@ svg { max-width: 100%; height: auto; }
    ============================================================ */
 .dashboard-metrics-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr)); /* Force exactly 3 columns side-by-side */
+    gap: 8px; /* Tighter gap to maximize card space on mobile */
     margin-bottom: 32px;
+    width: 100%;
 }
 
 @media (min-width: 768px) {
-    .dashboard-metrics-grid { gap: 24px; }
+    .dashboard-metrics-grid {
+        gap: 24px; /* Restore spacious gaps on PC */
+    }
 }
 
 /* 3D Floating Pill Design */
@@ -591,30 +594,30 @@ svg { max-width: 100%; height: auto; }
 /* 1. Icon at the top */
 .metric-icon {
     order: 1;
-    display: flex !important; /* Force reveal */
+    display: flex !important;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
+    width: 26px; /* Scaled down for mobile */
+    height: 26px;
+    border-radius: 8px;
     background: var(--bg-main);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05), inset 0 1px 2px rgba(255, 255, 255, 1);
-    margin-bottom: 6px; /* Tighter spacing */
+    margin-bottom: 4px; 
     z-index: 2;
 }
-.metric-icon svg { width: 16px; height: 16px; stroke-width: 2.5; }
+.metric-icon svg { width: 14px !important; height: 14px !important; stroke-width: 2.5; }
 
 /* 2. Value in the middle */
 .metric-value {
     order: 2;
     width: 100%;
-    font-size: clamp(20px, 4.5vw, 26px);
+    font-size: clamp(15px, 3.5vw, 24px); /* Scaled down to prevent blowing out the card */
     font-weight: 900;
     line-height: 1;
     letter-spacing: -0.02em;
     white-space: normal !important;
     word-break: break-word;
-    padding: 0 4px 6px 4px; /* EXACTLY 6px gap above the separator line */
+    padding: 0 2px 6px 2px; 
     margin: 0;
 }
 
@@ -623,25 +626,29 @@ svg { max-width: 100%; height: auto; }
     order: 3;
     width: 100%;
     color: var(--slate-500);
-    font-size: clamp(9px, 2.5vw, 11px);
+    font-size: clamp(7.5px, 1.8vw, 10px); /* Aggressively scaled to fit 3 columns */
     font-weight: 800;
+    text-align: center;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    line-height: 1.2;
-    white-space: normal !important;
-    margin: 0;
-    padding: 6px 4px 10px 4px; /* EXACTLY 6px gap below the separator line */
-    border: none;
-    border-top: 1px solid var(--border); /* The horizontal separator line */
+    letter-spacing: 0px; 
+    border-bottom: 1px solid var(--border);
     background: rgba(248, 250, 252, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px; /* Tighter height */
+    white-space: normal !important; /* Allows text to wrap to 2 lines if needed */
+    line-height: 1.1;
+    overflow: hidden; 
+    padding: 4px 2px 6px 2px;
 }
 
-/* PC Gap Adjustments */
+/* PC Gap & Typography Restoration */
 @media (min-width: 768px) {
     .metric-value { padding-bottom: 10px; font-size: 32px; }
-    .metric-label { padding: 10px 8px 14px 8px; font-size: 11px; }
-    .metric-icon { width: 40px; height: 40px; margin-bottom: 10px; }
-    .metric-icon svg { width: 20px; height: 20px; }
+    .metric-label { padding: 10px 8px 14px 8px; font-size: 11px; min-height: 42px; white-space: nowrap !important; }
+    .metric-icon { width: 40px; height: 40px; margin-bottom: 10px; border-radius: 10px; }
+    .metric-icon svg { width: 20px !important; height: 20px !important; }
 }
 
 /* Color Theming */
@@ -834,6 +841,27 @@ svg { max-width: 100%; height: auto; }
 .card-header-flex { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--slate-200); padding-bottom: 12px; margin-bottom: 16px; }
 .table-responsive { overflow-x: auto; width: 100%; display: block; -webkit-overflow-scrolling: touch; }
 .action-links { display: flex; gap: 12px; }
+
+/* Dashboard Recent Orders Table Overrides */
+.dash-orders-table { width: 100%; text-align: left; border-collapse: collapse; table-layout: auto; }
+.dash-orders-table th { padding: 14px 12px; font-size: 13px; color: var(--text-main); font-weight: 800; background: var(--bg-main); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 2; white-space: nowrap; }
+.dash-orders-table td { padding: 14px 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+
+@media (max-width: 767px) {
+    /* Restores readable font sizes, but heavily trims padding and tightly wraps columns */
+    .dash-orders-table th, .dash-orders-table td { padding: 14px 4px; font-size: 13px; }
+    .dash-orders-table th:first-child, .dash-orders-table td:first-child { padding-left: 12px; }
+    .dash-orders-table th:last-child, .dash-orders-table td:last-child { padding-right: 12px; }
+    
+    /* Tightly hug the content to save horizontal space without shrinking text */
+    .dash-orders-table th { font-size: 12px; }
+    
+    /* width: 1% and white-space: nowrap forces the column to shrink-wrap perfectly around the text */
+    .dash-orders-table td.order-ref-cell { font-weight: 700; white-space: nowrap; width: 1%; letter-spacing: -0.3px; }
+    .dash-orders-table td.date-cell { white-space: nowrap; width: 1%; font-size: 12px; }
+    .dash-orders-table td.amount-cell { font-weight: 800; white-space: nowrap; width: 1%; }
+    .dash-orders-table th:nth-child(4), .dash-orders-table td:nth-child(4) { width: 1%; white-space: nowrap; } /* Status Column */
+}
 .action-links button { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 13px; font-weight: 600; transition: color var(--duration-fast); }
 .action-links button:hover { color: var(--primary-hover); text-decoration: underline; }
 .action-links button.text-danger { color: var(--danger); }
