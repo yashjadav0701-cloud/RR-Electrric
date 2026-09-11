@@ -2826,37 +2826,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     border-bottom: 1px solid var(--border);
 }
 
-/* Premium 3D Discount Badge for Product Detail Page */
-.pdp-premium-discount {
-    display: inline-flex;
-    align-items: baseline;
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: #ffffff;
-    border-radius: 50px; /* Transforms it into a sleek, premium pill */
-    padding: 6px 14px;
-    gap: 6px;
-    box-shadow: 
-        0 6px 14px -4px rgba(220, 38, 38, 0.4), 
-        inset 0 2px 4px rgba(255, 255, 255, 0.4), 
-        inset 0 -3px 4px rgba(153, 27, 27, 0.4); /* High-end 3D glossy bevel */
-    border: 1px solid rgba(255, 255, 255, 0.5);
-}
-
-.pdp-premium-discount .pct {
-    font-size: 16px;
-    font-weight: 900;
-    letter-spacing: -0.5px;
-    line-height: 1;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.pdp-premium-discount .off-text {
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.5px;
-    line-height: 1;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
+/* Legacy PDP badge styles removed - now handled natively in JS for structural integrity */
 
 .pdp-desc {
     color: var(--text-muted);
@@ -3635,27 +3605,26 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 /* ============================================================
-   PREMIUM INLINE DISCOUNT LABEL (NEW)
+   AMAZON-STYLE INLINE DISCOUNT LABEL
    ============================================================ */
 .premium-inline-discount {
     display: inline-flex;
-    align-items: center; /* Perfect vertical centering for uniform text */
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    align-items: center;
+    background: #cc0c39; /* Amazon solid red */
     color: #ffffff;
-    border-radius: 4px;
-    padding: 3px 6px;
-    margin-left: 6px;
-    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+    border-radius: 4px; 
+    /* Offset padding: Less on top, more on bottom to counter font baselines */
+    padding: 2px 6px 4px 6px; 
+    margin-left: 0; 
     white-space: nowrap;
     vertical-align: middle;
 }
-.premium-inline-discount .pct,
-.premium-inline-discount .off-text {
-    font-size: 10px; /* EXACT SAME SIZE FOR ALL CHARACTERS */
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: 0px;
-    margin: 0 1.5px;
+.premium-inline-discount span {
+    font-size: 13px !important; 
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    letter-spacing: 0px !important;
+    margin: 0 !important;
 }
 
 .fbt-discount-row {
@@ -3664,13 +3633,42 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 .fbt-discount-row .premium-inline-discount {
     margin-left: 0;
-    padding: 2.5px 5px;
+    /* Offset padding for the tiny FBT labels */
+    padding: 1px 4px 3px 4px; 
     border-radius: 3px;
 }
-.fbt-discount-row .premium-inline-discount .pct,
-.fbt-discount-row .premium-inline-discount .off-text {
-    font-size: 8px; /* EXACT SAME SIZE FOR ALL CHARACTERS */
-    margin: 0 1px; 
+.fbt-discount-row .premium-inline-discount span {
+    font-size: 10px !important; 
+    margin: 0 !important; 
+}
+
+/* Amazon style MRP text */
+.premium-mrp-price {
+    font-size: 11.5px;
+    font-weight: 400;
+    color: var(--slate-500);
+}
+.premium-mrp-price span {
+    text-decoration: line-through;
+}
+
+/* FBT "Size Small" Card Auto-Scaling Overrides */
+.size-small .premium-mrp-price {
+    font-size: 10px;
+}
+.size-small .premium-selling-price {
+    font-size: 14px !important;
+}
+.size-small .premium-inline-discount {
+    /* Offset padding to perfectly center the text vertically */
+    padding: 1px 4px 3px 4px; 
+    border-radius: 3px;
+}
+.size-small .premium-inline-discount span {
+    font-size: 11px !important; 
+}
+.size-small .premium-price-lockup {
+    gap: 4px !important;
 }
 
 /* ============================================================
@@ -3684,9 +3682,9 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     border-top: 1px dashed var(--border-subtle);
     padding-top: 16px;
     width: 100%;
-    max-width: 100%; /* Prevents stretching past viewport */
-    min-width: 0; /* Forces grid/flex child constraint */
-    overflow: hidden; /* TRAPS the inner list so it is forced to scroll horizontally */
+    max-width: 100%; 
+    min-width: 0; 
+    overflow: visible !important; /* FIX: hidden traps touch events, visible allows them */
 }
 
 /* Heading */
@@ -3733,6 +3731,33 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 .fbt-product-track:active {
     cursor: grabbing;
+}
+
+/* ============================================================
+   HORIZONTAL SCROLL BUBBLE-OUT FIX (MOBILE)
+   ============================================================ */
+@media (max-width: 767px) {
+    /* 
+     * THE ROOT CAUSE FIX: 
+     * Flex children stretch infinitely by default. By hard-locking the width 
+     * to exactly the viewport minus the container padding, we guarantee the 
+     * browser registers an overflow, which forces the scrollbar to activate.
+     */
+    .shelf-track, 
+    .fbt-product-track, 
+    .cross-sell-grid, 
+    .variant-card-list, 
+    .variant-pill-list {
+        width: calc(100vw - 32px) !important;
+        max-width: calc(100vw - 32px) !important;
+        min-width: 0 !important;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-x pan-y !important;
+    }
 }
 
 /*
@@ -4110,10 +4135,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 .variant-simple-discount {
-    font-size: 11.5px;
-    font-weight: 800;
-    color: #ef4444; /* Pure, stark red */
-    letter-spacing: 0.2px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #cc0c39; /* Amazon text red */
+    letter-spacing: 0px;
     white-space: nowrap;
     display: inline-block;
 }
@@ -5073,9 +5098,9 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .dynamic-shelf-wrapper {
     grid-column: 1 / -1; 
     width: 100%;
-    max-width: 100%; /* Prevents stretching past viewport */
-    min-width: 0; /* Forces grid/flex child constraint */
-    overflow: hidden; /* TRAPS the inner list so it is forced to scroll horizontally */
+    max-width: 100%; 
+    min-width: 0; 
+    overflow: visible !important; /* FIX: hidden traps touch events, visible allows them */
     margin: 4px 0 8px 0; 
     padding: 12px 0 0 0; 
     border-top: 1px dashed var(--border-subtle);
@@ -5306,13 +5331,13 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 .store-product-card.layout-home-list {
     display: grid !important;
-    grid-template-columns: 110px minmax(0, 1fr); /* FIX: Forces the second column to respect screen width */
+    grid-template-columns: 120px minmax(0, 1fr); /* Slightly wider to absorb padding removal */
     grid-template-rows: 1fr auto;
     background: #ffffff;
     border: 1px solid rgba(226, 232, 240, 0.9);
     border-radius: 10px;
-    padding: 8px;
-    gap: 0 12px;
+    padding: 0 !important; /* FIX: Container padding completely removed */
+    gap: 0 10px;
     align-items: stretch;
     width: 100%;
     box-sizing: border-box;
@@ -5322,15 +5347,17 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     grid-column: 1;
     grid-row: 1 / span 2;
     width: 100% !important;
-    height: 110px !important;
-    aspect-ratio: 1 / 1 !important;
+    height: 100% !important; /* Stretches to top and bottom edges */
+    min-height: 120px !important; /* Maintains minimum structural height */
+    aspect-ratio: auto !important;
     border: none !important; 
-    border-radius: 6px !important; /* Adds a clean, slight curve */
-    padding: 0 !important; 
+    border-right: 1px solid rgba(226, 232, 240, 0.6) !important; /* Clean separator line */
+    border-radius: 10px 0 0 10px !important; /* Matches parent's left corners perfectly */
+    padding: 4px !important; /* Tiny micro-padding to prevent image clipping */
     margin: 0 !important;
-    align-self: center;
-    background: transparent !important; 
-    overflow: hidden !important; /* Ensures the image clips to the curve */
+    align-self: stretch;
+    background: #f8fafc !important; /* Tech-grey backdrop for the edge-to-edge box */
+    overflow: hidden !important; 
 }
 
 .store-product-card.layout-home-list .img-wrapper img {
@@ -5345,21 +5372,21 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .store-product-card.layout-home-list .store-product-card-details {
     grid-column: 2;
     grid-row: 1;
-    padding: 0 !important;
+    padding: 12px 12px 4px 0 !important; /* Top, Right, Bottom, Left */
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     gap: 4px;
-    min-width: 0; /* FIX: Allows the title text to truncate naturally */
+    min-width: 0; 
 }
 
 .store-product-card.layout-home-list .quick-add-wrapper {
     grid-column: 2;
     grid-row: 2;
-    padding: 4px 0 0 0 !important;
+    padding: 0 12px 12px 0 !important; /* Top removed to lift up. Right/Bottom added to offset edges */
     margin-top: auto;
     align-self: end;
-    min-width: 0; /* FIX: Prevents button contents from pushing the card out */
+    min-width: 0; 
     width: 100%;
 }
 
@@ -5408,12 +5435,13 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 @media (max-width: 400px) {
     .store-product-card.layout-home-list {
-        grid-template-columns: 96px minmax(0, 1fr);
-        padding: 8px;
+        grid-template-columns: 104px minmax(0, 1fr);
+        padding: 0 !important;
         gap: 0 10px;
     }
     .store-product-card.layout-home-list .img-wrapper {
-        height: 96px !important;
+        height: 100% !important;
+        min-height: 104px !important;
     }
     .store-product-card.layout-home-list .premium-selling-price {
         font-size: 18px !important;
@@ -5446,11 +5474,15 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     .store-product-card.layout-home-list .img-wrapper {
         width: 100% !important;
         height: auto !important;
+        min-height: 0 !important; /* Removes the mobile height lock */
         aspect-ratio: 1 / 1 !important;
         border: none !important;
         border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
+        border-right: none !important; /* Removes vertical separator */
         border-radius: 8px 8px 0 0 !important;
         overflow: hidden !important;
+        padding: 0 !important; /* Reset padding to 0 for PC */
+        background: #ffffff !important;
     }
     .store-product-card.layout-home-list .img-wrapper img {
         border-radius: 8px 8px 0 0 !important;

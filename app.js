@@ -795,7 +795,7 @@
             const hasDiscount = offPercentage > 0;
 
             const statusHtml = !isAvailable ? `<div class="premium-status-unavailable">SOLD OUT</div>` : '';
-            const inlineDiscountHtml = hasDiscount ? `<div class="premium-inline-discount"><span class="pct">${offPercentage}%</span><span class="off-text">OFF</span></div>` : '';
+            const inlineDiscountHtml = hasDiscount ? `<div class="premium-inline-discount"><span>-${offPercentage}%</span></div>` : '';
 
             // PREMIUM QUICK ADD BUTTON (Distinct Pill Design)
             let btnHtml = '';
@@ -814,24 +814,16 @@
                        </div>`;
             }
 
-            let priceAreaHtml = '';
-            if (size === 'small' && layout === 'grid') { // FBT specifically: Drops to next line
-                priceAreaHtml = `
-                    <div class="premium-price-lockup">
+            // Unifies layout for FBT, Standard Grids, and Horizontal Lists (Amazon Style: Badge -> Price -> MRP)
+            let priceAreaHtml = `
+                <div class="premium-price-lockup" style="display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 2px;">
+                    ${hasDiscount ? inlineDiscountHtml : ''}
+                    <div style="display: flex; align-items: baseline; gap: 4px;">
                         <span class="premium-selling-price">₹${p.selling_price}</span>
-                        ${hasDiscount ? `<span class="premium-mrp-price">₹${p.mrp_price}</span>` : ''}
+                        ${hasDiscount ? `<span class="premium-mrp-price">M.R.P: <span>₹${p.mrp_price}</span></span>` : ''}
                     </div>
-                    ${hasDiscount ? `<div class="fbt-discount-row">${inlineDiscountHtml}</div>` : ''}
-                `;
-            } else { // Standard & Home List: Keeps it inline next to MRP
-                priceAreaHtml = `
-                    <div class="premium-price-lockup" style="display: flex; align-items: center; flex-wrap: wrap;">
-                        <span class="premium-selling-price">₹${p.selling_price}</span>
-                        ${hasDiscount ? `<span class="premium-mrp-price">₹${p.mrp_price}</span>` : ''}
-                        ${hasDiscount ? inlineDiscountHtml : ''}
-                    </div>
-                `;
-            }
+                </div>
+            `;
 
             // Pure 2-Zone Layout: No buttons normally, strictly visual discovery
             return `
@@ -1287,24 +1279,21 @@
                         <div style="margin-bottom: 16px;"></div>
                         
                         ${(() => {
-                            let pricingHtml = `<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 5px; margin-bottom: 2px; padding-bottom: 2px; border-bottom: 1px solid var(--slate-200);">`;
+                            let pricingHtml = `<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 5px; margin-bottom: 2px; padding-bottom: 12px; border-bottom: 1px solid var(--slate-200);">`;
 
-                            // Left side: Price & MRP
-                            pricingHtml += `<div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;">`;
-                            pricingHtml += `<div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">`;
-                            pricingHtml += `<span style="font-size: 32px; font-weight: 800; color: var(--slate-900); line-height: 1;">₹${p.selling_price}</span>`;
+                            // Left side: Price & MRP (Amazon Structural Style)
+                            pricingHtml += `<div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">`;
                             
+                            pricingHtml += `<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">`;
                             if (p.mrp_price && p.mrp_price > p.selling_price) {
-                                pricingHtml += `<span style="font-size: 16px; color: var(--slate-400); text-decoration: line-through; font-weight: 600;">₹${p.mrp_price}</span>`;
+                                const off = Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100);
+                                pricingHtml += `<span style="font-size: 26px; font-weight: 300; color: #cc0c39; line-height: 1;">-${off}%</span>`;
                             }
+                            pricingHtml += `<span style="font-size: 32px; font-weight: 600; color: var(--slate-900); line-height: 1;">₹${p.selling_price}</span>`;
                             pricingHtml += `</div>`;
                             
                             if (p.mrp_price && p.mrp_price > p.selling_price) {
-                                const off = Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100);
-                                pricingHtml += `<div class="pdp-premium-discount">
-                                    <span class="pct">${off}%</span>
-                                    <span class="off-text">OFF</span>
-                                </div>`;
+                                pricingHtml += `<span style="font-size: 13px; color: var(--slate-500); font-weight: 500;">M.R.P.: <span style="text-decoration: line-through;">₹${p.mrp_price}</span></span>`;
                             }
                             pricingHtml += `</div>`;
 
@@ -1407,14 +1396,14 @@
                                                         }
                                                         const isActive = lp.id === p.id;
                                                         
-                                                        // Using the exact master pricing layout (Side-by-side top, centered bottom)
+                                                        // Amazon-style layout for variants
                                                         let pricingHtml = `
-                                                            <div class="price-top-row" style="display: flex; align-items: baseline; gap: 6px; width: 100%;">
+                                                            <div class="price-top-row" style="display: flex; align-items: center; gap: 6px; width: 100%;">
+                                                                <span class="variant-simple-discount" ${!hasVariantDiscount ? 'style="display:none"' : ''}>-${variantOffPercentage}%</span>
                                                                 <span class="selling-price">₹${lp.selling_price}</span>
-                                                                <span class="mrp-strike" ${!hasVariantDiscount ? 'style="display:none"' : ''}>₹${lp.mrp_price || 0}</span>
                                                             </div>
-                                                            <div class="discount-bottom-row" style="width: 100%; text-align: center; margin-top: 4px;" ${!hasVariantDiscount ? 'style="display:none"' : ''}>
-                                                                <span class="variant-simple-discount">${variantOffPercentage}% OFF</span>
+                                                            <div class="discount-bottom-row" style="width: 100%; margin-top: 2px;" ${!hasVariantDiscount ? 'style="display:none"' : ''}>
+                                                                <span class="mrp-strike" style="font-size: 10px; color: var(--slate-500);">M.R.P: <span style="text-decoration: line-through;">₹${lp.mrp_price || 0}</span></span>
                                                             </div>
                                                         `;
                                                         
