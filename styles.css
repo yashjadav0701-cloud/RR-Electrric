@@ -2904,63 +2904,88 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 /* ============================================================
-   PREMIUM FULL-WIDTH ADD TO BAG BUTTON (PILL DESIGN)
+   PREMIUM FULL-WIDTH ADD TO BAG BUTTON (PILL & ANIMATED SHINE)
    ============================================================ */
+.pdp-add-to-bag-wrapper {
+    margin-top: 32px;
+    margin-bottom: 32px;
+    width: 100%;
+    position: relative;
+}
+
 .btn-add-cart-large {
+    position: relative;
     display: flex !important;
     width: 100% !important;
     max-width: 100% !important;
     justify-content: center !important;
     align-items: center !important;
-    gap: 10px;
-    padding: 16px 24px;
-    margin-left: auto !important;
-    margin-right: auto !important;
+    gap: 12px;
+    padding: 18px 24px;
     
-    /* Circular ends (Perfect Pill shape) */
-    border-radius: 999px !important;
+    /* Forces Absolute Mathematical Pill Shape */
+    border-radius: 9999px !important; 
     
-    /* Premium Electric Blue Gradient */
-    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-    color: #ffffff;
+    /* Ultra-Deep Electric Gradient */
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+    color: #ffffff !important;
     font-family: inherit;
-    font-size: 16px;
-    font-weight: 800;
-    letter-spacing: 0.02em;
+    font-size: 17px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.03em;
     cursor: pointer;
     text-decoration: none;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
     user-select: none;
+    overflow: hidden; /* Clips the animated shine */
     
-    /* High-end 3D Bevel and Glow */
+    /* Hyper-Premium 3D Shading */
     box-shadow: 
-        inset 0 2px 2px rgba(255, 255, 255, 0.25), /* Top inner highlight */
-        inset 0 -4px 4px rgba(0, 0, 0, 0.15),      /* Bottom inner shading */
-        0 8px 16px -4px rgba(2, 132, 199, 0.4),    /* Soft blue glow */
-        0 4px 6px -2px rgba(15, 23, 42, 0.1);      /* Hard base shadow */
+        0 10px 20px -5px rgba(2, 132, 199, 0.4), 
+        0 4px 6px -2px rgba(15, 23, 42, 0.1),
+        inset 0 2px 2px rgba(255, 255, 255, 0.3),
+        inset 0 -4px 4px rgba(0, 0, 0, 0.2) !important;
         
-    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     transform: translateZ(0);
     -webkit-tap-highlight-color: transparent;
 }
 
-.btn-add-cart-large svg {
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+/* The Animated Sweeping Light Ray */
+.btn-add-cart-large::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 50%; height: 100%;
+    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+    transform: skewX(-25deg);
+    animation: buttonShine 4s infinite ease-in-out;
+    z-index: 1;
+}
+
+@keyframes buttonShine {
+    0% { left: -100%; }
+    20% { left: 200%; }
+    100% { left: 200%; }
+}
+
+/* Force Text and SVG above the shine animation */
+.btn-add-cart-large svg, .btn-add-cart-large span {
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
     filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
 }
 
 @media (hover: hover) and (pointer: fine) {
     .btn-add-cart-large:hover {
-        background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+        background: linear-gradient(135deg, #0369a1 0%, #075985 100%) !important;
         transform: translateY(-3px);
         box-shadow: 
-            inset 0 2px 2px rgba(255, 255, 255, 0.3),
-            inset 0 -4px 4px rgba(0, 0, 0, 0.2),
-            0 12px 24px -6px rgba(2, 132, 199, 0.5),
-            0 6px 8px -2px rgba(15, 23, 42, 0.15);
-    }
-    .btn-add-cart-large:hover svg {
-        transform: scale(1.15) rotate(-5deg);
+            0 15px 25px -5px rgba(2, 132, 199, 0.5), 
+            0 6px 8px -2px rgba(15, 23, 42, 0.15),
+            inset 0 2px 2px rgba(255, 255, 255, 0.4),
+            inset 0 -4px 4px rgba(0, 0, 0, 0.25) !important;
     }
 }
 
@@ -2980,6 +3005,9 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     cursor: not-allowed !important;
     transform: none !important;
     border: 1px solid var(--border) !important;
+}
+.btn-add-cart-large.disabled-add::before {
+    display: none; /* Hide shine when out of stock */
 }
 
 /* ============================================================
@@ -3579,29 +3607,29 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
    ============================================================ */
 .premium-inline-discount {
     display: inline-flex;
-    align-items: center;
+    align-items: baseline; /* FIX: Locks text to the same typographical bottom line */
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     color: #ffffff;
     border-radius: 4px;
-    padding: 2px 4px; /* Narrower padding */
+    padding: 2px 4px 3px 4px; /* Added 1px bottom padding to balance the baseline shift */
     margin-left: 6px;
     box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
     white-space: nowrap;
     vertical-align: middle;
 }
 .premium-inline-discount .pct {
-    font-size: 10px; /* Smaller font */
+    font-size: 10.5px; 
     font-weight: 800;
-    margin-right: 2px; /* Tighter gap between number and text */
+    margin-right: 1.5px; 
     line-height: 1;
     letter-spacing: -0.2px;
 }
 .premium-inline-discount .off-text {
-    font-size: 7.5px; /* Smaller font */
-    font-weight: 700;
-    opacity: 0.95;
+    font-size: 7px; 
+    font-weight: 800; /* Bolder to match the numbers */
+    opacity: 1; /* Removed opacity for sharper contrast */
     line-height: 1;
-    letter-spacing: 0.1px; /* Less letter spacing keeps it narrower */
+    letter-spacing: 0.2px; 
 }
 
 .fbt-discount-row {
@@ -3610,16 +3638,17 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 .fbt-discount-row .premium-inline-discount {
     margin-left: 0;
-    padding: 1.5px 3.5px; /* Narrower padding */
+    padding: 1.5px 3.5px 2px 3.5px; 
     border-radius: 3px;
 }
 .fbt-discount-row .premium-inline-discount .pct {
-    font-size: 9px; /* Smaller font */
-    margin-right: 2px; /* Tighter gap */
+    font-size: 9px; 
+    margin-right: 1.5px; 
 }
 .fbt-discount-row .premium-inline-discount .off-text {
-    font-size: 6px; /* Smaller font */
-    letter-spacing: 0px;
+    font-size: 6px; 
+    font-weight: 800;
+    letter-spacing: 0.2px;
 }
 
 /* ============================================================
@@ -3629,12 +3658,12 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 .cross-sell-container {
     margin-top: 20px;
-    margin-bottom: 0px; /* Removed extra bottom margin */
+    margin-bottom: 0px; 
     border-top: 1px dashed var(--border-subtle);
     padding-top: 16px;
     width: 100%;
     min-width: 0;
-    overflow: hidden;
+    overflow: visible; /* FIX: Prevents touch-events from being swallowed at the borders */
 }
 
 /* Heading */
@@ -3670,8 +3699,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: auto;
     overscroll-behavior-y: auto;
-    /* Restored to auto to let the browser natively handle vertical/horizontal gesture detection */
-    touch-action: auto !important;
+    /* FIX: Explicitly allows 2-way panning */
+    touch-action: pan-x pan-y !important;
     scroll-snap-type: none;
 }
 
@@ -5009,8 +5038,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     margin-bottom: -16px; 
     scrollbar-width: none; 
     -webkit-overflow-scrolling: touch; 
-    /* The Magic Trick: pan-y forces vertical swipes to scroll the page, horizontal handles the track naturally */
-    touch-action: pan-y; 
+    /* FIX: explicitly allows native 2-way panning so horizontal swipes are not blocked by the browser */
+    touch-action: pan-x pan-y; 
     overscroll-behavior-x: auto; 
 }
 .shelf-track::-webkit-scrollbar { display: none; }
@@ -5020,9 +5049,9 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .dynamic-shelf-wrapper {
     grid-column: 1 / -1; /* Forces it to span entirely across the grid */
     width: 100%;
-    overflow: hidden;
-    margin: 4px 0 8px 0; /* Tighter margins */
-    padding: 12px 0 0 0; /* Tighter padding */
+    overflow: visible; /* FIX: Prevents touch-events from being swallowed */
+    margin: 4px 0 8px 0; 
+    padding: 12px 0 0 0; 
     border-top: 1px dashed var(--border-subtle);
 }
 
@@ -5230,10 +5259,11 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
    ============================================================ */
 .home-list-feed {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr); /* FIX: Prevents children from blowing out the page width */
     gap: 12px;
     width: 100%;
     padding-bottom: 24px;
+    box-sizing: border-box;
 }
 
 @media (min-width: 768px) {
@@ -5250,7 +5280,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 .store-product-card.layout-home-list {
     display: grid !important;
-    grid-template-columns: 110px 1fr;
+    grid-template-columns: 110px minmax(0, 1fr); /* FIX: Forces the second column to respect screen width */
     grid-template-rows: 1fr auto;
     background: #ffffff;
     border: 1px solid rgba(226, 232, 240, 0.9);
@@ -5258,6 +5288,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     padding: 8px;
     gap: 0 12px;
     align-items: stretch;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .store-product-card.layout-home-list .img-wrapper {
@@ -5292,6 +5324,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     flex-direction: column;
     justify-content: flex-start;
     gap: 4px;
+    min-width: 0; /* FIX: Allows the title text to truncate naturally */
 }
 
 .store-product-card.layout-home-list .quick-add-wrapper {
@@ -5300,6 +5333,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     padding: 4px 0 0 0 !important;
     margin-top: auto;
     align-self: end;
+    min-width: 0; /* FIX: Prevents button contents from pushing the card out */
+    width: 100%;
 }
 
 .store-product-card.layout-home-list .store-product-card-title {
@@ -5347,7 +5382,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 @media (max-width: 400px) {
     .store-product-card.layout-home-list {
-        grid-template-columns: 96px 1fr;
+        grid-template-columns: 96px minmax(0, 1fr);
         padding: 8px;
         gap: 0 10px;
     }
@@ -5691,11 +5726,16 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 @media (max-width: 767px) {
 
-    html, body {
-        overflow-x: hidden;
+    html {
+        /* FIX: Removing overflow-x: hidden from HTML tag solves the iOS Safari bug that disables all internal horizontal scrolling */
+        overflow-x: visible; 
+    }
+    
+    body {
+        overflow-x: hidden; /* Keeps the page body from wiggling left/right */
         overscroll-behavior-x: none;
-        overscroll-behavior-y: auto !important; /* Ensures the native vertical pull-bounce works cleanly */
-        -webkit-overflow-scrolling: touch !important; /* strictly enforces momentum physics */
+        overscroll-behavior-y: auto !important; 
+        -webkit-overflow-scrolling: touch !important; 
     }
 
     /*

@@ -1446,10 +1446,11 @@
                         
                         ${p.description ? `<div class="pdp-desc" style="margin-top: 16px;">${p.description.replace(/\n/g, '<br>')}</div>` : ''}
                         
-                        <div style="margin-top: 24px; margin-bottom: 28px;">
+                        <!-- PREMIUM ADD TO BAG WRAPPER (Anchored Above FBT) -->
+                        <div class="pdp-add-to-bag-wrapper">
                         ${p.is_active !== false ? `
                         <button class="btn-add-cart-large" onclick="Store.handlePDPAddToCart('${p.id}')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
                             <span>Add to Bag</span>
                         </button>
                         ` : `
@@ -1463,6 +1464,7 @@
                         `}
                         </div>
 
+                        <!-- FREQUENTLY BOUGHT TOGETHER CONTAINER (Anchored Below Button) -->
                         <div id="pdp-cross-sell-container"></div>
                     </div>
                 </div>
