@@ -2666,12 +2666,12 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 @media (min-width: 768px) {
     .product-detail-layout {
-        /* MAGIC FIX: Grid strictly enforces a perfect 50/50 split */
         display: grid !important;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
-        gap: 40px;
+        /* WIDER DETAILS SECTION: 42% Image / 58% Details */
+        grid-template-columns: minmax(0, 4.2fr) minmax(0, 5.8fr) !important;
+        gap: 24px; /* Reduced horizontal gap to bring elements closer together */
         padding: 24px 16px;
-        max-width: 1100px;
+        max-width: 1240px; /* Increased overall width to give everything more room */
         margin: 0 auto;
         align-items: start;
     }
@@ -2685,8 +2685,34 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
         width: 100% !important;
         max-width: 100% !important;
         padding-top: 0; 
-        min-width: 0 !important; /* Forbids the text from pushing the image */
+        padding-right: 12px; /* Prevents scrollbar from covering text */
+        min-width: 0 !important; 
+        
+        /* INDEPENDENT SCROLLABLE CONTAINER */
+        height: 480px; /* Locked height (slightly taller than the 440px image) */
+        overflow-y: auto;
+        overscroll-behavior-y: auto; /* Scrolls the main page seamlessly once bottom is reached */
+        
+        /* Cross-browser scrollbar styling */
+        scrollbar-width: thin;
+        scrollbar-color: var(--slate-300) transparent;
     }
+    
+    /* Sleek custom scrollbar for WebKit browsers (Chrome/Safari/Edge) */
+    .product-info-section::-webkit-scrollbar {
+        width: 6px;
+    }
+    .product-info-section::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .product-info-section::-webkit-scrollbar-thumb {
+        background-color: var(--slate-300);
+        border-radius: 10px;
+    }
+    .product-info-section::-webkit-scrollbar-thumb:hover {
+        background-color: var(--slate-400);
+    }
+
     .home-category-section { margin: 40px 0; grid-column: 1 / -1; } 
 }
 
@@ -2920,8 +2946,8 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     max-width: 100% !important;
     justify-content: center !important;
     align-items: center !important;
-    gap: 12px;
-    padding: 18px 24px;
+    gap: 8px; /* Tighter gap for a sleeker look */
+    padding: 12px 24px; /* Dramatically reduced vertical padding */
     
     /* Forces Absolute Mathematical Pill Shape */
     border-radius: 9999px !important; 
@@ -2930,7 +2956,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
     color: #ffffff !important;
     font-family: inherit;
-    font-size: 17px !important;
+    font-size: 15px !important; /* Scaled down text size */
     font-weight: 800 !important;
     letter-spacing: 0.03em;
     cursor: pointer;
@@ -2975,6 +3001,12 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     z-index: 2;
     text-shadow: 0 1px 2px rgba(0,0,0,0.2);
     filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+}
+
+/* Force the icon to scale down to match the slimmer button */
+.btn-add-cart-large svg {
+    width: 18px !important;
+    height: 18px !important;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -3607,29 +3639,23 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
    ============================================================ */
 .premium-inline-discount {
     display: inline-flex;
-    align-items: baseline; /* FIX: Locks text to the same typographical bottom line */
+    align-items: center; /* Perfect vertical centering for uniform text */
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     color: #ffffff;
     border-radius: 4px;
-    padding: 2px 4px 3px 4px; /* Added 1px bottom padding to balance the baseline shift */
+    padding: 3px 6px;
     margin-left: 6px;
     box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
     white-space: nowrap;
     vertical-align: middle;
 }
-.premium-inline-discount .pct {
-    font-size: 10.5px; 
-    font-weight: 800;
-    margin-right: 1.5px; 
-    line-height: 1;
-    letter-spacing: -0.2px;
-}
+.premium-inline-discount .pct,
 .premium-inline-discount .off-text {
-    font-size: 7px; 
-    font-weight: 800; /* Bolder to match the numbers */
-    opacity: 1; /* Removed opacity for sharper contrast */
+    font-size: 10px; /* EXACT SAME SIZE FOR ALL CHARACTERS */
+    font-weight: 800;
     line-height: 1;
-    letter-spacing: 0.2px; 
+    letter-spacing: 0px;
+    margin: 0 1.5px;
 }
 
 .fbt-discount-row {
@@ -3638,17 +3664,13 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 .fbt-discount-row .premium-inline-discount {
     margin-left: 0;
-    padding: 1.5px 3.5px 2px 3.5px; 
+    padding: 2.5px 5px;
     border-radius: 3px;
 }
-.fbt-discount-row .premium-inline-discount .pct {
-    font-size: 9px; 
-    margin-right: 1.5px; 
-}
+.fbt-discount-row .premium-inline-discount .pct,
 .fbt-discount-row .premium-inline-discount .off-text {
-    font-size: 6px; 
-    font-weight: 800;
-    letter-spacing: 0.2px;
+    font-size: 8px; /* EXACT SAME SIZE FOR ALL CHARACTERS */
+    margin: 0 1px; 
 }
 
 /* ============================================================
@@ -3662,8 +3684,9 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     border-top: 1px dashed var(--border-subtle);
     padding-top: 16px;
     width: 100%;
-    min-width: 0;
-    overflow: visible; /* FIX: Prevents touch-events from being swallowed at the borders */
+    max-width: 100%; /* Prevents stretching past viewport */
+    min-width: 0; /* Forces grid/flex child constraint */
+    overflow: hidden; /* TRAPS the inner list so it is forced to scroll horizontally */
 }
 
 /* Heading */
@@ -5033,12 +5056,13 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     display: flex; 
     flex-wrap: nowrap; 
     gap: 12px; 
+    width: 100%;
+    max-width: 100%;
     overflow-x: auto; 
     padding-bottom: 16px; 
     margin-bottom: -16px; 
     scrollbar-width: none; 
     -webkit-overflow-scrolling: touch; 
-    /* FIX: explicitly allows native 2-way panning so horizontal swipes are not blocked by the browser */
     touch-action: pan-x pan-y; 
     overscroll-behavior-x: auto; 
 }
@@ -5047,9 +5071,11 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 /* Dynamic Discovery Engine Wrapper */
 .dynamic-shelf-wrapper {
-    grid-column: 1 / -1; /* Forces it to span entirely across the grid */
+    grid-column: 1 / -1; 
     width: 100%;
-    overflow: visible; /* FIX: Prevents touch-events from being swallowed */
+    max-width: 100%; /* Prevents stretching past viewport */
+    min-width: 0; /* Forces grid/flex child constraint */
+    overflow: hidden; /* TRAPS the inner list so it is forced to scroll horizontally */
     margin: 4px 0 8px 0; 
     padding: 12px 0 0 0; 
     border-top: 1px dashed var(--border-subtle);
