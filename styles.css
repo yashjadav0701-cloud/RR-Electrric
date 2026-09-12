@@ -664,6 +664,22 @@ button:disabled, .btn-primary:disabled {
 }
 
 /* ============================================================
+   DYNAMIC MOBILE NAVIGATION HIDING (SECONDARY PAGES)
+   ============================================================ */
+body.mobile-nav-hidden .mobile-bottom-nav {
+    display: none !important;
+}
+
+/* Reclaim the empty space at the bottom of the screen when nav is hidden */
+body.mobile-nav-hidden .site-footer {
+    padding-bottom: 32px !important;
+}
+
+body.mobile-nav-hidden .view-skeleton {
+    padding-bottom: 32px !important;
+}
+
+/* ============================================================
    THE ELECTRICAL FORM & INPUT SYSTEM
    ============================================================ */
 label, .form-group label {

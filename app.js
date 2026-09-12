@@ -729,6 +729,14 @@
                 document.getElementById('nav-cart')?.classList.add('active');
             }
 
+            // SMART NAVIGATION VISIBILITY ENGINE
+            // Hide the bottom navigation bar on secondary/detail pages to maximize screen space
+            if (['home', 'categories', 'cart'].includes(view)) {
+                document.body.classList.remove('mobile-nav-hidden');
+            } else {
+                document.body.classList.add('mobile-nav-hidden');
+            }
+
             // INSTANTLY hide old views and show the VIEW-SPECIFIC Skeleton Loader
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.view-skeleton').forEach(el => el.classList.add('hidden'));
