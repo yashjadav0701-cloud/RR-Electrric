@@ -757,22 +757,22 @@
                 setTimeout(() => {
                     // Render the heavy new view
                     if (view === 'home') {
-                        this.renderHome();
+                        this.renderHome(isPopState);
                         document.getElementById('view-home').classList.remove('hidden');
                     } else if (view === 'categories') {
-                        this.renderCategoriesIndex();
+                        this.renderCategoriesIndex(isPopState);
                         document.getElementById('view-categories').classList.remove('hidden');
                     } else if (view === 'category') {
-                        this.renderCategory(param);
+                        this.renderCategory(param, isPopState);
                         document.getElementById('view-category').classList.remove('hidden');
                     } else if (view === 'product') {
-                        this.renderProduct(param);
+                        this.renderProduct(param, isPopState);
                         document.getElementById('view-product').classList.remove('hidden');
                     } else if (view === 'search') {
-                        this.renderSearch(param);
+                        this.renderSearch(param, isPopState);
                         document.getElementById('view-search').classList.remove('hidden');
                     } else if (view === 'cart') {
-                        this.renderCart();
+                        this.renderCart(); // Cart always refreshes to reflect live quantity changes
                         document.getElementById('view-cart').classList.remove('hidden');
                     } else if (view === 'checkout') {
                         this.renderCheckout();
@@ -904,7 +904,15 @@
             track.innerHTML = html;
         },
 
-        renderHome: function() {
+        renderHome: function(isPopState = false) {
+            const grid = document.getElementById('home-products-grid');
+            
+            // DOM CACHING: If going back and the grid is already built, preserve everything!
+            if (isPopState && grid && grid.innerHTML.trim() !== '') {
+                this.setupInfiniteScroll(); // Just re-attach the scroll listener
+                return;
+            }
+            
             this.renderHeroCategories();
             this.updateHomeGrid();
             this.setupInfiniteScroll(); // Initializes the scroll engine
@@ -1090,8 +1098,13 @@
             `;
         },
 
-        renderCategoriesIndex: function() {
+        renderCategoriesIndex: function(isPopState = false) {
             const container = document.getElementById('categories-index-container');
+            
+            // DOM CACHING
+            if (isPopState && container && container.innerHTML.trim() !== '') {
+                return;
+            }
             
             // Only show categories that actually have active products inside them
             const activeCatIds = [...new Set(this.state.products.map(p => p.category_id))];
@@ -1128,7 +1141,15 @@
 
             },
 
-        renderSearch: function(query) {
+        renderSearch: function(query, isPopState = false) {
+            const gridContainer = document.getElementById('search-grid');
+            
+            // DOM CACHING: Preserve exact search results
+            if (isPopState && this.state.currentSearchParam === query && gridContainer && gridContainer.innerHTML.trim() !== '') {
+                return;
+            }
+            this.state.currentSearchParam = query;
+            
             document.getElementById('search-page-title').textContent = `Results for "${query}"`;
             const q = query.toLowerCase();
             
@@ -1136,7 +1157,6 @@
             this.SmartComposer.logIntent(query, 3); // High weight for explicit searches
             
             const matches = this.performSearch(query);
-            const gridContainer = document.getElementById('search-grid');
             
             // Apply the smart section wrapper styles
             gridContainer.className = 'storefront-sections-wrapper';
@@ -1164,7 +1184,14 @@
             gridContainer.innerHTML = matches.map((p, idx) => this.generateProductCardHTML(p, 'standard', 'grid', idx < 4, false)).join('');
         },
 
-        renderCategory: function(catId) {
+        renderCategory: function(catId, isPopState = false) {
+            const grid = document.getElementById('category-products-grid');
+            
+            // DOM CACHING: Preserve the exact category view and user sort selection
+            if (isPopState && this.state.currentCategoryParam === catId && grid && grid.innerHTML.trim() !== '') {
+                return; 
+            }
+            
             this.state.currentCategoryParam = catId;
             const catObj = this.state.categories.find(c => c.id === catId);
             document.getElementById('category-page-title').textContent = catObj ? catObj.name : 'Category';
@@ -1209,9 +1236,16 @@
             grid.innerHTML = catProducts.map(p => this.generateProductCardHTML(p)).join('');
         },
 
-        renderProduct: function(productId) {
-            const p = this.state.products.find(x => x.id === productId);
+        renderProduct: function(productId, isPopState = false) {
             const container = document.getElementById('product-detail-container');
+            
+            // DOM CACHING: Preserve exact product state (carousel, FBT items)
+            if (isPopState && this.state.currentProductParam === productId && container && container.innerHTML.trim() !== '') {
+                return; 
+            }
+            this.state.currentProductParam = productId;
+            
+            const p = this.state.products.find(x => x.id === productId);
             
             if (!p) {
                 container.innerHTML = '<div style="padding:40px 16px; text-align:center;">Product not found.</div>';
