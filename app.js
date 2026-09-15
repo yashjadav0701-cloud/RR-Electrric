@@ -802,7 +802,7 @@
             const offPercentage = (p.mrp_price && p.mrp_price > p.selling_price) ? Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100) : 0;
             const hasDiscount = offPercentage > 0;
 
-            const statusHtml = !isAvailable ? `<div class="premium-status-unavailable">SOLD OUT</div>` : '';
+            const statusHtml = !isAvailable ? `<div class="premium-status-unavailable">ARRIVING SOON</div>` : '';
             const inlineDiscountHtml = hasDiscount ? `<div class="premium-inline-discount"><span>-${offPercentage}%</span></div>` : '';
 
             // PREMIUM QUICK ADD BUTTON (Distinct Pill Design)
@@ -1485,12 +1485,12 @@
                             <span>Add to Bag</span>
                         </button>
                         ` : `
-                        <div class="pdp-availability-notice">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                            <span>Currently Unavailable</span>
+                        <div class="pdp-availability-notice" style="background: var(--slate-100); border-color: var(--slate-300); color: var(--slate-700);">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            <span>Arriving Soon</span>
                         </div>
                         <button class="btn-add-cart-large disabled-add" disabled>
-                            Out of Stock
+                            Currently Unavailable
                         </button>
                         `}
                         </div>
