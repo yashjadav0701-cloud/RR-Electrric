@@ -929,12 +929,12 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 .store-product-card-title {
-    font-size: clamp(10.5px, 3vw, 12px); /* Scales down text height on tight screens */
+    font-size: clamp(10.5px, 3vw, 12px); 
     font-weight: 600;
     color: var(--slate-700);
     line-height: 1.3;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3; /* Increased to 3 lines max */
     -webkit-box-orient: vertical;
     overflow: hidden;
     flex: 1;
@@ -3798,10 +3798,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .fbt-product-track .store-product-card .img-wrapper {
     width: 100% !important;
     aspect-ratio: 1 / 1 !important;
-    padding: 8px !important; /* Give tiny FBT images room to breathe */
+    padding: 0 !important; /* Edge to edge */
     border-radius: 11px 11px 0 0 !important;
-    border-bottom: none !important; /* Seamless gray-to-white transition */
-    background: #f8fafc !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
+    background: #ffffff !important;
 }
 
 /*
@@ -3882,9 +3882,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
  * Quick Add button proportionally scaled for FBT
  */
 .fbt-product-track .quick-add-wrapper {
-    padding: 4px 6px 8px 6px !important;
+    padding: 0 8px 10px 8px !important; /* Lifted up */
     margin-top: auto;
 }
+
 
 .fbt-product-track .btn-quick-add {
     height: 28px !important; /* Taller for 3D effect */
@@ -4093,14 +4094,15 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .vc-img-wrapper {
     width: 100%;
     height: 90px;
-    padding: 12px;
+    padding: 0 !important; /* Edge to edge */
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #f8fafc; /* Premium tech-gray canvas for the image */
-    border-bottom: none; /* Seamless integration, no harsh lines */
+    background: #ffffff; /* White background blends seamlessly */
+    border-bottom: 1px solid var(--slate-100);
     transition: background var(--duration-normal);
     border-radius: 11px 11px 0 0;
+    overflow: hidden;
 }
 
 .vc-img-wrapper img {
@@ -5182,12 +5184,12 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .store-product-card .img-wrapper {
     width: 100% !important; 
     aspect-ratio: 1 / 1 !important;
-    background: #f8fafc !important; /* Premium tech-gray canvas creates seamless contrast */
+    background: #ffffff !important; /* Pure white so images blend seamlessly to the edges */
     border: none !important;
-    border-bottom: none !important; /* Removes harsh separator line */
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important; /* Subtle dividing line */
     box-shadow: none !important;
-    padding: 12px !important; /* Internal padding so images don't touch edges */
-    border-radius: 11px 11px 0 0 !important; /* Match container top curve */
+    padding: 0 !important; /* ZERO PADDING: Image stretches perfectly edge-to-edge */
+    border-radius: 11px 11px 0 0 !important; 
     display: flex !important; 
     align-items: center !important; 
     justify-content: center !important; 
@@ -5200,11 +5202,13 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .store-product-card .img-wrapper img {
     width: 100% !important; 
     height: 100% !important; 
-    object-fit: contain !important; /* Fit properly without filling/stretching */
-    position: static !important;
+    object-fit: contain !important; 
+    position: absolute !important; /* Globally guarantees images never break the card layout height */
+    top: 0 !important;
+    left: 0 !important;
     transform: translateZ(0); 
     backface-visibility: hidden;
-    border-radius: 8px 8px 0 0 !important; /* Forces the image itself to curve */
+    border-radius: 8px 8px 0 0 !important; 
     margin: 0 !important;
     padding: 0 !important;
     background: transparent !important;
@@ -5281,12 +5285,13 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     font-weight: 600 !important; 
     color: var(--slate-800) !important;
     line-height: 1.4 !important;
-    display: -webkit-box; 
-    -webkit-line-clamp: 2; 
-    -webkit-box-orient: vertical;
-    overflow: hidden; 
-    text-overflow: ellipsis; 
-    white-space: normal;
+    display: -webkit-box !important; 
+    -webkit-line-clamp: 2 !important; 
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important; 
+    text-overflow: ellipsis !important; 
+    white-space: normal !important;
+    max-height: 2.8em !important; /* THE FIX: Mathematically locks height to exactly 2 lines */
     margin: 0 !important; 
     transition: color 0.2s;
 }
@@ -5367,7 +5372,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 /* Quick Add sizing for small horizontal cards */
 .size-small .quick-add-wrapper {
-    padding: 8px 10px 10px 10px !important; /* Better framing */
+    padding: 0 10px 12px 10px !important; /* Lifted up */
     margin-top: auto;
 }
 .size-small .btn-quick-add {
@@ -5407,12 +5412,13 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 .store-product-card.layout-home-list {
     display: grid !important;
-    grid-template-columns: 120px minmax(0, 1fr); /* Slightly wider to absorb padding removal */
+    /* Exactly 2:3 Ratio (40% image / 60% text) */
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) !important; 
     grid-template-rows: 1fr auto;
     background: #ffffff;
     border: 1px solid rgba(226, 232, 240, 0.9);
     border-radius: 10px;
-    padding: 0 !important; /* FIX: Container padding completely removed */
+    padding: 0 !important; 
     gap: 0 10px;
     align-items: stretch;
     width: 100%;
@@ -5423,23 +5429,30 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     grid-column: 1;
     grid-row: 1 / span 2;
     width: 100% !important;
-    height: 100% !important; 
+    height: auto !important; /* Height is strictly dictated by the text side */
     min-height: 120px !important; 
     aspect-ratio: auto !important;
     border: none !important; 
-    border-right: none !important; /* Completely seamless, let the background color do the separation */
+    border-right: none !important; 
     border-radius: 11px 0 0 11px !important; 
-    padding: 10px !important; /* Let the image breathe */
+    padding: 10px !important; 
     margin: 0 !important;
-    align-self: stretch;
+    align-self: stretch !important; /* Forces the grey background to match text height perfectly */
     background: #f8fafc !important; 
+    position: relative !important; /* Anchor for absolute image */
     overflow: hidden !important; 
 }
 
 .store-product-card.layout-home-list .img-wrapper img {
-    border-radius: 6px !important; /* Curves the image directly */
-    width: 100% !important;
-    height: 100% !important;
+    border-radius: 6px !important; 
+    /* Absolute positioning removes the image from document flow. It will NEVER stretch the card height! */
+    position: absolute !important; 
+    top: 10px !important; /* Follows wrapper padding */
+    left: 10px !important;
+    right: 10px !important;
+    bottom: 10px !important;
+    width: calc(100% - 20px) !important;
+    height: calc(100% - 20px) !important;
     object-fit: contain !important;
     background: transparent !important;
     mix-blend-mode: multiply !important; 
@@ -5469,7 +5482,12 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .store-product-card.layout-home-list .store-product-card-title {
     font-size: 13.5px !important;
     line-height: 1.35 !important;
-    -webkit-line-clamp: 2 !important;
+    /* Strict Webkit rules MUST be defined here to enforce the clamp */
+    display: -webkit-box !important;
+    -webkit-line-clamp: 3 !important; /* Increased to 3 lines max */
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    white-space: normal !important;
     margin-bottom: 4px !important;
     color: var(--slate-900) !important;
     margin-top: 2px !important;
@@ -5514,13 +5532,15 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 @media (max-width: 400px) {
     .store-product-card.layout-home-list {
-        grid-template-columns: 104px minmax(0, 1fr);
+        /* Enforces exact 2:3 ratio even on tiny phone screens */
+        grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) !important;
         padding: 0 !important;
         gap: 0 10px;
     }
     .store-product-card.layout-home-list .img-wrapper {
-        height: 100% !important;
+        height: auto !important; /* Syncs dynamic height logic */
         min-height: 104px !important;
+        align-self: stretch !important;
     }
     .store-product-card.layout-home-list .premium-selling-price {
         font-size: 22px !important;
@@ -5531,6 +5551,11 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     }
     .store-product-card.layout-home-list .store-product-card-title {
         font-size: 13px !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 3 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+        white-space: normal !important;
     }
     .store-product-card.layout-home-list .premium-discount-badge {
         width: 32px !important;
@@ -5557,18 +5582,26 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     .store-product-card.layout-home-list .img-wrapper {
         width: 100% !important;
         height: auto !important;
-        min-height: 0 !important; /* Removes the mobile height lock */
+        min-height: 0 !important; 
         aspect-ratio: 1 / 1 !important;
         border: none !important;
         border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
-        border-right: none !important; /* Removes vertical separator */
+        border-right: none !important; 
         border-radius: 8px 8px 0 0 !important;
         overflow: hidden !important;
-        padding: 0 !important; /* Reset padding to 0 for PC */
+        padding: 0 !important; 
         background: #ffffff !important;
+        align-self: auto !important; /* Resets the grid stretch lock */
     }
     .store-product-card.layout-home-list .img-wrapper img {
         border-radius: 8px 8px 0 0 !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
     }
     .store-product-card.layout-home-list .store-product-card-details {
         padding: 12px 10px 10px 10px !important;
@@ -5579,7 +5612,11 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     }
     .store-product-card.layout-home-list .store-product-card-title {
         font-size: 13.5px !important;
-        -webkit-line-clamp: 2 !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 3 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+        white-space: normal !important;
         margin: 0 !important;
     }
     .store-product-card.layout-home-list .premium-selling-price {
@@ -5741,7 +5778,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
    PREMIUM QUICK ADD BUTTON (Unified 3D Design)
    ============================================================ */
 .quick-add-wrapper {
-    padding: 8px 10px 10px 10px;
+    padding: 0 10px 12px 10px; /* Removed top padding to lift button up */
     margin-top: auto;
     width: 100%;
 }
@@ -5844,7 +5881,9 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     height: 100% !important;
     display: block !important;
     object-fit: contain !important;
-    position: static !important;
+    position: absolute !important; 
+    top: 0 !important;
+    left: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     border-radius: 8px 8px 0 0 !important;
