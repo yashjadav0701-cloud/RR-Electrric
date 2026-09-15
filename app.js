@@ -1236,6 +1236,52 @@
             grid.innerHTML = catProducts.map(p => this.generateProductCardHTML(p)).join('');
         },
 
+        // --- IN-PLACE VARIANT SWITCHING ENGINE ---
+        switchVariant: function(newProductId) {
+            const layout = document.querySelector('.product-detail-layout');
+            const variantList = document.querySelector('.variant-card-list');
+            
+            // Capture exact scroll position of the variant list so it doesn't snap back to the start
+            let savedScroll = 0;
+            if (variantList) savedScroll = variantList.scrollLeft;
+
+            // Visual Feedback: Fade out slightly and disable clicks (Premium loading feel)
+            if (layout) {
+                layout.style.transition = 'opacity 0.2s ease';
+                layout.style.opacity = '0.3';
+                layout.style.pointerEvents = 'none';
+            }
+
+            // Update URL without adding a new page to the browser history stack.
+            // This guarantees the "Back" button correctly returns to the Home/Category page!
+            window.history.replaceState({ view: 'product', param: newProductId }, '', `#product-${newProductId}`);
+            this.state.activeRouteKey = `product-${newProductId}`;
+
+            // Signal to the render engine that we are switching variants, NOT opening a new page.
+            // This ensures the variant list order stays perfectly stable.
+            this.state.isVariantSwitch = true;
+
+            // Slightly longer delay ensures the user physically registers the fade effect
+            setTimeout(() => {
+                // Re-render ONLY the product HTML (bypasses full page wipe and scroll-to-top)
+                this.renderProduct(newProductId);
+                
+                // Reset the switch flag
+                this.state.isVariantSwitch = false;
+                
+                // Instantly restore variant scroll position on the newly rendered list
+                const newVariantList = document.querySelector('.variant-card-list');
+                if (newVariantList) newVariantList.scrollLeft = savedScroll;
+                
+                // Fade back in smoothly
+                const newLayout = document.querySelector('.product-detail-layout');
+                if (newLayout) {
+                    newLayout.style.opacity = '1';
+                    newLayout.style.pointerEvents = 'auto';
+                }
+            }, 200);
+        },
+
         renderProduct: function(productId, isPopState = false) {
             const container = document.getElementById('product-detail-container');
             
@@ -1250,6 +1296,12 @@
             if (!p) {
                 container.innerHTML = '<div style="padding:40px 16px; text-align:center;">Product not found.</div>';
                 return;
+            }
+
+            // SMART CLUSTER CACHING: Captures the original variant group so the order never jumps
+            if (!this.state.isVariantSwitch) {
+                this.state.currentBaseProductId = p.id;
+                this.state.currentClusterIds = [...new Set([p.id, ...(p.linked_product_ids || [])])];
             }
 
             // Track category view intent (Only broad categories, never full product titles)
@@ -1417,13 +1469,20 @@
                                     `;
                                 }
 
-                                // 3. Linked Products (Smart Link Engine - Moved to bottom)
-                                if (p.linked_product_ids && p.linked_product_ids.length > 0) {
-                                    const linkedProds = this.state.products.filter(x => p.linked_product_ids.includes(x.id));
-                                    if (linkedProds.length > 0) {
-                                        // Sort the siblings by price, but ALWAYS keep the active product 'p' in the very first position
-                                        const sortedLinked = linkedProds.sort((a,b) => a.selling_price - b.selling_price);
-                                        const allLinked = [p, ...sortedLinked];
+                                // 3. Linked Products (Smart Link Engine with Stable Sorting)
+                                if (this.state.currentClusterIds && this.state.currentClusterIds.length > 1) {
+                                    const allLinked = this.state.products.filter(x => this.state.currentClusterIds.includes(x.id));
+                                    
+                                    if (allLinked.length > 1) {
+                                        // STABLE SORT: The product you originally clicked ALWAYS stays first. 
+                                        // The rest are permanently sorted by price.
+                                        allLinked.sort((a,b) => {
+                                            if (a.id === this.state.currentBaseProductId) return -1;
+                                            if (b.id === this.state.currentBaseProductId) return 1;
+                                            if (a.selling_price !== b.selling_price) return a.selling_price - b.selling_price;
+                                            return a.name.localeCompare(b.name);
+                                        });
+                                        
                                         variantHtml += `
                                             <div class="variant-group">
                                                 <div class="variant-label" style="margin-bottom: 4px;">Available Variations</div>
@@ -1450,7 +1509,7 @@
                                                         `;
                                                         
                                                         return `
-                                                            <a href="javascript:void(0)" onclick="Store.navigate('product', '${lp.id}', false, true)" class="variant-card ${isActive ? 'active' : ''}">
+                                                            <a href="javascript:void(0)" onclick="Store.switchVariant('${lp.id}')" class="variant-card ${isActive ? 'active' : ''}">
                                                                 ${isActive ? '<div class="vc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>' : ''}
                                                                 <div class="vc-img-wrapper">
                                                                     <img src="${img}" alt="${lp.name}" loading="lazy" decoding="async">

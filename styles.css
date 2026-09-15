@@ -3793,14 +3793,15 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 }
 
 /*
- * Smaller image area suitable for a recommendation rail, respecting the new 8px curve.
+ * Smaller image area suitable for a recommendation rail.
  */
 .fbt-product-track .store-product-card .img-wrapper {
     width: 100% !important;
     aspect-ratio: 1 / 1 !important;
-    padding: 0 !important;
-    border-radius: 8px 8px 0 0 !important;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
+    padding: 8px !important; /* Give tiny FBT images room to breathe */
+    border-radius: 11px 11px 0 0 !important;
+    border-bottom: none !important; /* Seamless gray-to-white transition */
+    background: #f8fafc !important;
 }
 
 /*
@@ -3812,7 +3813,6 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     object-fit: contain !important;
     padding: 0 !important;
     margin: 0 !important;
-    border-radius: 8px 8px 0 0 !important;
     background: transparent !important;
 }
 
@@ -3820,7 +3820,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
  * Compact product information matching main page proportions
  */
 .fbt-product-track .store-product-card .store-product-card-details {
-    padding: 8px 6px 6px 6px !important;
+    padding: 10px 8px 8px 8px !important; /* Slightly more luxurious padding */
     gap: 4px !important;
 }
 
@@ -4033,10 +4033,9 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     display: flex !important;
     flex-direction: column !important;
     background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    border: 1px solid var(--slate-200); /* Softer, premium gray border */
+    border-radius: 12px; /* Modern curve */
     
-    /* HARD-LOCK WIDTH: Forces them to stay side-by-side horizontally */
     width: 130px !important;
     min-width: 130px !important;
     max-width: 130px !important;
@@ -4044,24 +4043,23 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     
     text-decoration: none;
     position: relative;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: var(--shadow-sm);
-    /* Changed to visible so the active checkmark pill can pop out cleanly */
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03); /* Extremely soft ambient shadow */
     overflow: visible !important; 
 }
 
 .variant-card:hover {
-    border-color: var(--primary);
-    transform: translateY(-3px);
-    box-shadow: 0 10px 20px -5px rgba(2, 132, 199, 0.15);
+    border-color: var(--slate-300);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06);
 }
 
 .variant-card.active {
-    /* Thick physical border ensures it is completely visible */
     border: 2px solid var(--primary) !important;
-    box-shadow: 0 8px 24px -6px rgba(2, 132, 199, 0.35) !important;
-    background: rgba(239, 246, 255, 0.5); /* Soft blue tint */
-    transform: translateY(-2px); /* Slight permanent lift for the active item */
+    /* Premium subtle gradient background */
+    background: linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%); 
+    box-shadow: 0 8px 24px -6px rgba(2, 132, 199, 0.25), inset 0 0 0 1px rgba(2, 132, 199, 0.05) !important;
+    transform: translateY(-2px); 
 }
 
 .variant-card.active:hover {
@@ -4070,10 +4068,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 .vc-check {
     position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 18px;
-    height: 18px;
+    top: 8px; /* Tucked slightly inside the curve */
+    right: 8px;
+    width: 22px; /* Slightly larger for better touch target */
+    height: 22px;
     background: var(--primary);
     color: #ffffff;
     border-radius: 50%;
@@ -4081,26 +4079,28 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     align-items: center;
     justify-content: center;
     z-index: 10;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    /* The Premium trick: A thick white border matches the card background, making the blue pill look like it's floating in a cutout */
+    border: 2px solid #ffffff; 
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
 }
 
 .vc-check svg {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
+    stroke-width: 2.5;
 }
 
 .vc-img-wrapper {
     width: 100%;
     height: 90px;
-    padding: 10px;
+    padding: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #ffffff;
-    border-bottom: 1px solid var(--slate-100);
-    transition: border-color var(--duration-fast);
-    /* Curves the image wrapper to perfectly match the outer card */
-    border-radius: calc(var(--radius-md) - 2px) calc(var(--radius-md) - 2px) 0 0;
+    background: #f8fafc; /* Premium tech-gray canvas for the image */
+    border-bottom: none; /* Seamless integration, no harsh lines */
+    transition: background var(--duration-normal);
+    border-radius: 11px 11px 0 0;
 }
 
 .vc-img-wrapper img {
@@ -4108,10 +4108,15 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     max-height: 100%;
     object-fit: contain;
     mix-blend-mode: multiply;
+    transition: transform 0.3s ease;
+}
+
+.variant-card:hover .vc-img-wrapper img {
+    transform: scale(1.05); /* Slight pop on hover */
 }
 
 .variant-card.active .vc-img-wrapper {
-    border-bottom-color: rgba(2, 132, 199, 0.15);
+    background: transparent; /* Lets the blue gradient flow seamlessly */
 }
 
 .vc-details {
@@ -5141,10 +5146,10 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
    ============================================================ */
 .store-product-card {
     background: #ffffff; 
-    border: 1px solid rgba(226, 232, 240, 0.9); 
-    border-radius: 8px; /* Lower, tighter curve */
+    border: 1px solid var(--slate-200); /* Premium solid neutral gray */
+    border-radius: 12px; /* Modern standard curve */
     overflow: hidden; 
-    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
+    box-shadow: 0 4px 16px -4px rgba(15, 23, 42, 0.05); /* Softer ambient depth */
     display: flex; 
     flex-direction: column; 
     height: 100%; 
@@ -5154,22 +5159,22 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     transform: translateZ(0);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    content-visibility: auto; /* Unloads the card from GPU memory when scrolled past */
-    contain-intrinsic-size: 0 126px; /* Prevents scrollbar layout thrashing */
+    content-visibility: auto; 
+    contain-intrinsic-size: 0 126px; 
 }
 
 @media (hover: hover) and (pointer: fine) {
-    .store-product-card:hover { transform: translateY(-4px); }
-    .store-product-card:hover .img-wrapper {
-        box-shadow: 0 12px 24px -8px rgba(15, 23, 42, 0.12);
-        border-color: rgba(226, 232, 240, 0); /* Fades out border on hover to look like floating glass */
+    .store-product-card:hover { 
+        transform: translateY(-4px); 
+        border-color: var(--slate-300);
+        box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.08);
     }
     .store-product-card:hover .img-wrapper img { transform: scale(1.05); }
     .store-product-card:hover .store-product-card-title { color: var(--primary); }
 }
 
 .store-product-card:active {
-    transform: scale(0.97);
+    transform: scale(0.98);
     transition-duration: 0.1s;
 }
 
@@ -5177,19 +5182,21 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 .store-product-card .img-wrapper {
     width: 100% !important; 
     aspect-ratio: 1 / 1 !important;
-    background: #ffffff !important; 
+    background: #f8fafc !important; /* Premium tech-gray canvas creates seamless contrast */
     border: none !important;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
+    border-bottom: none !important; /* Removes harsh separator line */
+    box-shadow: none !important;
+    padding: 12px !important; /* Internal padding so images don't touch edges */
+    border-radius: 11px 11px 0 0 !important; /* Match container top curve */
     display: flex !important; 
     align-items: center !important; 
     justify-content: center !important; 
     position: relative !important; 
     flex: none !important;
     overflow: hidden !important; 
-    padding: 0 !important; /* Zero padding to fit perfectly edge-to-edge */
-    border-radius: 8px 8px 0 0 !important; /* Match container top curve */
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .store-product-card .img-wrapper img {
     width: 100% !important; 
     height: 100% !important; 
@@ -5360,18 +5367,18 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
 
 /* Quick Add sizing for small horizontal cards */
 .size-small .quick-add-wrapper {
-    padding: 6px 8px 8px 8px !important;
+    padding: 8px 10px 10px 10px !important; /* Better framing */
     margin-top: auto;
 }
 .size-small .btn-quick-add {
-    height: 28px !important;
-    font-size: 10.5px !important;
-    padding: 0 8px !important;
-    border-radius: 6px !important;
+    height: 30px !important; /* Slightly taller for a better touch target */
+    font-size: 11px !important;
+    padding: 0 10px !important;
+    border-radius: 8px !important; /* Matches outer card curves better */
 }
 .size-small .btn-quick-add svg {
-    width: 12px !important;
-    height: 12px !important;
+    width: 13px !important;
+    height: 13px !important;
 }
 
 /* ============================================================
@@ -5416,16 +5423,16 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     grid-column: 1;
     grid-row: 1 / span 2;
     width: 100% !important;
-    height: 100% !important; /* Stretches to top and bottom edges */
-    min-height: 120px !important; /* Maintains minimum structural height */
+    height: 100% !important; 
+    min-height: 120px !important; 
     aspect-ratio: auto !important;
     border: none !important; 
-    border-right: 1px solid rgba(226, 232, 240, 0.6) !important; /* Clean separator line */
-    border-radius: 10px 0 0 10px !important; /* Matches parent's left corners perfectly */
-    padding: 4px !important; /* Tiny micro-padding to prevent image clipping */
+    border-right: none !important; /* Completely seamless, let the background color do the separation */
+    border-radius: 11px 0 0 11px !important; 
+    padding: 10px !important; /* Let the image breathe */
     margin: 0 !important;
     align-self: stretch;
-    background: #f8fafc !important; /* Tech-grey backdrop for the edge-to-edge box */
+    background: #f8fafc !important; 
     overflow: hidden !important; 
 }
 
