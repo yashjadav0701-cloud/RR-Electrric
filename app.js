@@ -1298,6 +1298,39 @@
                 return;
             }
 
+            // --- INJECT DYNAMIC PRODUCT SCHEMA FOR SEO ---
+            const existingSchema = document.getElementById('dynamic-product-schema');
+            if (existingSchema) {
+                existingSchema.remove();
+            }
+
+            const schemaAvailability = p.is_active !== false ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
+            const schemaData = {
+                "@context": "https://schema.org/",
+                "@type": "Product",
+                "name": p.name,
+                "image": p.image_urls?.[0] || (window.location.origin + "/assets/icon.png"),
+                "description": p.description || "Shop premium electrical products at unbeatable prices.",
+                "brand": {
+                    "@type": "Brand",
+                    "name": p.brand || "RR ELECTRRIC"
+                },
+                "offers": {
+                    "@type": "Offer",
+                    "url": window.location.href,
+                    "priceCurrency": "INR",
+                    "price": p.selling_price,
+                    "availability": schemaAvailability
+                }
+            };
+            
+            const script = document.createElement('script');
+            script.type = 'application/ld+json';
+            script.id = 'dynamic-product-schema';
+            script.text = JSON.stringify(schemaData);
+            document.head.appendChild(script);
+            // ---------------------------------------------
+
             // SMART CLUSTER CACHING: Captures the original variant group so the order never jumps
             if (!this.state.isVariantSwitch) {
                 this.state.currentBaseProductId = p.id;
