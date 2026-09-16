@@ -668,21 +668,21 @@
         },
 
         routeInitial: function() {
-            const hash = window.location.hash;
-            if (hash.startsWith('#product-')) {
-                this.navigate('product', hash.replace('#product-', ''), true);
-            } else if (hash === '#categories') {
-                this.navigate('categories', null, true);
-            } else if (hash.startsWith('#category-')) {
-                this.navigate('category', hash.replace('#category-', ''), true);
-            } else if (hash.startsWith('#search-')) {
-                this.navigate('search', decodeURIComponent(hash.replace('#search-', '')), true);
-            } else if (hash === '#cart') {
-                this.navigate('cart', null, true);
-            } else if (hash === '#checkout') {
-                this.navigate('checkout', null, true);
+            const path = window.location.pathname;
+            if (path.startsWith('/product/')) {
+                this.navigate('product', path.replace('/product/', ''), true, true);
+            } else if (path === '/categories') {
+                this.navigate('categories', null, true, true);
+            } else if (path.startsWith('/category/')) {
+                this.navigate('category', path.replace('/category/', ''), true, true);
+            } else if (path.startsWith('/search/')) {
+                this.navigate('search', decodeURIComponent(path.replace('/search/', '')), true, true);
+            } else if (path === '/cart') {
+                this.navigate('cart', null, true, true);
+            } else if (path === '/checkout') {
+                this.navigate('checkout', null, true, true);
             } else {
-                this.navigate('home', null, true);
+                this.navigate('home', null, true, true);
             }
         },
 
@@ -693,18 +693,18 @@
             }
 
             if (pushHistory || replaceHistory) {
-                let hash = '';
-                if (view === 'product') hash = `#product-${param}`;
-                if (view === 'categories') hash = `#categories`;
-                if (view === 'category') hash = `#category-${param}`;
-                if (view === 'search') hash = `#search-${encodeURIComponent(param)}`;
-                if (view === 'cart') hash = `#cart`;
-                if (view === 'checkout') hash = `#checkout`;
+                let path = '/';
+                if (view === 'product') path = `/product/${param}`;
+                if (view === 'categories') path = `/categories`;
+                if (view === 'category') path = `/category/${param}`;
+                if (view === 'search') path = `/search/${encodeURIComponent(param)}`;
+                if (view === 'cart') path = `/cart`;
+                if (view === 'checkout') path = `/checkout`;
                 
                 if (replaceHistory) {
-                    window.history.replaceState({ view, param }, '', hash || window.location.pathname);
+                    window.history.replaceState({ view, param }, '', path);
                 } else {
-                    window.history.pushState({ view, param }, '', hash || window.location.pathname);
+                    window.history.pushState({ view, param }, '', path);
                 }
             }
             this.renderView(view, param, false); // FALSE indicates new navigation
@@ -1234,6 +1234,36 @@
 
             catProducts = this.sortArray(catProducts, this.state.categoryCurrentSort);
             grid.innerHTML = catProducts.map(p => this.generateProductCardHTML(p)).join('');
+
+            // --- INJECT DYNAMIC CATEGORY SCHEMA FOR SEO ---
+            const existingSchema = document.getElementById('dynamic-category-schema');
+            if (existingSchema) {
+                existingSchema.remove();
+            }
+
+            const catObj = this.state.categories.find(c => c.id === catId);
+            const categoryName = catObj ? catObj.name : 'Electrical Products';
+
+            const schemaData = {
+                "@context": "https://schema.org",
+                "@type": "ItemList",
+                "name": `RR ELECTRRIC - ${categoryName}`,
+                "url": window.location.href,
+                "numberOfItems": catProducts.length,
+                "itemListElement": catProducts.map((p, index) => ({
+                    "@type": "ListItem",
+                    "position": index + 1,
+                    "url": `${window.location.origin}/#product-${p.id}`,
+                    "name": p.name
+                }))
+            };
+
+            const script = document.createElement('script');
+            script.type = 'application/ld+json';
+            script.id = 'dynamic-category-schema';
+            script.text = JSON.stringify(schemaData);
+            document.head.appendChild(script);
+            // ----------------------------------------------
         },
 
         // --- IN-PLACE VARIANT SWITCHING ENGINE ---
@@ -1254,7 +1284,7 @@
 
             // Update URL without adding a new page to the browser history stack.
             // This guarantees the "Back" button correctly returns to the Home/Category page!
-            window.history.replaceState({ view: 'product', param: newProductId }, '', `#product-${newProductId}`);
+            window.history.replaceState({ view: 'product', param: newProductId }, '', `/product/${newProductId}`);
             this.state.activeRouteKey = `product-${newProductId}`;
 
             // Signal to the render engine that we are switching variants, NOT opening a new page.
