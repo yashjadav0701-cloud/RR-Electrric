@@ -1,8 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  <!-- Homepage -->
   <url>
     <loc>https://rrelectrric.vercel.app/</loc>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
   </url>
+
+  <!-- Main Categories Index -->
+  <url>
+    <loc>https://rrelectrric.vercel.app/categories</loc>
+  </url>
+
+  <!-- Category Pages -->
+  <url>
+    <loc>https://rrelectrric.vercel.app/category/YOUR-CATEGORY-ID</loc>
+  </url>
+
+  <!-- Product Pages -->
+  <url>
+    <loc>https://rrelectrric.vercel.app/product/YOUR-PRODUCT-ID</loc>
+  </url>
+
 </urlset>
