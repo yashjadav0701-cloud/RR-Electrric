@@ -1576,7 +1576,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     scrollbar-width: none;
     -ms-overflow-style: none;
     -webkit-overflow-scrolling: touch !important;
-    touch-action: auto !important; /* Allows flawless native mobile scrolling */
+    touch-action: pan-x pan-y !important; /* Forces strict swipe tracking without browser interventions */
 }
 
 .category-discovery-row::-webkit-scrollbar {
@@ -3627,7 +3627,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior-x: auto;
     overscroll-behavior-y: auto;
-    touch-action: auto !important; /* Let the mobile OS natively handle touch based on overflow */
+    touch-action: pan-x pan-y !important; /* Strictly handles scrolling to prevent zoom or refresh interruptions */
     scroll-snap-type: none;
 }
 
@@ -3840,7 +3840,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
         gap: 12px !important; /* Slightly wider gap helps the peek effect */
         overflow-x: auto !important;
         overflow-y: hidden !important;
-        touch-action: auto !important; 
+        touch-action: pan-x pan-y !important; 
         -webkit-overflow-scrolling: touch !important;
         padding-left: 4px !important;
         padding-right: 24px !important; /* Allows breathing room at the end of the scroll */
@@ -5804,7 +5804,7 @@ input:disabled, select:disabled, textarea:disabled, input[readonly] {
      */
     .products-grid,
     .store-product-card {
-        touch-action: auto !important; /* CRITICAL FIX: Allows both horizontal and vertical swiping natively */
+        touch-action: pan-x pan-y !important; /* CRITICAL FIX: Fluid swiping while preventing pinch-zoom accidents */
     }
 
     /*

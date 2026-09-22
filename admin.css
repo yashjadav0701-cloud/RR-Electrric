@@ -538,150 +538,149 @@ svg { max-width: 100%; height: auto; }
 }
 
 /* ============================================================
-   PREMIUM 3D DASHBOARD METRICS GRID
+   PREMIUM DASHBOARD METRICS GRID (COMPACT SAAS UI)
    ============================================================ */
 .dashboard-metrics-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr)); /* Force exactly 3 columns side-by-side */
-    gap: 8px; /* Tighter gap to maximize card space on mobile */
-    margin-bottom: 32px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
     width: 100%;
 }
 
 @media (min-width: 768px) {
-    .dashboard-metrics-grid {
-        gap: 24px; /* Restore spacious gaps on PC */
-    }
+    .dashboard-metrics-grid { gap: 16px; }
 }
 
-/* 3D Floating Pill Design */
 .metric-card {
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-    border: 1px solid rgba(226, 232, 240, 0.9);
-    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 12px;
+    box-shadow: 0 2px 4px -1px rgba(15, 23, 42, 0.03), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    padding: 14px 0 0 0; /* Pushes content away from top accent, removes side/bottom padding */
-    gap: 0; /* Strict control via child margins for precise 6px gaps */
-    box-shadow: 
-        0 10px 20px -6px rgba(15, 23, 42, 0.08),
-        0 4px 8px -2px rgba(15, 23, 42, 0.04),
-        inset 0 2px 4px rgba(255, 255, 255, 1);
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    text-align: center;
     position: relative;
-    overflow: hidden; /* Clips the top accent line cleanly */
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    padding-top: 16px; /* Optimized for a flat horizontal layout */
 }
 
-/* Top Accent Curved Stripes */
+/* Slimmer Top Accents */
 .metric-card::before {
-    content: "";
+    content: '';
     position: absolute;
     top: 0; left: 0; right: 0;
-    height: 5px;
-    background: var(--slate-200);
+    height: 4px;
     z-index: 2;
 }
-.metric-card:nth-child(1)::before { background: var(--danger); }
-.metric-card:nth-child(2)::before { background: var(--success); }
-.metric-card:nth-child(3)::before { background: var(--primary); }
+.metric-card:nth-child(1)::before { background: linear-gradient(90deg, #f43f5e 0%, #fb7185 100%); } 
+.metric-card:nth-child(2)::before { background: linear-gradient(90deg, #10b981 0%, #34d399 100%); } 
+.metric-card:nth-child(3)::before { background: linear-gradient(90deg, #0ea5e9 0%, #38bdf8 100%); } 
 
-/* Flex Reordering Wrapper */
-.metric-header { display: contents; }
-
-/* 1. Icon at the top */
+/* Flat, Small Icons (Forced to Top) */
+.metric-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    order: 1; /* Force to top */
+}
 .metric-icon {
-    order: 1;
     display: flex !important;
     align-items: center;
     justify-content: center;
-    width: 26px; /* Scaled down for mobile */
-    height: 26px;
-    border-radius: 8px;
-    background: var(--bg-main);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05), inset 0 1px 2px rgba(255, 255, 255, 1);
-    margin-bottom: 4px; 
-    z-index: 2;
+    width: 32px; /* Very small icon block */
+    height: 32px;
+    border-radius: 50%; /* Perfect circles to match image */
+    margin-bottom: 8px;
+    box-shadow: none; /* Removed internal shadow for cleaner look */
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .metric-icon svg { width: 14px !important; height: 14px !important; stroke-width: 2.5; }
 
-/* 2. Value in the middle */
-.metric-value {
-    order: 2;
+/* Labels moved ABOVE the value to match the image layout exactly */
+.metric-label {
     width: 100%;
-    font-size: clamp(15px, 3.5vw, 24px); /* Scaled down to prevent blowing out the card */
+    background: transparent; /* Removed the gray background bar */
+    border-top: none;
+    border-bottom: 1px solid var(--slate-100); 
+    color: var(--slate-500);
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0 0 10px 0;
+    margin-bottom: 10px;
+    text-align: center;
+    min-height: auto;
+    order: 2; /* Force below icon */
+}
+
+/* Compact Values (Forced to Bottom) */
+.metric-value {
+    font-size: clamp(20px, 4vw, 24px); /* Vibrant and readable */
     font-weight: 900;
     line-height: 1;
-    letter-spacing: -0.02em;
-    white-space: normal !important;
-    word-break: break-word;
-    padding: 0 2px 6px 2px; 
-    margin: 0;
-}
-
-/* 3. Label at the bottom separated by a line */
-.metric-label {
-    order: 3;
-    width: 100%;
-    color: var(--slate-500);
-    font-size: clamp(7.5px, 1.8vw, 10px); /* Aggressively scaled to fit 3 columns */
-    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 16px;
     text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 0px; 
-    border-bottom: 1px solid var(--border);
-    background: rgba(248, 250, 252, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 32px; /* Tighter height */
-    white-space: normal !important; /* Allows text to wrap to 2 lines if needed */
-    line-height: 1.1;
-    overflow: hidden; 
-    padding: 4px 2px 6px 2px;
+    width: 100%;
+    order: 3; /* Force to bottom */
 }
 
-/* PC Gap & Typography Restoration */
-@media (min-width: 768px) {
-    .metric-value { padding-bottom: 10px; font-size: 32px; }
-    .metric-label { padding: 10px 8px 14px 8px; font-size: 11px; min-height: 42px; white-space: nowrap !important; }
-    .metric-icon { width: 40px; height: 40px; margin-bottom: 10px; border-radius: 10px; }
-    .metric-icon svg { width: 20px !important; height: 20px !important; }
+/* Reduced Modal Padding to fit the new filters/charts nicely */
+.kpi-modal-body { padding: 16px 24px; }
+.kpi-modal-header { padding: 32px 24px 16px; }
+.kpi-icon-wrapper { width: 48px; height: 48px; margin-bottom: 12px; }
+.kpi-icon-wrapper svg { width: 24px; height: 24px; }
+
+/* Modal Time Filter Buttons */
+.kpi-time-filters {
+    display: flex; gap: 4px; background: var(--slate-100); padding: 4px; border-radius: 8px; margin-bottom: 16px; justify-content: space-between;
 }
+.kpi-filter-btn {
+    flex: 1; background: transparent; border: none; padding: 8px 0; font-size: 11px; font-weight: 700; color: var(--slate-500); border-radius: 6px; cursor: pointer; transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.kpi-filter-btn:hover { color: var(--slate-800); }
+.kpi-filter-btn.active { background: #ffffff; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-/* Color Theming */
-.metric-card:nth-child(1) .metric-icon { background: #fee2e2; color: var(--danger); }
-.metric-card:nth-child(1) .metric-value { color: var(--danger); }
+/* Eye-catching Colors */
+/* Card 1: Pending */
+.metric-card:nth-child(1) .metric-icon { background: #fee2e2; color: #ef4444; }
+.metric-card:nth-child(1) .metric-value { color: #ef4444; }
 
-.metric-card:nth-child(2) .metric-icon { background: #dcfce7; color: var(--success); }
-.metric-card:nth-child(2) .metric-value { color: var(--success); }
+/* Card 2: Revenue */
+.metric-card:nth-child(2) .metric-icon { background: #d1fae5; color: #10b981; }
+.metric-card:nth-child(2) .metric-value { color: #10b981; }
 
-.metric-card:nth-child(3) .metric-icon { background: #e0f2fe; color: var(--primary); }
-.metric-card:nth-child(3) .metric-value { color: var(--primary); }
+/* Card 3: Products */
+.metric-card:nth-child(3) .metric-icon { background: #e0f2fe; color: #0ea5e9; }
+.metric-card:nth-child(3) .metric-value { color: #0ea5e9; }
 
-/* Interactive Clickable States */
+/* Interactive Hover */
 .metric-card.kpi-clickable { cursor: pointer; }
-
-.metric-card.kpi-clickable::after {
-    content: ''; position: absolute; top: 10px; right: 10px; width: 16px; height: 16px;
-    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2394a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"></path><path d="M9 21H3v-6"></path><path d="M21 3l-7 7"></path><path d="M3 21l7-7"></path></svg>') center/contain no-repeat;
-    opacity: 0; transition: opacity 0.2s, transform 0.2s; transform: scale(0.8);
-}
-
 @media (hover: hover) and (pointer: fine) {
     .metric-card.kpi-clickable:hover {
-        transform: translateY(-4px) scale(1.02);
-        box-shadow: 0 14px 28px -8px rgba(15, 23, 42, 0.15), 0 4px 10px -2px rgba(15, 23, 42, 0.08), inset 0 2px 4px rgba(255, 255, 255, 1);
+        transform: translateY(-4px);
+        box-shadow: 0 15px 30px -8px rgba(15, 23, 42, 0.12);
+        border-color: var(--slate-300);
     }
-    .metric-card.kpi-clickable:hover::after { opacity: 1; transform: scale(1); }
+    .metric-card.kpi-clickable:hover .metric-icon {
+        transform: scale(1.1);
+    }
+}
+.metric-card.kpi-clickable:active {
+    transform: translateY(0) scale(0.98);
+    transition-duration: 50ms;
 }
 
-.metric-card.kpi-clickable:active {
-    transform: translateY(2px) scale(0.98);
-    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05), inset 0 4px 8px rgba(0, 0, 0, 0.05);
-    transition-duration: 50ms;
+/* Dedicated Analytics Chart Container */
+.kpi-chart-container {
+    width: 100%;
+    height: 220px;
+    margin-bottom: 24px;
+    position: relative;
 }
 
 /* Master Inventory Styles */
@@ -720,15 +719,33 @@ svg { max-width: 100%; height: auto; }
 
 @media (min-width: 1024px) {
     .inventory-filters input {
-        min-width: 260px;
+        min-width: 180px;
     }
 }
 .inventory-table-container {
     background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    overflow-x: auto;
+    overflow-x: hidden; /* table-layout: fixed handles width natively */
+    overflow-y: auto;
+    max-height: calc(100vh - 280px); /* Accommodate detached header */
     box-shadow: var(--shadow-sm);
+}
+
+/* Thin sleek scrollbar specifically for the table container */
+.inventory-table-container::-webkit-scrollbar {
+    width: 8px;
+}
+.inventory-table-container::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 8px 0;
+}
+.inventory-table-container::-webkit-scrollbar-thumb {
+    background-color: var(--slate-300);
+    border-radius: 10px;
+}
+.inventory-table-container::-webkit-scrollbar-thumb:hover {
+    background-color: var(--slate-400);
 }
 .inventory-thumb {
     width: 48px;
@@ -839,7 +856,7 @@ svg { max-width: 100%; height: auto; }
 
 /* Tables */
 .card-header-flex { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--slate-200); padding-bottom: 12px; margin-bottom: 16px; }
-.table-responsive { overflow-x: auto; width: 100%; display: block; -webkit-overflow-scrolling: touch; }
+.table-responsive { overflow-x: auto; width: 100%; display: block; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
 .action-links { display: flex; gap: 12px; }
 
 /* Dashboard Recent Orders Table Overrides */
@@ -1354,6 +1371,13 @@ svg { max-width: 100%; height: auto; }
     .btn-invoice .btn-text-label {
         display: inline-block !important; 
     }
+
+    /* Prevent iOS Auto-Zoom on form focus in Admin */
+    input[type="text"], input[type="email"], input[type="password"], input[type="number"], 
+    input[type="tel"], input[type="url"], input[type="search"], input[type="datetime-local"], 
+    select, textarea, .custom-select-trigger, .custom-select-option {
+        font-size: 16px !important;
+    }
 }
 
 /* ============================================================
@@ -1636,14 +1660,29 @@ body {
 .status-active { background: linear-gradient(180deg, #dcfce7 0%, #bbf7d0 100%) !important; color: #14532d !important; border: 1px solid #86efac !important; }
 .status-inactive { background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%) !important; color: #475569 !important; border: 1px solid #cbd5e1 !important; }
 
-/* 4. Dashboard Recent Orders Badges (Image 5 - Dynamic Override) */
-td div[title="Pending"] {
-    background: linear-gradient(135deg, #f87171, #dc2626) !important; color: white !important; border: 1px solid #b91c1c !important;
-    box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3), inset 0 1.5px 1px rgba(255,255,255,0.5) !important; border-radius: 50% !important;
+/* 4. Dashboard Recent Orders Badges (Modern SaaS Design) */
+.dash-status-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-td div[title="Completed"] {
-    background: linear-gradient(135deg, #34d399, #15803d) !important; color: white !important; border: 1px solid #047857 !important;
-    box-shadow: 0 4px 8px rgba(21, 128, 61, 0.3), inset 0 1.5px 1px rgba(255,255,255,0.5) !important; border-radius: 50% !important;
+.dash-status-badge svg {
+    width: 15px;
+    height: 15px;
+    stroke-width: 2.5;
+}
+.dash-pending {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35), inset 0 2px 2px rgba(255, 255, 255, 0.2); 
+}
+.dash-completed {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35), inset 0 2px 2px rgba(255, 255, 255, 0.2); 
 }
 
 /* 5. Utility Edit/Delete Buttons (Image 6 & 8 - Dynamic Override) */
@@ -1695,24 +1734,39 @@ td[style*="text-align: right;"] button:active,
 /* ============================================================
    7. FLAWLESS SCROLL PHYSICS (APPLE/AMAZON PREMIUM FEEL)
    ============================================================ */
-/* Guarantees buttery-smooth momentum scrolling on iOS and prevents 
-   internal scrollbars from chaining and pulling the whole app shell */
+/* 1. Primary Layouts: Momentum scrolling with natural OS bounce */
 .admin-main,
 .admin-nav,
+.orders-layout {
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: auto !important;
+}
+
+/* 2. Inner Containers: Lock scroll chaining so they don't pull the page */
 .modal-form,
 .inventory-table-container,
 .table-responsive,
 .linked-products-container,
 .custom-select-options,
-.orders-layout {
+.suggestions-list {
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior: contain !important;
 }
 
-/* Ensure the horizontal ribbon tracks on mobile admin also scroll smoothly */
+/* 3. Horizontal Tracks: Flawless mobile swiping */
 .action-btn-row, 
-.action-buttons-stack {
+.action-buttons-stack,
+.tabs-container {
     -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x pan-y !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+.action-btn-row::-webkit-scrollbar, 
+.action-buttons-stack::-webkit-scrollbar,
+.tabs-container::-webkit-scrollbar {
+    display: none !important;
 }
 
 /* ============================================================

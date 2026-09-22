@@ -422,10 +422,10 @@
                 const card = elPending.closest('.metric-card');
                 if (card) {
                     card.classList.add('kpi-clickable');
-                    card.onclick = () => AdminApp.openKpiModal('orders', { pendingOrders });
+                    /* Passed full orders array so we can calculate timeline charts */
+                    card.onclick = () => AdminApp.openKpiModal('orders', { pendingOrders, allOrders: orders });
                 }
             }
-
             if (elRevenue) {
                 elRevenue.textContent = `₹${formatCompact(totalRevenue)}`;
                 const card = elRevenue.closest('.metric-card');
@@ -457,13 +457,13 @@
                 const date = new Date(o.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
                 const isPending = o.status === 'pending';
                 
-                // Compact SVG icons to save horizontal space
+                // Modern SaaS circular status badges
                 const statusIcon = isPending 
-                    ? `<div style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #fee2e2; color: #991b1b;" title="Pending">
-                           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    ? `<div class="dash-status-badge dash-pending" title="Pending">
+                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                        </div>`
-                    : `<div style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #dcfce7; color: #166534;" title="Completed">
-                           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    : `<div class="dash-status-badge dash-completed" title="Completed">
+                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                        </div>`;
 
                 return `
@@ -490,92 +490,101 @@
                 document.body.appendChild(overlay);
             }
 
-            let contentHtml = '';
-            
+            // Save state for interactive chart switching
+            AdminApp.state.currentKpi = { type, data, timeframe: 'monthly' };
+
+            let title = '';
+            let valueHtml = '';
+            let iconHtml = '';
+            let headerColor = '';
+            let bgTint = '';
+            let extraHtml = '';
+            let showChart = true;
+
             if (type === 'orders') {
                 const pending = data.pendingOrders;
-                contentHtml = `
-                    <div class="kpi-modal-header" style="border-bottom: 2px solid var(--danger);">
-                        <div class="kpi-icon-wrapper" style="color: var(--danger); background: #fee2e2;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                        </div>
-                        <h2>Pending Orders</h2>
-                        <div class="kpi-hero-stat" style="color: var(--danger);">${pending.length}</div>
+                title = 'Pending Orders';
+                valueHtml = pending.length;
+                headerColor = '#e11d48';
+                bgTint = '#ffe4e6';
+                iconHtml = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+                extraHtml = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <p style="color: var(--text-muted); font-size: 12px; margin: 0; font-weight: 700; text-transform: uppercase;">Recent Pending Requests</p>
                     </div>
-                    <div class="kpi-modal-body">
-                        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 12px; font-weight: 600; text-transform: uppercase;">Recent Pending Requests</p>
-                        <div class="kpi-list-container">
-                            ${pending.length === 0 ? '<div style="text-align:center; padding: 24px; color: var(--text-muted);">No pending orders to review!</div>' : ''}
-                            ${pending.slice(0, 4).map(o => `
-                                <div class="kpi-list-item">
-                                    <div>
-                                        <div style="font-weight: 700; color: var(--text-main); margin-bottom: 2px;">${o.order_reference}</div>
-                                        <div style="font-size: 11px; color: var(--text-muted);">${new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric'})}</div>
-                                    </div>
-                                    <div style="font-weight: 800; font-size: 15px; color: var(--text-main);">₹${o.final_total}</div>
+                    <div class="kpi-list-container" style="max-height: 120px; overflow-y: auto;">
+                        ${pending.length === 0 ? '<div style="text-align:center; padding: 16px; color: var(--text-muted);">No pending orders to review!</div>' : ''}
+                        ${pending.slice(0, 10).map(o => `
+                            <div class="kpi-list-item" style="padding: 10px 14px;">
+                                <div>
+                                    <div style="font-weight: 700; color: var(--text-main); margin-bottom: 2px; font-size: 13px;">${o.order_reference}</div>
+                                    <div style="font-size: 11px; color: var(--text-muted);">${new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short'})}</div>
                                 </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    <div class="kpi-modal-footer">
-                        <button class="btn-primary" style="width: 100%; background: var(--danger); border-color: var(--danger);" onclick="document.getElementById('premium-kpi-modal').classList.remove('active'); AdminApp.loadView('orders'); AdminApp.switchOrderTab('pending');">Manage All Pending Orders</button>
+                                <div style="font-weight: 800; font-size: 14px; color: var(--text-main);">₹${o.final_total}</div>
+                            </div>
+                        `).join('')}
                     </div>
                 `;
             } else if (type === 'revenue') {
                 const AOV = data.acceptedOrders.length > 0 ? (data.totalRevenue / data.acceptedOrders.length) : 0;
-                contentHtml = `
-                    <div class="kpi-modal-header" style="border-bottom: 2px solid var(--success);">
-                        <div class="kpi-icon-wrapper" style="color: var(--success); background: #dcfce7;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                title = 'Total Revenue Generated';
+                valueHtml = '₹' + data.formatExactMoney(data.totalRevenue);
+                headerColor = '#10b981';
+                bgTint = '#d1fae5';
+                iconHtml = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                extraHtml = `
+                    <div class="kpi-stats-grid">
+                        <div class="kpi-stat-box">
+                            <div class="kpi-stat-label">Total Completed Orders</div>
+                            <div class="kpi-stat-value">${data.acceptedOrders.length}</div>
                         </div>
-                        <h2>Total Revenue Generated</h2>
-                        <div class="kpi-hero-stat" style="color: var(--success);">₹${data.formatExactMoney(data.totalRevenue)}</div>
-                    </div>
-                    <div class="kpi-modal-body">
-                        <div class="kpi-stats-grid">
-                            <div class="kpi-stat-box">
-                                <div class="kpi-stat-label">Total Completed Orders</div>
-                                <div class="kpi-stat-value">${data.acceptedOrders.length}</div>
-                            </div>
-                            <div class="kpi-stat-box">
-                                <div class="kpi-stat-label">Average Order Value</div>
-                                <div class="kpi-stat-value">₹${data.formatExactMoney(AOV)}</div>
-                            </div>
+                        <div class="kpi-stat-box">
+                            <div class="kpi-stat-label">Average Order Value</div>
+                            <div class="kpi-stat-value">₹${data.formatExactMoney(AOV)}</div>
                         </div>
-                    </div>
-                    <div class="kpi-modal-footer">
-                        <button class="btn-secondary" style="width: 100%;" onclick="document.getElementById('premium-kpi-modal').classList.remove('active')">Close Insights</button>
                     </div>
                 `;
             } else if (type === 'products') {
+                showChart = false; // Disable charts for products entirely
                 const active = data.allProducts.filter(p => p.is_active).length;
                 const inactive = data.allProducts.filter(p => !p.is_active).length;
                 const total = data.allProducts.length;
-                
-                contentHtml = `
-                    <div class="kpi-modal-header" style="border-bottom: 2px solid var(--primary);">
-                        <div class="kpi-icon-wrapper" style="color: var(--primary); background: #eff6ff;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                title = 'Live Catalog Health';
+                valueHtml = `${active} <span style="font-size: 14px; font-weight: 600; color: var(--text-muted); vertical-align: middle;">Active Items</span>`;
+                headerColor = '#0ea5e9';
+                bgTint = '#e0f2fe';
+                iconHtml = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>`;
+                extraHtml = `
+                    <div class="kpi-stats-grid">
+                        <div class="kpi-stat-box" style="padding: 12px;">
+                            <div class="kpi-stat-label">Total Database Products</div>
+                            <div class="kpi-stat-value" style="font-size: 18px;">${total}</div>
                         </div>
-                        <h2>Live Catalog Health</h2>
-                        <div class="kpi-hero-stat" style="color: var(--primary);">${active} <span style="font-size: 14px; font-weight: 600; color: var(--text-muted); vertical-align: middle;">Active Items</span></div>
-                    </div>
-                    <div class="kpi-modal-body">
-                        <div class="kpi-stats-grid">
-                            <div class="kpi-stat-box">
-                                <div class="kpi-stat-label">Total Database Products</div>
-                                <div class="kpi-stat-value">${total}</div>
-                            </div>
-                            <div class="kpi-stat-box" style="border-color: #fca5a5; background: #fef2f2;">
-                                <div class="kpi-stat-label" style="color: var(--danger);">Offline / Out of Stock</div>
-                                <div class="kpi-stat-value" style="color: var(--danger);">${inactive}</div>
-                            </div>
+                        <div class="kpi-stat-box" style="padding: 12px; border-color: #fca5a5; background: #fef2f2;">
+                            <div class="kpi-stat-label" style="color: var(--danger);">Offline / Out of Stock</div>
+                            <div class="kpi-stat-value" style="color: var(--danger); font-size: 18px;">${inactive}</div>
                         </div>
-                    </div>
-                    <div class="kpi-modal-footer">
-                        <button class="btn-primary" style="width: 100%;" onclick="document.getElementById('premium-kpi-modal').classList.remove('active'); AdminApp.loadView('products');">Manage Inventory Details</button>
                     </div>
                 `;
+            }
+
+            const timeFiltersHtml = showChart ? `
+                <div class="kpi-time-filters">
+                    <button class="kpi-filter-btn" data-time="daily" onclick="AdminApp.updateKpiChart('daily')">Daily</button>
+                    <button class="kpi-filter-btn" data-time="weekly" onclick="AdminApp.updateKpiChart('weekly')">Weekly</button>
+                    <button class="kpi-filter-btn active" data-time="monthly" onclick="AdminApp.updateKpiChart('monthly')">Monthly</button>
+                    <button class="kpi-filter-btn" data-time="yearly" onclick="AdminApp.updateKpiChart('yearly')">Yearly</button>
+                </div>
+                <div class="kpi-chart-container"><canvas id="kpiChart"></canvas></div>
+            ` : '';
+
+            let actionBtnHtml = '';
+            if (type === 'orders') {
+                actionBtnHtml = `<button class="btn-primary" style="width: 100%; background: ${headerColor}; border-color: ${headerColor};" onclick="document.getElementById('premium-kpi-modal').classList.remove('active'); AdminApp.loadView('orders'); AdminApp.switchOrderTab('pending');">Manage Orders</button>`;
+            } else if (type === 'products') {
+                actionBtnHtml = `<button class="btn-primary" style="width: 100%; background: ${headerColor}; border-color: ${headerColor};" onclick="document.getElementById('premium-kpi-modal').classList.remove('active'); AdminApp.loadView('products');">Manage Inventory</button>`;
+            } else {
+                actionBtnHtml = `<button class="btn-secondary" style="width: 100%;" onclick="document.getElementById('premium-kpi-modal').classList.remove('active')">Close Insights</button>`;
             }
 
             overlay.innerHTML = `
@@ -584,13 +593,200 @@
                     <button class="kpi-close-btn" onclick="document.getElementById('premium-kpi-modal').classList.remove('active')" aria-label="Close">
                         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
-                    ${contentHtml}
+                    <div class="kpi-modal-header" style="border-bottom: 2px solid ${headerColor}; padding-bottom: 20px;">
+                        <div class="kpi-icon-wrapper" style="color: ${headerColor}; background: ${bgTint};">
+                            ${iconHtml}
+                        </div>
+                        <h2>${title}</h2>
+                        <div class="kpi-hero-stat" style="color: ${headerColor};">${valueHtml}</div>
+                    </div>
+                    <div class="kpi-modal-body">
+                        ${timeFiltersHtml}
+                        ${extraHtml}
+                    </div>
+                    <div class="kpi-modal-footer">
+                        ${actionBtnHtml}
+                    </div>
                 </div>
             `;
             
-            // Force browser reflow to trigger the CSS spring animation perfectly
+            // Destroy existing chart instance if it exists to prevent overlap bugs
+            if (window.kpiChartInstance) {
+                window.kpiChartInstance.destroy();
+                window.kpiChartInstance = null;
+            }
+
             void overlay.offsetWidth;
             overlay.classList.add('active');
+
+            if (showChart) {
+                setTimeout(() => { AdminApp.updateKpiChart('monthly'); }, 300);
+            }
+        },
+
+        updateKpiChart: function(timeframe) {
+            if (!this.state.currentKpi) return;
+            this.state.currentKpi.timeframe = timeframe;
+            
+            document.querySelectorAll('.kpi-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.time === timeframe);
+            });
+
+            const kpi = this.state.currentKpi;
+            const ctx = document.getElementById('kpiChart').getContext('2d');
+            if (window.kpiChartInstance) window.kpiChartInstance.destroy();
+
+            let labels = [];
+            let dataPoints = [];
+            const now = new Date();
+            let chartType = 'bar';
+            let toolTipPrefix = '';
+
+            const getWeekLabel = (date) => {
+                const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+                const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+                return `W${Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7)} '${date.getFullYear().toString().substr(-2)}`;
+            };
+
+            const processData = (items, dateAccessor, sumAccessor = null) => {
+                if (timeframe === 'daily') {
+                    for(let i=6; i>=0; i--) {
+                        const d = new Date(now); d.setDate(d.getDate() - i);
+                        labels.push(d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+                        const matchDate = d.toISOString().split('T')[0];
+                        const matches = items.filter(x => dateAccessor(x).startsWith(matchDate));
+                        dataPoints.push(sumAccessor ? matches.reduce((acc, curr) => acc + sumAccessor(curr), 0) : matches.length);
+                    }
+                } else if (timeframe === 'weekly') {
+                    for(let i=5; i>=0; i--) {
+                        const start = new Date(now); start.setDate(start.getDate() - (i*7 + 7));
+                        const end = new Date(now); end.setDate(end.getDate() - (i*7));
+                        labels.push(getWeekLabel(end));
+                        const matches = items.filter(x => {
+                            const d = new Date(dateAccessor(x));
+                            return d >= start && d <= end;
+                        });
+                        dataPoints.push(sumAccessor ? matches.reduce((acc, curr) => acc + sumAccessor(curr), 0) : matches.length);
+                    }
+                } else if (timeframe === 'monthly') {
+                    for(let i=5; i>=0; i--) {
+                        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                        labels.push(d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+                        const matches = items.filter(x => {
+                            const xd = new Date(dateAccessor(x));
+                            return xd.getMonth() === d.getMonth() && xd.getFullYear() === d.getFullYear();
+                        });
+                        dataPoints.push(sumAccessor ? matches.reduce((acc, curr) => acc + sumAccessor(curr), 0) : matches.length);
+                    }
+                } else if (timeframe === 'yearly') {
+                    for(let i=4; i>=0; i--) {
+                        const y = now.getFullYear() - i;
+                        labels.push(y.toString());
+                        const matches = items.filter(x => new Date(dateAccessor(x)).getFullYear() === y);
+                        dataPoints.push(sumAccessor ? matches.reduce((acc, curr) => acc + sumAccessor(curr), 0) : matches.length);
+                    }
+                }
+            };
+
+            let datasets = [];
+
+            if (kpi.type === 'orders') {
+                chartType = 'bar';
+                processData(kpi.data.allOrders || [], o => o.created_at);
+                
+                // Beautiful SaaS Rose/Ruby Gradient for Bars
+                let barGradient = ctx.createLinearGradient(0, 0, 0, 220);
+                barGradient.addColorStop(0, '#f43f5e'); 
+                barGradient.addColorStop(1, '#e11d48'); 
+
+                datasets.push({
+                    label: 'Orders',
+                    data: dataPoints,
+                    backgroundColor: barGradient,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barPercentage: 0.6,
+                    hoverBackgroundColor: '#be123c'
+                });
+            } else if (kpi.type === 'revenue') {
+                chartType = 'line';
+                toolTipPrefix = '₹';
+                processData(kpi.data.acceptedOrders || [], o => o.created_at, o => o.final_total);
+
+                // Beautiful Emerald Fade Gradient for Line Area
+                let lineGradient = ctx.createLinearGradient(0, 0, 0, 220);
+                lineGradient.addColorStop(0, 'rgba(16, 185, 129, 0.6)'); 
+                lineGradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)'); 
+
+                datasets.push({
+                    label: 'Revenue',
+                    data: dataPoints,
+                    borderColor: '#10b981',
+                    backgroundColor: lineGradient,
+                    fill: true,
+                    tension: 0.4, /* Beautiful smooth curve */
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#10b981',
+                    pointBorderWidth: 2,
+                    pointHoverBackgroundColor: '#10b981',
+                    pointHoverBorderColor: '#ffffff'
+                });
+            }
+
+            const chartConfig = {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(15,23,42,0.95)',
+                            padding: 12,
+                            cornerRadius: 8,
+                            titleFont: { size: 13, family: 'Inter', weight: 'normal', color: '#94a3b8' },
+                            bodyFont: { size: 15, weight: 'bold', family: 'Inter' },
+                            displayColors: false,
+                            callbacks: {
+                                label: c => toolTipPrefix + (toolTipPrefix ? c.raw.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : c.raw)
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            grid: { display: false }, 
+                            border: { display: false }, 
+                            ticks: { font: { family: 'Inter', size: 11 }, color: '#64748b' } 
+                        },
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: '#f1f5f9', borderDash: [5,5], drawBorder: false },
+                            ticks: { 
+                                font: { family: 'Inter', size: 11 }, 
+                                color: '#94a3b8',
+                                precision: toolTipPrefix ? undefined : 0,
+                                callback: function(value) {
+                                    if (toolTipPrefix) {
+                                        if (value >= 1000) return '₹' + (value / 1000) + 'k';
+                                        return '₹' + value;
+                                    }
+                                    return value;
+                                }
+                            }
+                        }
+                    },
+                    interaction: { intersect: false, mode: 'index' }
+                }
+            };
+
+            window.kpiChartInstance = new Chart(ctx, chartConfig);
         },
 
         // --- PHASE 14: ORDERS ---
@@ -2376,12 +2572,12 @@
                                 <option value="price-desc" ${invState.sort === 'price-desc' ? 'selected' : ''}>Price High to Low</option>
                             </select>
                         </div>
-                        <div id="inventory-action-buttons" style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%;">
-                            <button onclick="AdminApp.toggleQuickEdit()" id="btn-quick-edit" class="btn-secondary" style="flex: 1; padding: 10px 16px; white-space: nowrap; justify-content: center;">
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><polygon points="16 3 21 8 8 21 3 21 3 16 16 3"></polygon></svg> Quick Edit
+                        <div id="inventory-action-buttons" style="display: flex; gap: 8px; flex-wrap: nowrap; flex-shrink: 0;">
+                            <button onclick="AdminApp.toggleQuickEdit()" id="btn-quick-edit" class="btn-secondary" style="padding: 8px 14px; font-size: 13px; white-space: nowrap; justify-content: center;">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><polygon points="16 3 21 8 8 21 3 21 3 16 16 3"></polygon></svg> Quick Edit
                             </button>
-                            <button onclick="AdminApp.openProductForm()" id="btn-add-product" class="btn-primary" style="flex: 1; padding: 10px 16px; white-space: nowrap; justify-content: center;">+ Add Product</button>
-                            <button onclick="AdminApp.saveQuickEdit()" id="btn-save-quick-edit" class="btn-primary hidden" style="background: var(--success); border-color: var(--success); flex: 1; padding: 10px 16px; white-space: nowrap; justify-content: center;">Save Prices</button>
+                            <button onclick="AdminApp.openProductForm()" id="btn-add-product" class="btn-primary" style="padding: 8px 14px; font-size: 13px; white-space: nowrap; justify-content: center;">+ Add Product</button>
+                            <button onclick="AdminApp.saveQuickEdit()" id="btn-save-quick-edit" class="btn-primary hidden" style="background: var(--success); border-color: var(--success); padding: 8px 14px; font-size: 13px; white-space: nowrap; justify-content: center;">Save Prices</button>
                         </div>
                     </div>
                     <div id="inventory-list-wrapper"></div>
@@ -2496,13 +2692,26 @@
             if (filtered.length === 0) {
                 html += `<div style="text-align: center; padding: 40px; color: var(--text-muted); background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius);">No products found matching criteria.</div>`;
             } else {
-                // Desktop Table
+                // Desktop Table: Decoupled Header & Body for Premium Layout
+                const colGroupHtml = `
+                    <colgroup>
+                        <col style="width: 7%;">
+                        <col style="width: 36%;">
+                        <col style="width: 14%;">
+                        <col style="width: 12%;">
+                        <col style="width: 10%;">
+                        <col style="width: 10%;">
+                        <col style="width: 11%;">
+                    </colgroup>
+                `;
+
                 html += `
-                <div class="inventory-table-container desktop-only">
-                    <table class="inventory-table">
+                <div class="inventory-header-wrapper desktop-only" style="padding-right: 10px; margin-bottom: 6px;">
+                    <table class="inventory-table" style="table-layout: fixed; width: 100%;">
+                        ${colGroupHtml}
                         <thead>
                             <tr>
-                                <th style="width: 64px;">Thumb</th>
+                                <th>Thumb</th>
                                 <th>Product</th>
                                 <th>Category</th>
                                 <th>Price</th>
@@ -2511,6 +2720,11 @@
                                 <th style="text-align: right;">Actions</th>
                             </tr>
                         </thead>
+                    </table>
+                </div>
+                <div class="inventory-table-container desktop-only">
+                    <table class="inventory-table" style="table-layout: fixed; width: 100%;">
+                        ${colGroupHtml}
                         <tbody>
                             ${filtered.map(p => {
                                 const thumb = p.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
@@ -2518,7 +2732,7 @@
                                 let discountHtml = '';
                                 if (p.mrp_price && p.mrp_price > p.selling_price) {
                                     const off = Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100);
-                                    discountHtml = `<span style="color: var(--success); font-weight: bold; font-size: 12px; margin-left: 6px;">${off}% OFF</span>`;
+                                    discountHtml = `<div style="color: var(--success); font-weight: 800; font-size: 11.5px; margin-top: 4px;">${off}% OFF</div>`;
                                 }
                                 return `
                                     <tr>
@@ -2532,7 +2746,10 @@
                                         <td>
                                             ${this.state.isQuickEditMode ? 
                                                 `<input type="number" step="0.01" class="quick-edit-input qe-price" data-id="${p.id}" value="${p.selling_price}" style="width: 80px; padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-weight: bold;">` : 
-                                                `<div style="font-weight: bold; font-size: 15px;">₹${p.selling_price} ${discountHtml}</div>`
+                                                `<div style="display: flex; flex-direction: column; justify-content: center; line-height: 1.2;">
+                                                    <span style="font-weight: bold; font-size: 14px;">₹${p.selling_price}</span>
+                                                    ${discountHtml}
+                                                </div>`
                                             }
                                         </td>
                                         <td>

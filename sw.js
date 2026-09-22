@@ -1,8 +1,10 @@
-const CACHE_NAME = 'rr-electrric-core-v8'; // Bumped to force SW update on all devices
+const CACHE_NAME = 'rr-electrric-core-v9'; // Bumped to cache new admin routes
 const IMAGE_CACHE = 'rr-images-v2';
 
 const SAFE_ASSETS = [
     '/',
+    '/rr',
+    '/admin.html',
     '/index.html',
     '/styles.css',
     '/admin.css',
@@ -68,6 +70,10 @@ self.addEventListener('fetch', (e) => {
                 });
                 return networkResponse;
             }).catch(() => {
+                const reqUrl = new URL(e.request.url);
+                if (reqUrl.pathname === '/rr' || reqUrl.pathname.includes('admin.html')) {
+                    return caches.match('/admin.html');
+                }
                 return caches.match('/index.html');
             });
         })
@@ -125,8 +131,8 @@ self.addEventListener('notificationclick', function(event) {
             // Check if we already have the correct app open (Admin vs Storefront)
             for (let i = 0; i < windowClients.length; i++) {
                 const client = windowClients[i];
-                const isTargetAdmin = urlToTarget.includes('admin.html');
-                const isClientAdmin = client.url.includes('admin.html');
+                const isTargetAdmin = urlToTarget.includes('admin.html') || urlToTarget.endsWith('/rr');
+                const isClientAdmin = client.url.includes('admin.html') || client.url.endsWith('/rr');
                 
                 // If it's the right domain and app type, focus and navigate smoothly via SPA
                 if (client.url.includes(self.location.origin) && isTargetAdmin === isClientAdmin && 'focus' in client) {
