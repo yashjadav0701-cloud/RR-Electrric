@@ -2,7 +2,7 @@
  * The cloned response is created before any body can be consumed. Cache writes
  * are awaited before exposing the original response to the page.
  */
-const CACHE_NAME = 'rr-invoice-studio-pwa-v2';
+const CACHE_NAME = 'rr-invoice-studio-pwa-v4';
 const APP_SHELL = [
   '/invoice-studio/',
   '/invoice-studio/index.html',

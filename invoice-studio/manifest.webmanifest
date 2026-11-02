@@ -2,7 +2,7 @@
   "id": "/invoice-studio/",
   "name": "RR ELECTRRIC Invoice Studio",
   "short_name": "Invoice Studio",
-  "description": "Create, save and download RR ELECTRRIC invoices.",
+  "description": "Open the RR ELECTRRIC Google Sheets invoice form without a separate Invoice Studio sign-in.",
   "start_url": "/invoice-studio/",
   "scope": "/invoice-studio/",
   "display": "standalone",
