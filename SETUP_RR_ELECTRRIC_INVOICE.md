@@ -12,8 +12,8 @@ This package keeps the current Supabase order system and the existing Google She
 - New order items store their original cart position. Existing rows are not assigned a fabricated historical sequence.
 - The generated PDF is saved to `Invoice-PDF` in Drive and the same PDF is offered for download.
 - Repeating the same order invoice request returns the existing successful PDF rather than creating another invoice.
-- Manual invoices remain available from the Google Sheet menu: `INVOICE STUDIO → Open HTML Invoice Form`.
-- Anonymous GET access to the deployed Apps Script web-app URL displays a short notice instead of exposing the manual product catalogue/form. Signed website POST hand-offs still open the invoice form.
+- Manual invoices are available from the Google Sheet menu and from the new authenticated PWA at `https://rrelectrric.vercel.app/invoice-studio/`.
+- The Apps Script `/exec` GET route redirects to the PWA; it never exposes the catalogue or invoice form anonymously. Signed website POST hand-offs still open the existing Apps Script HTML form.
 - Product cards use the same responsive system throughout the storefront: 2 columns on phones, 4 on tablets, 6 on laptops/desktops. Add to cart is a neutral outline control with no filled background.
 
 ## Required deployment order
@@ -67,25 +67,62 @@ In the existing Apps Script project, replace the complete contents of:
 
 Keep the existing spreadsheet itself and its `Invoice_Manual`, `Products` and `Invoice_Log` tabs. The supplied `.xlsx` in this bundle is the unchanged source workbook for reference; it does not need to be re-imported or replaced.
 
-Run `setupSystem()` once from the Apps Script editor, or use the spreadsheet's `INVOICE STUDIO → Setup Invoice System` menu. This stores the spreadsheet ID and ensures the PDF folder exists. Do not delete other Script Properties or triggers.
+Run `setupSystem()` once from the Apps Script editor, or use the spreadsheet's `INVOICE STUDIO → Setup Invoice System` menu. This stores the spreadsheet ID and ensures the PDF folder exists. Do not delete other Script Properties or triggers. The existing `INVOICE_SHARED_SECRET` property must remain in place.
 
-### 4. Deploy the dedicated Invoice Studio Web App
+### 4. Deploy the Apps Script Web App
 
-Use the dedicated Invoice Studio Web App deployment URL below. This is intentionally separate from the older Google Apps Script URL used by the existing Supabase product-sync trigger:
+**Important form-POST compatibility fix:** The supplied `Code.gs` now decodes the URL-encoded `payloadJson`, `timestamp` and `signature` fields directly from `e.postData.contents` when Apps Script does not populate `e.parameter`. This avoids attempting `JSON.parse()` on a body beginning with `payloadJson=...`. Replace the complete `Code.gs` and `Index.html` before deploying a **New version** of the Web App.
 
-`https://script.google.com/macros/s/AKfycbwtqsx4naszPK6Q8nQrdq3eMOMMl3K_JVfQkSs5cKAyO4e-gt-RFxYxhIlCwyR-O9O6Tg/exec`
 
-In the Invoice Generator Apps Script project:
+In Apps Script → Deploy → Manage deployments → Edit the existing Web App deployment:
 
-- Confirm the deployed project contains the updated top-level `doGet(e)` and `doPost(e)` functions.
-- Deploy as a **Web app**.
-- Execute as: **Me** (the spreadsheet/Drive owner).
-- Who has access: **Anyone** (the website posts the signed hand-off without a Google login).
-- Deploy a **New version** and keep the dedicated URL above in sync with the website.
+- Execute as: **Me** (the spreadsheet/Drive owner)
+- Who has access: **Anyone** (the website needs to POST the signed hand-off without a Google login)
+- Select **New version**, then Deploy
 
-Do not change the legacy product-sync trigger URL in Supabase. The HMAC signature and expiry check are required for website invoice preparation. Anonymous GET access must not expose the manual invoice form; staff open manual invoices from the spreadsheet menu. The `?diag=1` diagnostic route should identify the running build when `doGet(e)` is present.
+Keep the same `/exec` URL. It is already referenced by the website code and the existing product-sync webhook. The HMAC signature and expiry checks are required for website invoice preparation and for the new authenticated PWA-to-Apps-Script API. `doGet()` redirects users to the authenticated PWA and never exposes the manual catalogue or form anonymously.
 
-### 5. Deploy the Supabase Edge Functions
+**Verify the deployed version before testing:** after deploying, open the exact `/exec` URL currently configured in `admin.js`, adding `?diag=1`. It must display:
+
+```text
+BUILD_ID=RR-ELECTRRIC-INVOICE-STUDIO-2026-11-02-PWA-API-V4
+HANDOFF_PARSER=FORM_AND_JSON_V3
+STUDIO_API=SIGNED_HMAC_V1
+STATUS=ACTIVE
+```
+
+If it does not, the website is still pointed at an older Web App deployment or the existing deployment was not updated to a New version. In Manage deployments, edit the existing Web App deployment and create a New version; do not create a separate deployment unless you also update `INVOICE_STUDIO_WEB_APP_URL` in `admin.js` to that new `/exec` URL.
+
+The current `Code.gs` accepts the normal browser URL-encoded POST body, a whole-body URL-encoded variant, and the legacy JSON hand-off envelope. It separately accepts a short-lived HMAC-signed `studioApi` envelope from the new Supabase proxy. It only calls `JSON.parse()` for bodies that begin as JSON, so a form body beginning with `payloadJson=` cannot be mistaken for the existing Supabase product-sync JSON webhook.
+
+### 5. Direct URL and installable Invoice Studio app
+
+The new manual-invoice URL is:
+
+`https://rrelectrric.vercel.app/invoice-studio/`
+
+This is a separate Progressive Web App (PWA) with its own manifest, 192px/512px icons and service worker. On supported browsers, use **Install App** in the top bar. On iPhone/iPad, open the page in Safari, tap **Share**, then **Add to Home Screen**. The app shell can be cached for quicker startup, but catalogue loading, authentication, invoice saving and PDF creation require an internet connection.
+
+The PWA uses the same Supabase Auth session as the RR ELECTRRIC website. It also signs in users directly when needed. Both the Supabase Edge Function and Apps Script independently enforce the admin/HMAC boundary; do not expose the service-role key or `INVOICE_SHARED_SECRET` in frontend files.
+
+No additional database migration is required for this PWA proxy. It uses the existing `user_roles` admin assignment and the existing invoice spreadsheet tabs.
+
+Deployment steps for this feature:
+
+1. In the bound Apps Script project, replace `Code.gs` with the updated file in this package. Keep `Index.html` unchanged; it is still used by signed website-order hand-offs and the Google Sheets modal.
+2. Deploy the Apps Script Web App as a **New version**, keeping the existing deployment URL, Execute as **Me**, access **Anyone**. The `/exec` GET route now redirects to the PWA; `?diag=1` remains available.
+3. From the website project root, deploy the new authenticated proxy function:
+
+   ```powershell
+   npx supabase functions deploy invoice-studio --project-ref ycckkswajajrqobrohcx
+   ```
+
+4. Confirm the existing `INVOICE_SHARED_SECRET` is still set in Supabase Edge Function secrets and Apps Script Script Properties. The new function uses this same secret; do not generate a different value for it. `INVOICE_STUDIO_WEB_APP_URL` is optional because the function contains the current dedicated deployment URL as its default.
+5. Deploy the updated website project to Vercel. The PWA is served from `/invoice-studio/` and is installable on supported browsers.
+
+The new Edge Function is configured with `verify_jwt = false` solely so its `OPTIONS` preflight reaches the handler. The function explicitly validates the bearer session with `auth.getUser()` and checks `user_roles.role = admin` before proxying any request. Apps Script then independently verifies the short-lived HMAC envelope. Keep both checks in place.
+
+## 6. Deploy the Supabase Edge Functions
 
 From the website project root:
 
@@ -96,15 +133,9 @@ npx supabase functions deploy prepare-invoice --project-ref ycckkswajajrqobrohcx
 
 `create-order` is updated to save `customer_snapshot` and `line_number`. `prepare-invoice` verifies the logged-in admin, loads the accepted order and item snapshots, reconciles the order totals, signs the payload and returns it to the browser.
 
-**CORS / JWT gateway setting:** `supabase/config.toml` intentionally sets `verify_jwt = false` for `prepare-invoice` only. This lets browser `OPTIONS` preflight requests reach the function. The function itself still validates the supplied bearer token with `auth.getUser()` and checks the caller's `user_roles` admin record before reading any order data. Keep both checks in place; do not remove the in-function authentication.
+### 7. Deploy the website
 
-### 6. Deploy the website
-
-Deploy the contents of this website ZIP to the existing Vercel/GitHub project, preserving the current project root. The frontend asset versions and service-worker cache have been incremented to avoid serving the old product-card and admin JavaScript.
-
-## Local preview note
-
-The `/rr` admin route is a hosting rewrite configured in `vercel.json` and `netlify.toml`; a plain static server such as VS Code Live Server does not implement that rewrite. For local testing, open `/admin.html` directly. The service worker no longer tries to precache `/rr` as a physical file, and it caches core assets independently so one missing optional asset cannot cancel the whole precache.
+Deploy the contents of this website ZIP to the existing Vercel/GitHub project, preserving the current project root. The new `/invoice-studio/` application has its own manifest, service worker and correctly sized app icons. The existing storefront and admin PWA files are retained.
 
 ## First end-to-end test
 

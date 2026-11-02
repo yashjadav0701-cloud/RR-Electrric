@@ -1,12 +1,40 @@
 {
   "rewrites": [
     {
+      "source": "/invoice-studio",
+      "destination": "/invoice-studio/index.html"
+    },
+    {
       "source": "/rr",
       "destination": "/admin.html"
     },
     {
       "source": "/(.*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/invoice-studio/manifest.webmanifest",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    },
+    {
+      "source": "/invoice-studio/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
     }
   ]
 }

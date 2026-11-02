@@ -38,3 +38,8 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/prepare-invoice/deno.json"
 entrypoint = "./functions/prepare-invoice/index.ts"
+
+[functions.invoice-studio]
+enabled = true
+# The handler validates the user JWT and admin role itself; allow OPTIONS preflight.
+verify_jwt = false

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rr-electrric-core-v13'; // Invoice Studio endpoint update + resilient core asset precache
+const CACHE_NAME = 'rr-electrric-core-v14'; // Preserve the independently scoped Invoice Studio PWA
 const IMAGE_CACHE = 'rr-images-v2';
 
 const SAFE_ASSETS = [
@@ -41,7 +41,7 @@ self.addEventListener('activate', (e) => {
     e.waitUntil(
         caches.keys().then((keys) => {
             return Promise.all(keys.map((key) => {
-                if (key !== CACHE_NAME && key !== IMAGE_CACHE) {
+                if (key !== CACHE_NAME && key !== IMAGE_CACHE && !key.startsWith('rr-invoice-studio-')) {
                     return caches.delete(key);
                 }
             }));
@@ -57,6 +57,11 @@ self.addEventListener('fetch', (e) => {
 
     // SAFETY CHECK: Let cross-origin requests (like Supabase images/APIs) bypass the service worker fetch interceptor entirely to avoid stream cloning crashes.
     if (url.origin !== self.location.origin) {
+        return;
+    }
+
+    // Invoice Studio has a more-specific service worker and its own offline cache.
+    if (url.pathname.startsWith('/invoice-studio/')) {
         return;
     }
 
