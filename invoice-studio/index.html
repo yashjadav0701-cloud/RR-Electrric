@@ -599,12 +599,26 @@
       });
       if (error) {
         let message = error.message || 'The Invoice Studio service could not be reached.';
-        try {
-          if (error.context && typeof error.context.json === 'function') {
-            const detail = await error.context.json();
+        const response = error.context;
+        if (response && typeof response.clone === 'function') {
+          try {
+            // Read a clone so the SDK's original error response remains untouched.
+            const responseCopy = response.clone();
+            const detail = await responseCopy.json();
             if (detail && (detail.error || detail.message)) message = detail.error || detail.message;
+            if (detail && detail.diagnostic) {
+              const d = detail.diagnostic;
+              const parts = [];
+              if (d.stage) parts.push('stage: ' + d.stage);
+              if (d.httpStatus) parts.push('Google HTTP: ' + d.httpStatus);
+              if (d.buildId) parts.push('Apps Script build: ' + d.buildId);
+              if (parts.length) message += ' (' + parts.join(' · ') + ')';
+            }
+          } catch (ignored) {
+            const status = response && response.status;
+            if (status) message += ' (HTTP ' + status + ').';
           }
-        } catch (ignored) {}
+        }
         throw new Error(message);
       }
       if (!data || data.status !== 'success') {
@@ -615,19 +629,30 @@
 
     async function bootInvoiceStudio() {
       $('authError').classList.remove('show');
+      let sessionData;
       try {
-        const { data, error } = await invoiceSupabase.auth.getSession();
-        if (error) throw error;
-        if (!data || !data.session) {
-          showAuthGate();
-          return;
-        }
+        const sessionResult = await invoiceSupabase.auth.getSession();
+        if (sessionResult.error) throw sessionResult.error;
+        sessionData = sessionResult.data;
+      } catch (error) {
+        showAuthGate('Could not verify your RR ELECTRRIC sign-in: ' + (error && error.message ? error.message : 'Please sign in again.'));
+        return;
+      }
+
+      if (!sessionData || !sessionData.session) {
+        showAuthGate();
+        return;
+      }
+
+      try {
         const catalog = await invokeInvoiceStudio('catalog');
         $('authGate').classList.add('hidden');
         $('invoiceApp').classList.remove('hidden');
         initForm(catalog);
       } catch (error) {
-        showAuthGate(error && error.message ? error.message : 'Sign in with an authorised RR ELECTRRIC administrator account.');
+        // Do not imply the password was wrong when Auth succeeded and only the API failed.
+        showAuthGate('Your administrator sign-in was accepted, but Invoice Studio could not connect to the Google Sheets service. ' +
+          (error && error.message ? error.message : 'Please check the service deployment.'));
       }
     }
 
