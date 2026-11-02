@@ -163,27 +163,9 @@
             },
 
             buildMasterFeed: function(allProducts) {
-                let activeProducts = allProducts.filter(p => p.is_active !== false);
-
-                // Group products strictly by category to keep them together
-                const categoryGroups = {};
-                activeProducts.forEach(p => {
-                    const catId = p.category_id || 'uncategorized';
-                    if (!categoryGroups[catId]) categoryGroups[catId] = [];
-                    categoryGroups[catId].push(p);
-                });
-
-                // Shuffle the categories entirely on page refresh
-                const shuffledCategoryKeys = Object.keys(categoryGroups).sort(() => Math.random() - 0.5);
-
-                let masterFeed = [];
-                shuffledCategoryKeys.forEach(catId => {
-                    // Shuffle the products within their unified category block
-                    const shuffledProducts = categoryGroups[catId].sort(() => Math.random() - 0.5);
-                    masterFeed.push(...shuffledProducts);
-                });
-
-                return masterFeed;
+                // The products query is ordered newest-first. Keep that stable order;
+                // random shuffling makes product discovery and pagination feel erratic.
+                return [...allProducts].filter(p => p.is_active !== false);
             },
 
             generateDynamicShelf: function(allProducts, categories) {
@@ -248,9 +230,11 @@
                 // PHASE 2: "Complete the Set" Grid instead of a horizontal shelf
                 const catMatches = active.filter(p => p.category_id === currentProduct.category_id);
                 if (catMatches.length >= 2) sections.push({ id: 'pdp-1', type: 'grid', title: 'Complete the Set (Similar Picks)', products: catMatches.slice(0, 8) });
-                
-                const random = [...active].sort(() => 0.5 - Math.random());
-                sections.push({ id: 'pdp-2', type: 'grid', title: 'More to Explore', products: random.slice(0, 8) });
+
+                // Keep the wider discovery section stable and avoid repeating the products above.
+                const similarIds = new Set(catMatches.slice(0, 8).map(p => p.id));
+                const moreToExplore = active.filter(p => !similarIds.has(p.id)).slice(0, 8);
+                sections.push({ id: 'pdp-2', type: 'grid', title: 'More to Explore', products: moreToExplore });
                 
                 return sections.filter(s => s.products.length > 0);
             }
@@ -580,7 +564,7 @@
 
         fetchData: async function() {
             try {
-                // Fetch ALL products immediately so the master feed shuffles the entire database on every refresh
+                // Fetch products newest-first; the storefront preserves this stable order by default.
                 const queries = [
                     supabase.from('products').select('*, categories(name)').order('created_at', { ascending: false }),
                     supabase.from('categories').select('*').order('name'),
@@ -794,58 +778,87 @@
 
         // --- RENDERERS ---
 
-        generateProductCardHTML: function(p, size = 'standard', layout = 'grid', isPriority = false, showButton = false) {
+        generateProductCardHTML: function(p, size = 'standard', layout = 'grid', isPriority = false, showButton = true) {
+            if (!p || p.id === undefined || p.id === null) return '';
+
+            const productId = String(p.id);
+            // Product IDs are UUIDs in Supabase. Restrict inline-handler content to a
+            // safe identifier alphabet rather than inserting arbitrary DB text into JS.
+            if (!/^[A-Za-z0-9_-]{1,80}$/.test(productId)) return '';
+
+            const escapeHtml = (value) => String(value === null || value === undefined ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+            const formatPrice = (value) => {
+                const number = Number(value);
+                if (!Number.isFinite(number)) return '0';
+                try {
+                    return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(number);
+                } catch (err) {
+                    return number.toFixed(2).replace(/\.00$/, '');
+                }
+            };
+
             const isAvailable = p.is_active !== false;
-            const img = p.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
-            const loadingAttr = isPriority ? 'loading="eager" fetchpriority="high"' : 'loading="lazy" decoding="async"';
-            
-            const offPercentage = (p.mrp_price && p.mrp_price > p.selling_price) ? Math.round(((p.mrp_price - p.selling_price) / p.mrp_price) * 100) : 0;
+            const productName = escapeHtml(p.name || '');
+            const categoryName = escapeHtml(p.categories?.name || '');
+            const warranty = String(p.warranty || '').trim();
+            const safeWarranty = escapeHtml(warranty);
+            const rawImage = String(p.image_urls?.[0] || '');
+            const imageUrl = /^(https:\/\/|http:\/\/)/i.test(rawImage)
+                ? escapeHtml(rawImage)
+                : 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 400%22%3E%3Crect width=%22400%22 height=%22400%22 fill=%22%23f5f7f8%22/%3E%3Cpath d=%22M130 240h140l-70-90z%22 fill=%22%23cbd5e1%22/%3E%3C/svg%3E';
+            const sellingPrice = Number(p.selling_price || 0);
+            const mrpPrice = Number(p.mrp_price || 0);
+            const offPercentage = Number.isFinite(mrpPrice) && mrpPrice > sellingPrice && mrpPrice > 0
+                ? Math.round(((mrpPrice - sellingPrice) / mrpPrice) * 100)
+                : 0;
             const hasDiscount = offPercentage > 0;
+            const loadingAttr = isPriority
+                ? 'loading="eager" fetchpriority="high"'
+                : 'loading="lazy" decoding="async"';
 
-            const statusHtml = !isAvailable ? `<div class="premium-status-unavailable">ARRIVING SOON</div>` : '';
-            const inlineDiscountHtml = hasDiscount ? `<div class="premium-inline-discount"><span>-${offPercentage}%</span></div>` : '';
+            const statusHtml = !isAvailable
+                ? '<span class="product-stock-badge">Unavailable</span>'
+                : '';
+            const discountHtml = hasDiscount
+                ? `<span class="product-discount-badge">${offPercentage}% off</span>`
+                : '';
+            const warrantyHtml = warranty
+                ? `<span class="product-warranty">${safeWarranty} warranty</span>`
+                : '';
+            const quickAddHtml = showButton
+                ? (isAvailable
+                    ? `<button type="button" class="btn-quick-add" aria-label="Add ${productName} to cart" title="Add to cart" onclick="event.preventDefault(); event.stopPropagation(); Store.addToCart('${productId}')">
+                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                           <span>Add to cart</span>
+                       </button>`
+                    : `<button type="button" class="btn-quick-add disabled-add" disabled aria-label="${productName} is unavailable"><span>Unavailable</span></button>`)
+                : '';
 
-            // PREMIUM QUICK ADD BUTTON (Distinct Pill Design)
-            let btnHtml = '';
-            if (showButton) {
-                btnHtml = isAvailable 
-                    ? `<div class="quick-add-wrapper">
-                           <button type="button" class="btn-quick-add" onclick="event.preventDefault(); event.stopPropagation(); Store.addToCart('${p.id}')">
-                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                               <span>Quick Add</span>
-                           </button>
-                       </div>` 
-                    : `<div class="quick-add-wrapper">
-                           <button type="button" class="btn-quick-add disabled-add" disabled>
-                               <span>Sold Out</span>
-                           </button>
-                       </div>`;
-            }
-
-            // Unifies layout for FBT, Standard Grids, and Horizontal Lists (Stacked Style)
-            let priceAreaHtml = `
-                <div class="premium-price-lockup" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin-top: 4px;">
-                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                        ${hasDiscount ? inlineDiscountHtml : ''}
-                        <span class="premium-selling-price"><span class="currency-symbol">₹</span>${p.selling_price}</span>
-                    </div>
-                    ${hasDiscount ? `<div class="premium-mrp-price">MRP: <span>₹${p.mrp_price}</span></div>` : ''}
-                </div>
-            `;
-
-            // Pure 2-Zone Layout: No buttons normally, strictly visual discovery
             return `
-                <a href="javascript:void(0)" onclick="Store.navigate('product', '${p.id}')" class="store-product-card size-${size} layout-${layout} ${!isAvailable ? 'is-unavailable' : ''}">
-                    <div class="img-wrapper">
-                        ${statusHtml}
-                        <img src="${img}" alt="${p.name}" ${loadingAttr}>
-                    </div>
-                    <div class="store-product-card-details">
-                        <h3 class="store-product-card-title">${p.name}</h3>
-                        ${priceAreaHtml}
-                    </div>
-                    ${btnHtml}
-                </a>
+                <article class="store-product-card size-${size} layout-${layout === 'list' ? 'list' : 'grid'} ${!isAvailable ? 'is-unavailable' : ''}" data-product-id="${escapeHtml(productId)}">
+                    <a href="/product/${encodeURIComponent(productId)}" onclick="event.preventDefault(); Store.navigate('product', '${productId}')" class="store-product-card-link" aria-label="View ${productName}">
+                        <div class="img-wrapper">
+                            ${statusHtml}
+                            ${discountHtml}
+                            <img src="${imageUrl}" alt="${productName}" ${loadingAttr}>
+                        </div>
+                        <div class="store-product-card-details">
+                            ${categoryName ? `<span class="product-category-label">${categoryName}</span>` : '<span class="product-category-label product-category-label-empty" aria-hidden="true"></span>'}
+                            <h3 class="store-product-card-title">${productName}</h3>
+                            ${warrantyHtml ? `<div class="product-card-meta">${warrantyHtml}</div>` : '<div class="product-card-meta product-card-meta-empty" aria-hidden="true"></div>'}
+                            <div class="premium-price-lockup">
+                                <span class="premium-selling-price"><span class="currency-symbol">₹</span>${formatPrice(sellingPrice)}</span>
+                                ${hasDiscount ? `<span class="premium-mrp-price">₹${formatPrice(mrpPrice)}</span>` : ''}
+                            </div>
+                        </div>
+                    </a>
+                    ${quickAddHtml ? `<div class="quick-add-wrapper">${quickAddHtml}</div>` : ''}
+                </article>
             `;
         },
 
@@ -853,11 +866,9 @@
             let sorted = [...arr];
             
             if (sortMode === 'recommended') {
-                // True Random Shuffle: No search bias, strictly random on every load
-                for (let i = sorted.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
-                }
+                // Preserve the Supabase fetch order (created_at descending). Stable
+                // ordering makes catalogue browsing predictable across visits.
+                return sorted;
             } else if (sortMode === 'price-low') {
                 sorted.sort((a,b) => a.selling_price - b.selling_price);
             } else if (sortMode === 'price-high') {
@@ -873,12 +884,15 @@
             const track = document.getElementById('hero-3d-cat-track');
             if (!track) return;
 
-            // Only show categories that actually have active products
-            const activeCatIds = [...new Set(this.state.products.map(p => p.category_id))];
-            let displayCategories = this.state.categories.filter(c => activeCatIds.includes(c.id));
-
-            // Shuffle categories randomly on every page refresh/load
-            displayCategories.sort(() => Math.random() - 0.5);
+            // Display only categories with active products, in a stable alphabetical order.
+            const activeProducts = this.state.products.filter(p => p.is_active !== false);
+            const activeCatIds = [...new Set(activeProducts.map(p => p.category_id).filter(Boolean))];
+            const displayCategories = this.state.categories
+                .filter(c => activeCatIds.includes(c.id))
+                .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }));
+            const escapeHtml = (value) => String(value === null || value === undefined ? '' : value)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
             if (displayCategories.length === 0) {
                 track.innerHTML = '';
@@ -886,17 +900,23 @@
             }
 
             const html = displayCategories.map(c => {
-                const catProducts = this.state.products.filter(p => p.category_id === c.id);
-                // Pick a random product on every render (refresh)
-                const randomProd = catProducts[Math.floor(Math.random() * catProducts.length)];
-                const img = randomProd?.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
+                const categoryId = String(c.id || '');
+                if (!/^[A-Za-z0-9_-]{1,80}$/.test(categoryId)) return '';
+                const catProducts = activeProducts.filter(p => p.category_id === c.id);
+                // Use the first product in the existing newest-first catalogue order.
+                const representative = catProducts.find(p => Array.isArray(p.image_urls) && p.image_urls[0]);
+                const rawImage = representative?.image_urls?.[0] || '';
+                const img = /^(https:\/\/|http:\/\/)/i.test(rawImage)
+                    ? escapeHtml(rawImage)
+                    : 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 400%22%3E%3Crect width=%22400%22 height=%22400%22 fill=%22%23f5f7f8%22/%3E%3C/svg%3E';
+                const categoryName = escapeHtml(c.name || '');
 
                 return `
-                    <a href="javascript:void(0)" class="hero-3d-cat-item" onclick="Store.navigate('category', '${c.id}')">
+                    <a href="javascript:void(0)" class="hero-3d-cat-item" onclick="Store.navigate('category', '${categoryId}')">
                         <div class="hero-3d-cat-box">
-                            <img src="${img}" alt="${c.name}" loading="eager" fetchpriority="high">
+                            <img src="${img}" alt="${categoryName}" loading="lazy" decoding="async">
                         </div>
-                        <span class="hero-3d-cat-label">${c.name}</span>
+                        <span class="hero-3d-cat-label">${categoryName}</span>
                     </a>
                 `;
             }).join('');
@@ -1000,11 +1020,10 @@
             else if (sec.type === 'shelf-large') { wrapperClass = 'shelf-track'; cardSize = 'large'; }
             else if (sec.type === 'list') { wrapperClass = 'list-track'; cardSize = 'standard'; cardLayout = 'list'; }
 
-            // Randomly assign between 4 to 6 columns for PC grid sections
-            const randomCols = Math.floor(Math.random() * 3) + 4; // Generates 4, 5, or 6
+            // All standard grids use the same responsive 2 / 4 / 6-column system.
 
             return `
-                <div class="storefront-section" id="section-${sec.id}" data-pc-cols="${randomCols}">
+                <div class="storefront-section" id="section-${sec.id}" data-pc-cols="6">
                     ${headerHtml}
                     <div class="${wrapperClass}">
                         ${sec.products.map((p, i) => this.generateProductCardHTML(p, cardSize, cardLayout, isPriority && i < 4, true)).join('')}
@@ -1016,84 +1035,64 @@
         updateHomeGrid: function(isAppend = false) {
             const gridContainer = document.getElementById('home-products-grid');
             const loadMoreContainer = document.getElementById('home-load-more-container');
+            if (!gridContainer || !loadMoreContainer) return;
 
             if (!isAppend) {
                 this.state.homeFeedIndex = 0;
-                // Switch exclusively to the new Amazon-style horizontal list feed
-                gridContainer.className = 'home-list-feed';
+                gridContainer.className = 'products-grid';
                 gridContainer.innerHTML = '';
                 document.getElementById('end-of-catalog')?.remove();
-
-                let displayList = this.state.products;
-
-                if (this.state.homeCurrentSort !== 'recommended') {
-                    this.state.masterFeed = this.sortArray(displayList, this.state.homeCurrentSort);
-                } else {
-                    this.state.masterFeed = this.SmartComposer.buildMasterFeed(displayList);
-                }
+                const activeProducts = this.state.products.filter(p => p.is_active !== false);
+                this.state.masterFeed = this.sortArray(activeProducts, this.state.homeCurrentSort);
             }
 
-            // Use chunk size of 6 to interleave horizontal lists more frequently
-            const chunkSize = 6;
+            // Render in measured batches to keep initial interaction responsive while
+            // preserving one uninterrupted, uniform product grid.
+            const chunkSize = 18;
             const chunkProducts = this.state.masterFeed.slice(
                 this.state.homeFeedIndex,
                 this.state.homeFeedIndex + chunkSize
             );
 
-            if (chunkProducts.length > 0) {
-                let html = '';
-
-                chunkProducts.forEach((p, i) => {
-                    // Generate Amazon-style horizontal card (layout = 'home-list', showButton = true)
-                    html += this.generateProductCardHTML(p, 'standard', 'home-list', !isAppend && i < 4, true);
-                });
-
-                // --- DYNAMIC SHELF INJECTION ---
-                // Continuously inject a smart horizontal shelf in between the main vertical list chunks
-                if (this.state.homeCurrentSort === 'recommended') {
-                    const shelfConfig = this.SmartComposer.generateDynamicShelf(this.state.products, this.state.categories);
-                    if (shelfConfig) {
-                        const shelfHtml = this.renderSingleSectionHTML(shelfConfig, false);
-                        // Wrap it in a full grid column span so it breaks out of the grid properly
-                        html += `
-                            <div class="dynamic-shelf-wrapper">
-                                ${shelfHtml}
-                            </div>
-                        `;
-                    }
-                }
-
+            if (chunkProducts.length) {
+                const html = chunkProducts.map((product, index) =>
+                    this.generateProductCardHTML(product, 'standard', 'grid', !isAppend && index < 4, true)
+                ).join('');
                 gridContainer.insertAdjacentHTML('beforeend', html);
                 this.state.homeFeedIndex += chunkProducts.length;
             }
 
-            // Handle End of Catalog Seamlessly
             if (this.state.homeFeedIndex >= this.state.masterFeed.length) {
                 loadMoreContainer.classList.add('hidden');
-
-                if (
-                    this.state.masterFeed.length > 0 &&
-                    !document.getElementById('end-of-catalog')
-                ) {
+                if (this.state.masterFeed.length && !document.getElementById('end-of-catalog')) {
                     gridContainer.insertAdjacentHTML(
                         'afterend',
-                        '<div id="end-of-catalog" style="grid-column: 1/-1; text-align: center; padding: 40px 16px; color: var(--text-muted); font-size: 14px; font-weight: 500; width: 100%;">You have reached the end of the catalog!</div>'
+                        '<div id="end-of-catalog" style="grid-column:1/-1;text-align:center;padding:34px 16px;color:var(--text-muted);font-size:13px;font-weight:500;width:100%;">You have reached the end of the catalogue.</div>'
                     );
                 }
             } else {
                 loadMoreContainer.classList.remove('hidden');
             }
 
-            if (this.state.masterFeed.length === 0) {
-                gridContainer.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px 0; color: var(--text-muted);">No products found.</div>';
+            if (!this.state.masterFeed.length) {
+                gridContainer.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-muted);">No products found.</div>';
             }
         },
 
         generateCategoryThumbnailHTML: function(p) {
-            const img = p.image_urls?.[0] || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" background="%23f1f5f9"></svg>';
+            const productId = String(p?.id || '');
+            if (!/^[A-Za-z0-9_-]{1,80}$/.test(productId)) return '';
+            const escapeHtml = (value) => String(value === null || value === undefined ? '' : value)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            const productName = escapeHtml(p.name || '');
+            const rawImage = String(p.image_urls?.[0] || '');
+            const img = /^(https:\/\/|http:\/\/)/i.test(rawImage)
+                ? escapeHtml(rawImage)
+                : 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 400%22%3E%3Crect width=%22400%22 height=%22400%22 fill=%22%23f5f7f8%22/%3E%3C/svg%3E';
             return `
-                <a href="javascript:void(0)" onclick="Store.navigate('product', '${p.id}')" class="category-thumb-card" title="${p.name}">
-                    <img src="${img}" alt="${p.name}" loading="lazy" decoding="async">
+                <a href="/product/${encodeURIComponent(productId)}" onclick="event.preventDefault(); Store.navigate('product', '${productId}')" class="category-thumb-card" title="${productName}">
+                    <img src="${img}" alt="${productName}" loading="lazy" decoding="async">
                 </a>
             `;
         },
@@ -1181,7 +1180,7 @@
             
             // PHASE 2: Search uses a strict, uniform Precision Grid (no bento resizing)
             gridContainer.className = 'products-grid';
-            gridContainer.innerHTML = matches.map((p, idx) => this.generateProductCardHTML(p, 'standard', 'grid', idx < 4, false)).join('');
+            gridContainer.innerHTML = matches.map((p, idx) => this.generateProductCardHTML(p, 'standard', 'grid', idx < 4, true)).join('');
         },
 
         renderCategory: function(catId, isPopState = false) {
@@ -1233,7 +1232,7 @@
             }
 
             catProducts = this.sortArray(catProducts, this.state.categoryCurrentSort);
-            grid.innerHTML = catProducts.map(p => this.generateProductCardHTML(p)).join('');
+            grid.innerHTML = catProducts.map(p => this.generateProductCardHTML(p, 'standard', 'grid', false, true)).join('');
 
             // --- INJECT DYNAMIC CATEGORY SCHEMA FOR SEO ---
             const existingSchema = document.getElementById('dynamic-category-schema');
@@ -2431,15 +2430,17 @@
             }
 
             const activeCatIds = [...new Set(this.state.products.map(x => x.category_id))];
-            let displayCats = this.state.categories.filter(c => activeCatIds.includes(c.id));
-            displayCats.sort(() => Math.random() - 0.5);
-            displayCats = displayCats.slice(0, 4);
+            let displayCats = this.state.categories
+                .filter(c => activeCatIds.includes(c.id))
+                .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }))
+                .slice(0, 4);
 
             // PHASE 4: The Cart "Impulse" Optimizer (Micro-Shelf)
             // Fetch low-cost, high-margin consumables that act as "Free Shipping Unlockers" or impulse buys
-            let impulseProducts = this.state.products.filter(p => p.is_active !== false && p.selling_price < 250);
-            impulseProducts.sort(() => 0.5 - Math.random());
-            impulseProducts = impulseProducts.slice(0, 8);
+            let impulseProducts = this.state.products
+                .filter(p => p.is_active !== false && Number(p.selling_price) < 250)
+                .sort((a, b) => Number(a.selling_price) - Number(b.selling_price) || String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }))
+                .slice(0, 8);
 
             if (impulseProducts.length > 0) {
                 let titleMsg = "Forgot Something?";
@@ -2636,39 +2637,9 @@
                 `;
                 document.body.appendChild(overlay);
 
-                // --- PUSH TO GOOGLE SHEETS DRAFT ---
-                try {
-                    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxvptAZYKVS9Q6OHQIpJ5knL0JYQDZ_a_IQd2VuRIz3lr0_Qs9z84AaHdfsvHPU/exec"; // PASTE YOUR SPREADSHEET API URL HERE
-                    const sheetPayload = {
-                        source: "WEBSITE",
-                        orderId: data.order_reference,
-                        date: new Date().toISOString(),
-                        deliveryCharge: clientTotals.isFreeDelivery || clientTotals.deliveryCharge === 0 ? "FREE" : clientTotals.deliveryCharge,
-                        customer: {
-                            name: customerData.name,
-                            phone: customerData.phone,
-                            address: customerData.address,
-                            area: customerData.area,
-                            note: customerData.note || ""
-                        },
-                        items: this.state.cart.map(item => {
-                            const p = this.state.products.find(x => x.id === item.id);
-                            return {
-                                name: p ? p.name : "Unknown Product",
-                                qty: item.qty || item.quantity
-                            };
-                        })
-                    };
-                    
-                    fetch(googleScriptUrl, {
-                        method: "POST",
-                        body: JSON.stringify(sheetPayload),
-                        headers: { "Content-Type": "text/plain;charset=utf-8" }
-                    }).catch(err => console.warn("Sheet push failed:", err));
-                } catch (e) {
-                    console.warn("Sheet prep failed:", e);
-                }
-                // -----------------------------------
+                // Invoice creation is an admin action. Do not push raw checkout data
+                // into Google Sheets here; the accepted order is prepared securely
+                // from Supabase when an admin opens Invoice Studio.
 
                 // Clear Cart
                 this.state.cart = [];

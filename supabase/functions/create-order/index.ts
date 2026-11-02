@@ -20,8 +20,11 @@ serve(async (req) => {
 
     const { customer, cart, couponCode, expectedTotal, idempotencyKey } = await req.json()
 
-    if (!cart || cart.length === 0) {
+    if (!Array.isArray(cart) || cart.length === 0) {
       throw new Error("Cart is empty.")
+    }
+    if (cart.length > 50) {
+      throw new Error("A single order can contain up to 50 different product lines. Please split a larger order into separate orders.")
     }
 
     const cartIds = cart.map((item: any) => item.id)
@@ -169,6 +172,13 @@ serve(async (req) => {
         .insert({
             order_reference: orderRef,
             customer_id: customerId,
+            customer_snapshot: {
+                name: custData.name,
+                phone: custData.phone,
+                address: custData.address,
+                area: custData.area,
+                landmark: custData.landmark
+            },
             coupon_id: couponId,
             status: 'pending',
             subtotal: sellingSubtotal,
@@ -183,8 +193,9 @@ serve(async (req) => {
         
     if (orderErr) throw orderErr;
 
-    const itemsToInsert = finalOrderItems.map(item => ({
+    const itemsToInsert = finalOrderItems.map((item, index) => ({
         order_id: orderData.id,
+        line_number: index + 1,
         ...item
     }))
     const { error: itemsErr } = await supabase.from('order_items').insert(itemsToInsert)

@@ -20,3 +20,21 @@ entrypoint = "./functions/proactive-engagement/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/proactive-engagement/*.html" ]
+
+
+
+
+[functions.create-order]
+enabled = true
+# Customer checkout is public. The function validates products and pricing
+# server-side using the service role key, so the gateway must not require a JWT.
+verify_jwt = false
+
+[functions.prepare-invoice]
+enabled = true
+# The function validates the bearer token and admin role itself.
+# Disable gateway JWT verification so unauthenticated browser OPTIONS
+# preflight requests can reach the function CORS handler.
+verify_jwt = false
+import_map = "./functions/prepare-invoice/deno.json"
+entrypoint = "./functions/prepare-invoice/index.ts"

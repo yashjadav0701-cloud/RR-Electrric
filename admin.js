@@ -31,53 +31,77 @@
         return str;
     }
 
+    const INVOICE_STUDIO_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwtqsx4naszPK6Q8nQrdq3eMOMMl3K_JVfQkSs5cKAyO4e-gt-RFxYxhIlCwyR-O9O6Tg/exec";
+
     window.generateInvoice = async function(orderId, btnElement) {
         const order = AdminApp.state.orders.find(o => o.id === orderId);
-        if (!order) return CustomUI.alert("Order data not found.");
+        if (!order) return CustomUI.alert("Order data not found. Refresh the order list and try again.", "Invoice unavailable");
+        if (order.status !== 'accepted') {
+            return CustomUI.alert("Only accepted orders can be prepared for invoicing.", "Order not accepted");
+        }
 
-        const originalBtnText = btnElement.innerHTML;
-        btnElement.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"></path></svg> Loading...`;
-        btnElement.disabled = true;
+        // Open the destination synchronously during the click so the browser does not
+        // block the form POST after the secure server request completes.
+        const popupName = 'rr_invoice_' + Date.now();
+        const invoiceWindow = window.open('about:blank', popupName);
+        if (!invoiceWindow) {
+            return CustomUI.alert("Please allow pop-ups for RR ELECTRRIC so Invoice Studio can open in a new tab.", "Allow pop-ups");
+        }
+
+        const originalContent = btnElement ? btnElement.innerHTML : '';
+        if (btnElement) {
+            btnElement.disabled = true;
+            btnElement.classList.add('is-loading');
+            btnElement.setAttribute('aria-busy', 'true');
+            btnElement.innerHTML = '<span class="invoice-button-spinner" aria-hidden="true"></span>';
+        }
 
         try {
-            const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxvptAZYKVS9Q6OHQIpJ5knL0JYQDZ_a_IQd2VuRIz3lr0_Qs9z84AaHdfsvHPU/exec"; // PASTE YOUR SPREADSHEET API URL HERE
+            // The Edge Function verifies the signed-in admin, reads the canonical
+            // order and signs its immutable price/customer snapshot for Apps Script.
+            const { data, error } = await supabase.functions.invoke('prepare-invoice', {
+                body: { orderId: order.id }
+            });
+            if (error) throw error;
+            if (!data || !data.payloadJson || !data.timestamp || !data.signature) {
+                throw new Error('The secure invoice service returned an incomplete response.');
+            }
 
-            const payload = {
-                source: "ADMIN_PANEL",
-                orderId: order.order_reference,
-                date: order.created_at,
-                deliveryCharge: order.delivery_charge === 0 ? "FREE" : order.delivery_charge,
-                customer: {
-                    name: order.customers.name,
-                    phone: order.customers.phone,
-                    address: order.customers.address,
-                    area: order.customers.area,
-                    note: order.notes || ""
-                },
-                items: order.order_items.map(item => ({
-                    name: item.product_name_snapshot,
-                    qty: item.quantity
-                }))
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = INVOICE_STUDIO_WEB_APP_URL;
+            form.target = popupName;
+            form.enctype = 'application/x-www-form-urlencoded';
+            form.acceptCharset = 'UTF-8';
+            form.style.display = 'none';
+
+            const fields = {
+                payloadJson: data.payloadJson,
+                timestamp: String(data.timestamp),
+                signature: data.signature
             };
-
-            const response = await fetch(googleScriptUrl, {
-                method: "POST",
-                body: JSON.stringify(payload),
-                headers: { "Content-Type": "text/plain;charset=utf-8" }
+            Object.entries(fields).forEach(([name, value]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = String(value);
+                form.appendChild(input);
             });
 
-            const result = await response.json();
-            if (result.status === "success") {
-                CustomUI.alert("Order successfully loaded into your Google Sheet Draft!", "Success");
-            } else {
-                ErrorHandler.show(result.message, "Spreadsheet Sync Failed");
-            }
+            document.body.appendChild(form);
+            form.submit();
+            form.remove();
         } catch (err) {
-            console.error("Sheet Sync Error:", err);
-            ErrorHandler.show(err, "Connection Error");
+            try { invoiceWindow.close(); } catch (closeErr) {}
+            console.error('Invoice handoff failed:', err);
+            ErrorHandler.show(err, 'Could not prepare invoice');
         } finally {
-            btnElement.innerHTML = originalBtnText;
-            btnElement.disabled = false;
+            if (btnElement) {
+                btnElement.innerHTML = originalContent;
+                btnElement.disabled = false;
+                btnElement.classList.remove('is-loading');
+                btnElement.removeAttribute('aria-busy');
+            }
         }
     };
 
@@ -905,10 +929,10 @@
                             <button title="WhatsApp Customer" style="display: flex; flex: 1; align-items: center; justify-content: center; height: 30px; background: #dcfce7; border: 1px solid #bbf7d0; border-radius: 6px; color: #166534; cursor: pointer; transition: all 0.2s;" onclick="AdminApp.contactCustomer('${c.phone}', '${order.order_reference}')">
                                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none"><path d="M11.99 0a11.96 11.96 0 00-10.3 18.06L0 24l6.09-1.6a11.94 11.94 0 105.9-22.4zM12 21.93a9.92 9.92 0 01-5.07-1.38l-.36-.21-3.77.99 1.01-3.68-.24-.37A9.87 9.87 0 1112 21.93zm5.42-7.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.26-.46-2.39-1.4-.88-.74-1.48-1.64-1.65-1.94-.17-.3 0-.46.13-.6.13-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.2-.24-.58-.48-.5-.67-.51-.17 0-.37 0-.57 0-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.06 2.88 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35z"/></svg>
                             </button>
-                            <button title="Load into Spreadsheet" style="display: flex; flex: 2; align-items: center; justify-content: center; gap: 4px; height: 30px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; color: #1d4ed8; font-weight: 700; font-size: 12px; cursor: pointer; transition: all 0.2s;" onclick="generateInvoice('${order.id}', this)">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                                To Sheet
-                            </button>
+                            ${order.status === 'accepted' ? `
+                            <button type="button" class="btn-invoice-icon" title="Prepare invoice PDF" aria-label="Prepare invoice PDF for order ${order.order_reference || order.id}" onclick="generateInvoice('${order.id}', this)">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M12 11v7m-3-3 3 3 3-3"></path></svg>
+                            </button>` : ''}
                         </div>
                     `;
                 }
@@ -1035,10 +1059,10 @@
                                             <svg viewBox="0 0 24 24" style="width: 16px !important; height: 16px !important; margin: 0 !important;" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                         </button>
                                         ` : `
-                                        <button class="btn-admin-action btn-invoice" title="Load into Spreadsheet" style="padding: 0 12px !important; height: 32px !important; flex: 2; justify-content: center; gap: 6px;" onclick="generateInvoice('${order.id}', this)">
-                                            <svg viewBox="0 0 24 24" style="width: 14px !important; height: 14px !important; margin: 0 !important;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                                            <span style="font-size: 11px; display: inline-block !important;">To Sheet</span>
-                                        </button>
+                                        ${order.status === 'accepted' ? `
+                                        <button class="btn-admin-action btn-invoice-icon" type="button" title="Prepare invoice PDF" aria-label="Prepare invoice PDF for order ${order.order_reference || order.id}" onclick="generateInvoice('${order.id}', this)">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M12 11v7m-3-3 3 3 3-3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                                        </button>` : ''}
                                         `}
                                     </div>
                                 </div>

@@ -1,9 +1,8 @@
-const CACHE_NAME = 'rr-electrric-core-v9'; // Bumped to cache new admin routes
+const CACHE_NAME = 'rr-electrric-core-v13'; // Invoice Studio endpoint update + resilient core asset precache
 const IMAGE_CACHE = 'rr-images-v2';
 
 const SAFE_ASSETS = [
     '/',
-    '/rr',
     '/admin.html',
     '/index.html',
     '/styles.css',
@@ -18,7 +17,22 @@ const SAFE_ASSETS = [
 
 self.addEventListener('install', (e) => {
     e.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(SAFE_ASSETS)).catch(() => {})
+        caches.open(CACHE_NAME).then(async (cache) => {
+            // Cache core files independently. A single missing optional asset
+            // (or a production-only route alias such as /rr on Live Server)
+            // must not reject the entire precache operation.
+            await Promise.allSettled(SAFE_ASSETS.map(async (asset) => {
+                try {
+                    const response = await fetch(asset, { cache: 'reload' });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    await cache.put(asset, response);
+                } catch (error) {
+                    console.warn(`[ServiceWorker] Skipped precache asset ${asset}:`, error);
+                }
+            }));
+        }).catch((error) => {
+            console.warn('[ServiceWorker] Core cache could not be initialized:', error);
+        })
     );
     self.skipWaiting();
 });

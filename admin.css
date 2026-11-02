@@ -1842,3 +1842,68 @@ td[style*="text-align: right;"] button:active,
     box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.2) !important;
     transition-duration: 50ms !important;
 }
+
+/* Keep every action in an order's action row the same width, including
+   the icon-only invoice action. The row naturally wraps on narrow screens. */
+.actions-col .action-buttons-stack {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+}
+.actions-col .action-buttons-stack > .btn-admin-action {
+    box-sizing: border-box;
+    flex: 1 1 0 !important;
+    width: 0;
+    min-width: 0;
+    height: 34px !important;
+}
+.actions-col .action-buttons-stack > .btn-invoice-icon {
+    flex: 1 1 0 !important;
+    width: 0;
+    min-width: 0;
+    height: 34px !important;
+}
+
+/* RR ELECTRRIC — neutral icon-only invoice action */
+.btn-invoice-icon {
+    display: inline-flex;
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid var(--border, #d9e0e7);
+    border-radius: 9px;
+    color: var(--text-main, #334155);
+    background: #fff;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+    transition: border-color .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.btn-invoice-icon svg { width: 16px; height: 16px; display: block; }
+@media (hover: hover) and (pointer: fine) {
+    .btn-invoice-icon:hover {
+        border-color: #94a3b8;
+        color: #0f172a;
+        background: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(15, 23, 42, .08);
+    }
+}
+.btn-invoice-icon:active { transform: scale(.96); }
+.btn-invoice-icon:disabled { opacity: .62; cursor: wait; transform: none; }
+.btn-invoice-icon .invoice-button-spinner {
+    width: 15px;
+    height: 15px;
+    border: 2px solid #cbd5e1;
+    border-top-color: #334155;
+    border-radius: 50%;
+    animation: rrInvoiceSpin .7s linear infinite;
+}
+@keyframes rrInvoiceSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .btn-invoice-icon, .btn-invoice-icon .invoice-button-spinner { transition: none; animation-duration: 1.5s; }
+}
