@@ -4,81 +4,43 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#176c4b">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Invoice Studio">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <link rel="manifest" href="/invoice-studio/manifest.webmanifest">
-  <link rel="apple-touch-icon" href="/invoice-studio/icons/icon-192.png">
-  <link rel="icon" type="image/png" href="/invoice-studio/icons/icon-192.png">
   <title>RR ELECTRRIC | Invoice Studio</title>
   <style>
-    :root { color-scheme:light; --ink:#17211c; --muted:#68766d; --line:#e3e9e3; --brand:#176c4b; --canvas:#f5f7f5; }
+    :root { color-scheme: light; --ink:#17211c; --muted:#68766d; --line:#e3e9e3; --brand:#176c4b; --canvas:#f5f7f5; }
     * { box-sizing:border-box; }
-    html,body { min-height:100%; margin:0; }
-    body { display:grid; place-items:center; padding:22px; background:radial-gradient(circle at 12% 0%,#e7f2e9 0,transparent 38%),var(--canvas); color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
-    .card { width:min(100%,510px); padding:30px; border:1px solid var(--line); border-radius:22px; background:#fff; box-shadow:0 18px 52px rgba(23,33,28,.08); }
-    .brand { display:flex; align-items:center; gap:13px; margin-bottom:23px; }
-    .brand img { width:54px; height:54px; object-fit:contain; border:1px solid var(--line); border-radius:14px; padding:5px; background:#fff; }
-    .eyebrow { color:var(--brand); font-size:10px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
-    h1 { margin:3px 0 0; font-size:25px; letter-spacing:-.04em; }
-    .lead { margin:0; color:#48564d; font-size:14px; line-height:1.65; }
-    .note { margin:17px 0 0; padding:12px 13px; border:1px solid #dce9df; border-radius:12px; background:#f2f8f3; color:#41634e; font-size:12px; line-height:1.6; }
-    .state { display:flex; align-items:center; gap:10px; margin-top:20px; color:var(--muted); font-size:12px; }
-    .spinner { width:17px; height:17px; border:2px solid #dce9df; border-top-color:var(--brand); border-radius:50%; animation:spin .8s linear infinite; flex:none; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    .setup { margin-top:18px; padding:12px; border-radius:10px; background:#fff7e8; color:#77531b; font-size:12px; line-height:1.6; display:none; overflow-wrap:anywhere; }
-    .foot { margin:23px 0 0; color:#8a948d; font-size:10px; text-align:center; }
-    @media (max-width:520px) { .card { padding:23px; } h1 { font-size:23px; } }
+    body { min-height:100vh; margin:0; display:grid; place-items:center; padding:22px; background:var(--canvas); color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+    main { width:min(100%,470px); padding:28px; border:1px solid var(--line); border-radius:20px; background:#fff; box-shadow:0 18px 48px rgba(23,33,28,.08); }
+    .eyebrow { color:var(--brand); font-size:10px; font-weight:800; letter-spacing:.15em; text-transform:uppercase; }
+    h1 { margin:7px 0 9px; font-size:25px; letter-spacing:-.04em; }
+    p { color:#526057; font-size:13px; line-height:1.65; }
+    .status { margin:18px 0 0; padding:12px 14px; border:1px solid #dce9df; border-radius:12px; background:#f2f8f3; color:#41634e; }
+    a { display:flex; justify-content:center; align-items:center; min-height:48px; margin-top:18px; border-radius:11px; background:var(--brand); color:#fff; text-decoration:none; font-size:13px; font-weight:750; }
+    .foot { color:#879188; font-size:10px; text-align:center; }
   </style>
 </head>
 <body>
-  <main class="card">
-    <div class="brand">
-      <img src="/assets/logo-short.svg" alt="RR ELECTRRIC logo">
-      <div><div class="eyebrow">RR ELECTRRIC · Billing desk</div><h1>Invoice Studio</h1></div>
-    </div>
-    <p class="lead">Opening the invoice form…</p>
-    <div class="note">No separate RR ELECTRRIC email or password is needed. Google verifies the account, and only accounts with Editor access to the invoice spreadsheet and PDF folder can use the form.</div>
-    <div class="state" id="state"><span class="spinner" aria-hidden="true"></span><span>Connecting to the secure invoice form</span></div>
-    <div class="setup" id="setup"></div>
-    <p class="foot">RR ELECTRRIC · Invoice Studio</p>
+  <main>
+    <div class="eyebrow">RR ELECTRRIC · Billing desk</div>
+    <h1>Invoice Studio</h1>
+    <p id="description">Opening the secure invoice form. Google will check that this browser is signed in with the RR ELECTRRIC account.</p>
+    <div class="status" id="status">Use <b>rrelectrric@gmail.com</b> when Google asks you to choose an account. If that account is already signed in, the form should open directly.</div>
+    <a id="openLink" href="#" hidden>Open invoice form</a>
+    <p class="foot">Access is restricted by the Google Apps Script deployment. No separate Invoice Studio password is used.</p>
   </main>
   <script>
-    'use strict';
-    // After creating the separate direct-form Apps Script deployment, paste its
-    // deployed URL (the URL ending in /exec) here. Do not paste the old API URL.
-    const DIRECT_FORM_WEB_APP_URL = 'PASTE_NEW_DIRECT_FORM_WEB_APP_URL_HERE';
-
-    (function openDirectForm() {
-      const state = document.getElementById('state');
-      const setup = document.getElementById('setup');
-      const raw = String(DIRECT_FORM_WEB_APP_URL || '').trim();
-      if (!raw || raw.indexOf('PASTE_NEW_DIRECT_FORM_WEB_APP_URL_HERE') !== -1) {
-        state.innerHTML = '<span aria-hidden="true">ⓘ</span><span>One-time connection setup is required.</span>';
-        state.querySelector('.spinner')?.remove();
-        setup.style.display = 'block';
-        setup.textContent = 'Create a separate Apps Script Web App deployment configured as “Execute as: User accessing the web app”. Paste its new /exec URL into DIRECT_FORM_WEB_APP_URL in this file, then redeploy the website. Keep the existing API deployment unchanged.';
-        return;
-      }
-
-      let target;
-      try {
-        target = new URL(raw);
-      } catch (error) {
-        state.textContent = 'The direct form URL is not valid.';
-        setup.style.display = 'block';
-        setup.textContent = 'Check DIRECT_FORM_WEB_APP_URL. It must be the full HTTPS Apps Script deployment URL ending in /exec.';
-        return;
-      }
-      if (target.protocol !== 'https:' || target.hostname !== 'script.google.com' || !/^\/macros\/s\/[^/]+\/exec$/.test(target.pathname)) {
-        state.textContent = 'The configured URL is not an Apps Script Web App deployment URL.';
-        setup.style.display = 'block';
-        setup.textContent = 'Use the new direct-form deployment URL ending in /exec. Do not use /dev or the old website-integration URL.';
-        return;
-      }
-      target.searchParams.set('form', '1');
-      window.location.replace(target.toString());
-    })();
+    // After creating the private Apps Script deployment, paste its exact /exec URL here.
+    // Do not use the older public website-order/HMAC integration deployment URL.
+    const DIRECT_FORM_WEB_APP_URL = 'PASTE_NEW_PRIVATE_EXEC_URL_HERE';
+    const isValidExecUrl = /^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec(?:\?.*)?$/.test(DIRECT_FORM_WEB_APP_URL);
+    if (isValidExecUrl) {
+      const link = document.getElementById('openLink');
+      link.href = DIRECT_FORM_WEB_APP_URL;
+      link.hidden = false;
+      window.location.replace(DIRECT_FORM_WEB_APP_URL);
+    } else {
+      document.getElementById('description').textContent = 'The private Google Apps Script URL has not been configured in this page yet.';
+      document.getElementById('status').textContent = 'After deploying the direct form as Execute as: Me and Who has access: Only myself, paste that new deployment URL ending in /exec into DIRECT_FORM_WEB_APP_URL in this file, then redeploy the website.';
+    }
   </script>
 </body>
 </html>
